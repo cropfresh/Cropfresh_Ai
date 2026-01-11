@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from loguru import logger
 
 from ...agents.voice_agent import VoiceAgent, VoiceResponse
-from ...voice import IndicWhisperSTT, IndicTTS, VoiceEntityExtractor
+from ...voice import IndicWhisperSTT, IndicTTS, VoiceEntityExtractor, MultiProviderSTT
 
 
 # Router
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 
 # Initialize voice components (lazy loaded)
 _voice_agent: Optional[VoiceAgent] = None
-_stt: Optional[IndicWhisperSTT] = None
+_stt: Optional[MultiProviderSTT] = None
 _tts: Optional[IndicTTS] = None
 
 
@@ -33,19 +33,25 @@ def get_voice_agent() -> VoiceAgent:
     global _voice_agent, _stt, _tts
     
     if _voice_agent is None:
-        _stt = IndicWhisperSTT()
+        # Use MultiProviderSTT for automatic fallback
+        _stt = MultiProviderSTT(
+            use_faster_whisper=True,
+            use_indicconformer=True,
+            use_groq=True,
+            faster_whisper_model="small",  # Good balance of speed/accuracy
+        )
         _tts = IndicTTS()
         _voice_agent = VoiceAgent(stt=_stt, tts=_tts)
-        logger.info("Voice agent initialized")
+        logger.info(f"Voice agent initialized with providers: {_stt.get_available_providers()}")
     
     return _voice_agent
 
 
-def get_stt() -> IndicWhisperSTT:
+def get_stt() -> MultiProviderSTT:
     """Get or create STT instance"""
     global _stt
     if _stt is None:
-        _stt = IndicWhisperSTT()
+        _stt = MultiProviderSTT()
     return _stt
 
 

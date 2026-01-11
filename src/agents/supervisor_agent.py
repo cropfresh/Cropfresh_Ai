@@ -42,14 +42,26 @@ Your job is to analyze user queries and route them to the most appropriate speci
 Available agents:
 1. **agronomy_agent**: Expert in crops, farming practices, pest management, soil health, irrigation, organic farming
    - Keywords: grow, plant, cultivate, harvest, pest, disease, fertilizer, soil, seed, irrigation, variety
-   
+
 2. **commerce_agent**: Expert in market prices, trading, sell/hold recommendations, AISP calculations
    - Keywords: price, sell, buy, mandi, market, rate, cost, profit, AISP, logistics
-   
+
 3. **platform_agent**: Expert in CropFresh app features, registration, quality grades, how to use the platform
    - Keywords: register, login, app, feature, quality, grade, logistics, order, payment
-   
-4. **general_agent**: Fallback for greetings, general questions, or unclear intents
+
+4. **web_scraping_agent**: Expert in fetching LIVE data from websites - current mandi prices, weather, news
+   - Keywords: live, current, today, real-time, fetch, scrape, website, portal, eNAM, Agmarknet, weather
+   - Use for: "What's the current tomato price?", "Get today's weather advisory", "Latest agri news"
+
+5. **browser_agent**: Expert in interactive web tasks requiring login, form submission, navigation
+   - Keywords: login, submit, navigate, download, portal, form, interactive, authenticated
+   - Use for: "Check my eNAM dashboard", "Submit an application", "Download price report"
+
+6. **research_agent**: Expert in deep research with multiple sources, citations, and comprehensive reports
+   - Keywords: research, investigate, comprehensive, detailed, compare, analysis, report, study
+   - Use for: "Research best tomato varieties", "Compare farming methods", "Detailed analysis of..."
+
+7. **general_agent**: Fallback for greetings, general questions, or unclear intents
    - Keywords: hello, hi, thanks, help, who are you
 
 Analyze the user query and respond with a JSON object:
@@ -249,6 +261,25 @@ class SupervisorAgent(BaseAgent):
             "payment", "cropfresh", "quality grade", "digital twin"
         ]
         
+        # Web scraping keywords (live data)
+        scraping_kw = [
+            "live", "current", "today", "real-time", "realtime", "fetch",
+            "scrape", "website", "portal", "enam", "agmarknet", "weather",
+            "latest", "now", "today's"
+        ]
+        
+        # Browser agent keywords (interactive)
+        browser_kw = [
+            "login to", "submit", "navigate", "download", "form",
+            "interactive", "authenticated", "dashboard", "check my"
+        ]
+        
+        # Research agent keywords (deep research)
+        research_kw = [
+            "research", "investigate", "comprehensive", "detailed",
+            "compare", "analysis", "report", "study", "in-depth"
+        ]
+        
         # Direct/general keywords
         general_kw = [
             "hello", "hi", "thanks", "thank you", "bye", "help",
@@ -260,6 +291,9 @@ class SupervisorAgent(BaseAgent):
             "agronomy_agent": sum(1 for kw in agronomy_kw if kw in query_lower),
             "commerce_agent": sum(1 for kw in commerce_kw if kw in query_lower),
             "platform_agent": sum(1 for kw in platform_kw if kw in query_lower),
+            "web_scraping_agent": sum(1 for kw in scraping_kw if kw in query_lower),
+            "browser_agent": sum(1 for kw in browser_kw if kw in query_lower),
+            "research_agent": sum(1 for kw in research_kw if kw in query_lower),
             "general_agent": sum(1 for kw in general_kw if kw in query_lower),
         }
         

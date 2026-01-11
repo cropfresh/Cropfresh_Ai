@@ -26,8 +26,25 @@ async def test_qdrant_connection():
     
     try:
         from qdrant_client import QdrantClient
+        from src.config import get_settings
         
-        client = QdrantClient(host="localhost", port=6333)
+        settings = get_settings()
+        host = settings.qdrant_host
+        api_key = settings.qdrant_api_key
+        
+        # Check if using cloud
+        is_cloud = "qdrant.io" in host or "cloud" in host
+        
+        if is_cloud:
+            url = host if host.startswith("https://") else f"https://{host}"
+            if ":6333" not in url and ":443" not in url:
+                url = f"{url}:6333"
+            client = QdrantClient(url=url, api_key=api_key)
+            print(f"   Connecting to Qdrant Cloud: {url}")
+        else:
+            client = QdrantClient(host=host, port=settings.qdrant_port)
+            print(f"   Connecting to local Qdrant: {host}:{settings.qdrant_port}")
+        
         collections = client.get_collections()
         
         print(f"✅ Qdrant connected!")
@@ -36,7 +53,7 @@ async def test_qdrant_connection():
         
     except Exception as e:
         print(f"❌ Qdrant connection failed: {e}")
-        print("   Make sure Qdrant is running: docker start qdrant")
+        print("   Make sure Qdrant is running or check your cloud credentials")
         return False
 
 
@@ -81,8 +98,14 @@ async def test_knowledge_base():
     
     try:
         from src.rag.knowledge_base import KnowledgeBase, Document
+        from src.config import get_settings
         
-        kb = KnowledgeBase()
+        settings = get_settings()
+        kb = KnowledgeBase(
+            host=settings.qdrant_host,
+            port=settings.qdrant_port,
+            api_key=settings.qdrant_api_key,
+        )
         await kb.initialize()
         
         print(f"✅ Knowledge base initialized!")
@@ -236,8 +259,13 @@ async def test_full_rag_pipeline():
             model=settings.llm_model,
         )
         
-        # Create knowledge agent
-        agent = KnowledgeAgent(llm=llm)
+        # Create knowledge agent with Qdrant Cloud settings
+        agent = KnowledgeAgent(
+            llm=llm,
+            qdrant_host=settings.qdrant_host,
+            qdrant_port=settings.qdrant_port,
+            qdrant_api_key=settings.qdrant_api_key,
+        )
         await agent.initialize()
         
         # Test a query

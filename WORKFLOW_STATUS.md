@@ -1,6 +1,6 @@
 # CropFresh AI Service - Workflow Status
 
-**Last Updated:** January 9, 2026 (19:30 IST)  
+**Last Updated:** January 10, 2026 (11:55 IST)  
 **Package Manager:** uv  
 **Python Version:** 3.11+
 
@@ -22,6 +22,55 @@
 ---
 
 ## 📁 File Changes Log
+
+### January 10, 2026 (Afternoon Session)
+
+#### Advanced RAG Phase 1: Real-Time Data Integration
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/tools/enam_client.py` | eNAM API client for live mandi prices, trends, market summaries |
+| CREATE | `src/tools/imd_weather.py` | IMD Weather client with forecasts and agro advisories |
+| CREATE | `src/tools/google_amed.py` | Google AMED for satellite crop monitoring and season info |
+| CREATE | `src/tools/realtime_data.py` | Unified RealTimeDataManager with fallbacks and health checks |
+| UPDATE | `src/tools/__init__.py` | Added exports for all new real-time data modules |
+| CREATE | `scripts/test_realtime_data.py` | Test suite for Phase 1 components |
+| CREATE | `docs/diagrams/advanced_rag_architecture.png` | Architecture diagram for advanced RAG |
+| CREATE | `docs/diagrams/raptor_tree_structure.png` | RAPTOR hierarchical retrieval diagram |
+| UPDATE | `docs/rag_architecture.md` | Updated with diagrams and new components |
+| CREATE | `docs/advanced_rag_implementation_plan.md` | Comprehensive implementation plan |
+
+#### Advanced RAG Phase 2: Advanced Retrieval Techniques
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/rag/raptor.py` | RAPTOR hierarchical tree indexing with GMM clustering |
+| CREATE | `src/rag/contextual_chunker.py` | Contextual chunking with entity extraction |
+| UPDATE | `src/rag/__init__.py` | Added exports for RAPTOR and contextual chunking |
+| CREATE | `scripts/test_advanced_retrieval.py` | Test suite for Phase 2 components |
+
+#### Advanced RAG Phase 3-4: Query Processing & Enhanced Retrieval
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/rag/query_processor.py` | HyDE, multi-query, step-back, decomposition, rewriting |
+| CREATE | `src/rag/enhanced_retriever.py` | Parent Document, Sentence Window, MMR retrievers |
+| UPDATE | `src/rag/__init__.py` | Added exports for Phase 3-4 modules |
+| CREATE | `scripts/test_query_retrieval.py` | Test suite for Phase 3-4 components |
+
+---
+
+### January 10, 2026 (Morning Session)
+
+#### Next-Level RAG Enhancements
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/rag/hybrid_search.py` | BM25 sparse retrieval + RRF fusion for hybrid search |
+| CREATE | `src/rag/reranker.py` | Cross-encoder reranking with MiniLM fallback |
+| CREATE | `src/rag/graph_retriever.py` | Neo4j Graph RAG with entity extraction |
+| CREATE | `src/rag/observability.py` | LangSmith tracing + RAG evaluation metrics |
+| UPDATE | `src/rag/__init__.py` | Added exports for all new enhancement modules |
+| CREATE | `scripts/test_rag_enhancements.py` | Comprehensive test suite for enhancements |
+| UPDATE | `.env` | Added LangSmith configuration section |
+
+---
 
 ### January 9, 2026 (Evening Session)
 
@@ -201,15 +250,16 @@ http://localhost:8000/docs
 ## 📝 Future Improvements
 
 ### High Priority
-- [ ] **Hybrid Search**: Add BM25 sparse retrieval alongside dense vectors
-- [ ] **Cross-Encoder Re-ranking**: Improve search relevance with rerankers
+- [x] **Hybrid Search**: BM25 sparse retrieval + RRF fusion ✅ DONE
+- [x] **Cross-Encoder Re-ranking**: MiniLM-based reranking ✅ DONE
 - [ ] **Lighter Embedding Model**: Add MiniLM option for low-memory systems
 - [ ] **True LLM Token Streaming**: Stream tokens directly from Groq API
 
 ### Medium Priority
 - [ ] **Vision Agent**: YOLOv12 + DINOv2 for crop disease detection
 - [ ] **Database Query Tool**: Access order/transaction data
-- [ ] **LangSmith/LangFuse Tracing**: Full observability for agent chains
+- [x] **LangSmith/LangFuse Tracing**: Observability + evaluation ✅ DONE
+- [x] **Graph RAG**: Neo4j integration for relationships ✅ DONE
 - [ ] **Redis Session Storage**: Production-grade session persistence
 
 ### Lower Priority
@@ -238,13 +288,16 @@ Fixed API compatibility for Qdrant client 1.7+ (use `query_points` instead of de
 
 ```bash
 # Run all multi-agent tests
-.venv\Scripts\python scripts\test_multi_agent.py
+uv run python scripts/test_multi_agent.py
 
 # Run knowledge base search test
-.venv\Scripts\python scripts\test_kb_search.py
+uv run python scripts/test_kb_search.py
+
+# Run RAG enhancements tests (NEW)
+uv run python scripts/test_rag_enhancements.py
 
 # Populate Qdrant with sample data
-.venv\Scripts\python scripts\populate_qdrant.py
+uv run python scripts/populate_qdrant.py
 
 # Run pytest suite
 uv run pytest -v

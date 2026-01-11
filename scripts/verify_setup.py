@@ -58,8 +58,19 @@ def check_qdrant_connection() -> tuple[bool, str]:
         
         host = os.getenv("QDRANT_HOST", "localhost")
         port = int(os.getenv("QDRANT_PORT", "6333"))
+        api_key = os.getenv("QDRANT_API_KEY", "")
         
-        client = QdrantClient(host=host, port=port, timeout=5)
+        # Check if using cloud (URL contains qdrant.io or cloud)
+        is_cloud = "qdrant.io" in host or "cloud" in host
+        
+        if is_cloud:
+            url = host if host.startswith("https://") else f"https://{host}"
+            if ":6333" not in url and ":443" not in url:
+                url = f"{url}:6333"
+            client = QdrantClient(url=url, api_key=api_key, timeout=10)
+        else:
+            client = QdrantClient(host=host, port=port, timeout=5)
+        
         collections = client.get_collections()
         return True, f"Connected ({len(collections.collections)} collections)"
     except Exception as e:

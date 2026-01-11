@@ -43,6 +43,7 @@ class KnowledgeAgent:
         llm=None,
         qdrant_host: str = "localhost",
         qdrant_port: int = 6333,
+        qdrant_api_key: str = "",
     ):
         """
         Initialize Knowledge Agent.
@@ -51,10 +52,12 @@ class KnowledgeAgent:
             llm: LLM provider for generation
             qdrant_host: Qdrant host
             qdrant_port: Qdrant port
+            qdrant_api_key: Qdrant API key for cloud
         """
         self.llm = llm
         self.qdrant_host = qdrant_host
         self.qdrant_port = qdrant_port
+        self.qdrant_api_key = qdrant_api_key
         self._knowledge_base = None
         self._initialized = False
     
@@ -66,6 +69,7 @@ class KnowledgeAgent:
             self._knowledge_base = KnowledgeBase(
                 host=self.qdrant_host,
                 port=self.qdrant_port,
+                api_key=self.qdrant_api_key,
             )
         return self._knowledge_base
     

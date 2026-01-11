@@ -1,9 +1,15 @@
 """Quick test for knowledge base search."""
 import asyncio
 from src.rag.knowledge_base import KnowledgeBase
+from src.config import get_settings
 
 async def test():
-    kb = KnowledgeBase()
+    settings = get_settings()
+    kb = KnowledgeBase(
+        host=settings.qdrant_host,
+        port=settings.qdrant_port,
+        api_key=settings.qdrant_api_key,
+    )
     await kb.initialize()
     
     # Test search

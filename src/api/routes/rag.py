@@ -108,6 +108,7 @@ async def get_knowledge_agent():
             llm=llm,
             qdrant_host=settings.qdrant_host,
             qdrant_port=settings.qdrant_port,
+            qdrant_api_key=settings.qdrant_api_key,
         )
         await _knowledge_agent.initialize()
     

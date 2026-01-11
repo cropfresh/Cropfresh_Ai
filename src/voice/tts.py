@@ -118,6 +118,14 @@ class IndicTTS:
         if self._initialized:
             return
         
+        # For now, skip local model loading due to Parler-TTS compatibility issues
+        # Use Edge TTS as the primary TTS engine (high quality, free)
+        # TODO: Add Coqui XTTS-v2 support when GPU available
+        if self.use_edge_fallback:
+            logger.info("Using Edge TTS as primary TTS (skipping local model)")
+            self._initialized = True
+            return
+        
         try:
             await self._load_model()
             self._initialized = True

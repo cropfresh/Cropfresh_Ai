@@ -4,13 +4,17 @@ CropFresh AI Service - FastAPI Application
 Main entry point for the AI service API.
 """
 
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from src.config import get_settings
+
 
 
 @asynccontextmanager
@@ -94,6 +98,12 @@ app.include_router(voice_rest.router, tags=["voice"])
 # WebSocket routes
 from src.api import websocket as voice_ws
 app.include_router(voice_ws.router, tags=["websocket"])
+
+# Static files (Voice Test UI)
+static_dir = Path(__file__).parent.parent.parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    logger.info(f"📁 Static files mounted from: {static_dir}")
 
 
 if __name__ == "__main__":

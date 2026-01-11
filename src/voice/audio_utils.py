@@ -63,18 +63,45 @@ class AudioProcessor:
     
     def _check_ffmpeg(self) -> bool:
         """Check if FFmpeg is available for advanced processing"""
+        import shutil
+        import subprocess
+        import os
+        
+        # First try shutil.which (most reliable cross-platform)
+        ffmpeg_path = shutil.which("ffmpeg")
+        if ffmpeg_path:
+            logger.info(f"FFmpeg found at: {ffmpeg_path}")
+            return True
+        
+        # On Windows, try common installation paths
+        if os.name == 'nt':
+            common_paths = [
+                r"C:\ffmpeg\bin\ffmpeg.exe",
+                r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+                os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe"),
+            ]
+            for path in common_paths:
+                if os.path.exists(path):
+                    logger.info(f"FFmpeg found at: {path}")
+                    return True
+        
+        # Try running ffmpeg directly
         try:
-            import subprocess
             result = subprocess.run(
                 ["ffmpeg", "-version"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                shell=True  # Use shell on Windows for PATH resolution
             )
-            return result.returncode == 0
-        except Exception:
-            logger.warning("FFmpeg not available, using basic audio processing")
-            return False
+            if result.returncode == 0:
+                logger.info("FFmpeg available via shell")
+                return True
+        except Exception as e:
+            pass
+        
+        logger.warning("FFmpeg not available, using basic audio processing")
+        return False
     
     def detect_format(self, audio_data: bytes) -> AudioFormat:
         """
@@ -228,7 +255,8 @@ class AudioProcessor:
             result = subprocess.run(
                 cmd,
                 capture_output=True,
-                timeout=30
+                timeout=30,
+                shell=True  # Use shell on Windows for PATH resolution
             )
             
             if result.returncode != 0:

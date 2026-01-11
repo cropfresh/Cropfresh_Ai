@@ -107,6 +107,7 @@ async def get_supervisor_agent():
         kb = KnowledgeBase(
             host=settings.qdrant_host,
             port=settings.qdrant_port,
+            api_key=settings.qdrant_api_key,
         )
         await kb.initialize()
         
