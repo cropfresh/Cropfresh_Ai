@@ -91,6 +91,10 @@ app.include_router(rag.router, prefix="/api/v1", tags=["rag"])
 from src.api.routes import chat
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 
+# Data & Scraper API routes (Production-grade with Scrapling + AI Kosha)
+from src.api.routes import data as data_routes
+app.include_router(data_routes.router, prefix="/api/v1", tags=["data"])
+
 # Voice API routes
 from src.api.rest import voice as voice_rest
 app.include_router(voice_rest.router, tags=["voice"])

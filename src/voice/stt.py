@@ -243,8 +243,6 @@ class IndicWhisperSTT:
         self,
         model_name: str = DEFAULT_MODEL,
         device: str = "auto",
-        use_groq_fallback: bool = True,
-        groq_api_key: Optional[str] = None,
     ):
         """
         Initialize IndicWhisper STT.
@@ -252,13 +250,9 @@ class IndicWhisperSTT:
         Args:
             model_name: HuggingFace model name
             device: 'cuda', 'cpu', or 'auto'
-            use_groq_fallback: Fall back to Groq API if local fails
-            groq_api_key: API key for Groq (reads from env if not provided)
         """
         self.model_name = model_name
         self.device = device
-        self.use_groq_fallback = use_groq_fallback
-        self._groq_api_key = groq_api_key
         
         self._model = None
         self._processor = None
@@ -276,12 +270,8 @@ class IndicWhisperSTT:
             await self._load_model()
             self._initialized = True
         except Exception as e:
-            logger.warning(f"Failed to load local model: {e}")
-            if self.use_groq_fallback:
-                logger.info("Will use Groq API fallback")
-                self._initialized = True
-            else:
-                raise
+            logger.error(f"Failed to load local model: {e}")
+            raise
     
     async def _load_model(self):
         """Load IndicConformer model from HuggingFace"""
@@ -353,22 +343,13 @@ class IndicWhisperSTT:
         # Get duration
         duration = self._audio_processor.get_audio_duration(audio)
         
-        # Try local model first
+        # Use local model only
         if self._model is not None:
-            try:
-                result = await self._transcribe_local(audio, language, task)
-                result.duration_seconds = duration
-                return result
-            except Exception as e:
-                logger.warning(f"Local transcription failed: {e}")
-                if not self.use_groq_fallback:
-                    raise
+            result = await self._transcribe_local(audio, language, task)
+            result.duration_seconds = duration
+            return result
         
-        # Fallback to Groq API
-        if self.use_groq_fallback:
-            return await self._transcribe_groq(audio, language, duration)
-        
-        raise RuntimeError("No transcription backend available")
+        raise RuntimeError("Local IndicConformer model is not loaded and no fallbacks are allowed")
     
     async def _transcribe_local(
         self,
@@ -443,72 +424,7 @@ class IndicWhisperSTT:
             provider="indicconformer"
         )
     
-    async def _transcribe_groq(
-        self,
-        audio: bytes,
-        language: str,
-        duration: float,
-    ) -> TranscriptionResult:
-        """Transcribe using Groq Whisper API"""
-        import os
-        import httpx
-        import base64
-        
-        # Try instance key first, then settings, then env
-        api_key = self._groq_api_key
-        if not api_key:
-            try:
-                from src.config import get_settings
-                api_key = get_settings().groq_api_key
-            except Exception:
-                pass
-        if not api_key:
-            api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            raise RuntimeError("GROQ_API_KEY not set for fallback")
-
-        
-        logger.info("Using Groq Whisper API fallback")
-        
-        # Preprocess audio
-        preprocessed = self._audio_processor.preprocess_for_stt(audio)
-        
-        # Use Groq transcription endpoint
-        async with httpx.AsyncClient() as client:
-            # Create multipart form data
-            files = {
-                "file": ("audio.wav", preprocessed, "audio/wav"),
-                "model": (None, "whisper-large-v3"),
-            }
-            
-            if language != "auto":
-                files["language"] = (None, language)
-            
-            response = await client.post(
-                "https://api.groq.com/openai/v1/audio/transcriptions",
-                headers={"Authorization": f"Bearer {api_key}"},
-                files=files,
-                timeout=60.0,
-            )
-            
-            if response.status_code != 200:
-                logger.error(f"Groq API error: {response.text}")
-                raise RuntimeError(f"Groq API error: {response.status_code}")
-            
-            result = response.json()
-        
-        text = result.get("text", "").strip()
-        detected_lang = result.get("language", language)
-        if detected_lang == "auto":
-            detected_lang = self._detect_language(text)
-        
-        return TranscriptionResult(
-            text=text,
-            language=detected_lang,
-            confidence=0.85,
-            duration_seconds=duration,
-            provider="groq"
-        )
+    # Groq fallback method removed completely for 100% local operation
     
     def _detect_language(self, text: str) -> str:
         """Simple language detection from text"""
@@ -591,24 +507,28 @@ class MultiProviderSTT:
         self,
         use_faster_whisper: bool = True,
         use_indicconformer: bool = True,
-        use_groq: bool = True,
         faster_whisper_model: str = "small",
-        groq_api_key: Optional[str] = None,
     ):
         """
         Initialize multi-provider STT.
         
         Args:
-            use_faster_whisper: Enable Faster Whisper (primary)
+            use_faster_whisper: Enable Faster Whisper (primary alternative)
             use_indicconformer: Enable IndicConformer (Indian languages)
-            use_groq: Enable Groq Whisper API (cloud fallback)
             faster_whisper_model: Model size for Faster Whisper
-            groq_api_key: API key for Groq
         """
         self._providers = []
         self._provider_names = []
         
-        # Add providers in priority order
+        # Add providers in priority order (IndicConformer first for Indian context)
+        if use_indicconformer:
+            try:
+                self._providers.append(IndicWhisperSTT())
+                self._provider_names.append("indicconformer")
+                logger.info("MultiProviderSTT: AI4Bharat IndicConformer enabled")
+            except Exception as e:
+                logger.warning(f"Could not init IndicConformer: {e}")
+                
         if use_faster_whisper:
             try:
                 self._providers.append(FasterWhisperSTT(model_size=faster_whisper_model))
@@ -617,26 +537,10 @@ class MultiProviderSTT:
             except Exception as e:
                 logger.warning(f"Could not init Faster Whisper: {e}")
         
-        if use_indicconformer:
-            try:
-                self._providers.append(IndicWhisperSTT(use_groq_fallback=False))
-                self._provider_names.append("indicconformer")
-                logger.info("MultiProviderSTT: IndicConformer enabled")
-            except Exception as e:
-                logger.warning(f"Could not init IndicConformer: {e}")
+        if not self._providers:
+            raise RuntimeError("No local STT providers available. Cannot run in cloud API fallback mode.")
         
-        if use_groq:
-            # Groq is handled via IndicWhisperSTT with fallback enabled
-            self._groq_enabled = True
-            self._groq_api_key = groq_api_key
-            logger.info("MultiProviderSTT: Groq fallback enabled")
-        else:
-            self._groq_enabled = False
-        
-        if not self._providers and not self._groq_enabled:
-            raise RuntimeError("No STT providers available")
-        
-        logger.info(f"MultiProviderSTT initialized with {len(self._providers)} providers: {self._provider_names}")
+        logger.info(f"MultiProviderSTT initialized with {len(self._providers)} local providers: {self._provider_names}")
     
     async def transcribe(
         self,
@@ -675,27 +579,9 @@ class MultiProviderSTT:
                 errors.append(f"{self._provider_names[i]}: {str(e)}")
                 continue
         
-        # Final fallback: Groq API
-        if self._groq_enabled:
-            try:
-                logger.info("Trying Groq Whisper API as final fallback")
-                groq_stt = IndicWhisperSTT(use_groq_fallback=True, groq_api_key=self._groq_api_key)
-                # Force Groq by ensuring local model fails
-                groq_stt._model = None
-                groq_stt._initialized = True
-                result = await groq_stt.transcribe(audio, language)
-                
-                if result.is_successful:
-                    logger.info(f"STT success with Groq: {result.text[:50]}...")
-                    return result
-                    
-            except Exception as e:
-                logger.error(f"Groq fallback also failed: {e}")
-                errors.append(f"groq: {str(e)}")
-        
-        # All providers failed
+        # All local providers failed
         error_msg = "; ".join(errors)
-        logger.error(f"All STT providers failed: {error_msg}")
+        logger.error(f"All local STT providers failed: {error_msg}")
         
         # Return empty result rather than crash
         return TranscriptionResult(
@@ -708,7 +594,4 @@ class MultiProviderSTT:
     
     def get_available_providers(self) -> list[str]:
         """Get list of available provider names"""
-        providers = self._provider_names.copy()
-        if self._groq_enabled:
-            providers.append("groq")
-        return providers
+        return self._provider_names.copy()

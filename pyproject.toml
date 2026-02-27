@@ -40,6 +40,14 @@ dependencies = [
     "aiohttp>=3.11.0",
     "websockets>=12.0",
     # ═══════════════════════════════════════════════════════════════
+    # Web Scraping (Production-grade)
+    # ═══════════════════════════════════════════════════════════════
+    "scrapling>=0.2.9",
+    # ═══════════════════════════════════════════════════════════════
+    # Rate Limiting
+    # ═══════════════════════════════════════════════════════════════
+    "slowapi>=0.1.9",
+    # ═══════════════════════════════════════════════════════════════
     # Data Processing
     # ═══════════════════════════════════════════════════════════════
     "numpy>=2.0.0",
@@ -101,10 +109,10 @@ voice-advanced = [
 ]
 # Note: transformers, torch are in [ml] extras - used for Whisper + IndicTTS
 
-# Web Scraping & Browsing (Phase 10)
+# Web Scraping & Browsing (Production-grade with Scrapling)
 web = [
+    "scrapling[all]>=0.2.9",     # Full Scrapling with browser support
     "playwright>=1.49.0",
-    "crawl4ai>=0.4.0",
     "fake-useragent>=1.5.0",
     "trafilatura>=1.14.0",
     "beautifulsoup4>=4.12.0",

@@ -74,12 +74,26 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://user:password@localhost:5432/cropfresh"
 
     # ═══════════════════════════════════════════════════════════════
+    # AI Kosha (India's AI Dataset Platform)
+    # ═══════════════════════════════════════════════════════════════
+    aikosha_api_key: str = ""
+    aikosha_base_url: str = "https://indiaai.gov.in/api/v1"
+
+    # ═══════════════════════════════════════════════════════════════
+    # Scraping Configuration
+    # ═══════════════════════════════════════════════════════════════
+    scraping_rate_limit: int = 30  # requests per minute (global)
+    scraping_cache_ttl: int = 300  # cache TTL in seconds (5 min)
+
+    # ═══════════════════════════════════════════════════════════════
     # API Settings
     # ═══════════════════════════════════════════════════════════════
     api_host: str = "0.0.0.0"
     api_port: int = 8080
     debug: bool = True
     log_level: str = "INFO"
+    api_key: str = ""  # API key for authentication (empty = disabled)
+    environment: str = "development"  # development, staging, production
 
     # ═══════════════════════════════════════════════════════════════
     # Model Paths
