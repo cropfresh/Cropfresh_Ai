@@ -117,25 +117,13 @@ class IndicTTS:
         """Lazy load the model on first use"""
         if self._initialized:
             return
-        
-        # For now, skip local model loading due to Parler-TTS compatibility issues
-        # Use Edge TTS as the primary TTS engine (high quality, free)
-        # TODO: Add Coqui XTTS-v2 support when GPU available
-        if self.use_edge_fallback:
-            logger.info("Using Edge TTS as primary TTS (skipping local model)")
-            self._initialized = True
-            return
-        
+            
         try:
             await self._load_model()
             self._initialized = True
         except Exception as e:
-            logger.warning(f"Failed to load local TTS model: {e}")
-            if self.use_edge_fallback:
-                logger.info("Will use Edge TTS fallback")
-                self._initialized = True
-            else:
-                raise
+            logger.error(f"Failed to load local TTS model: {e}")
+            raise RuntimeError(f"Failed to load local TTS model: {e}")
     
     async def _load_model(self):
         """Load IndicTTS model from HuggingFace"""
@@ -162,8 +150,8 @@ class IndicTTS:
             logger.info(f"IndicTTS loaded on {device}")
             
         except Exception as e:
-            logger.warning(f"Could not load local TTS model: {e}")
-            # Don't raise - we'll use fallback
+            logger.error(f"Could not load local TTS model: {e}")
+            raise
     
     async def synthesize(
         self,
@@ -202,20 +190,11 @@ class IndicTTS:
         # Normalize text
         text = self._normalize_text(text, language)
         
-        # Try local model first
+        # Use local model only
         if self._model is not None:
-            try:
-                return await self._synthesize_local(text, language, voice, emotion, speed)
-            except Exception as e:
-                logger.warning(f"Local TTS failed: {e}")
-                if not self.use_edge_fallback:
-                    raise
+            return await self._synthesize_local(text, language, voice, emotion, speed)
         
-        # Fallback to Edge TTS
-        if self.use_edge_fallback:
-            return await self._synthesize_edge(text, language, voice)
-        
-        raise RuntimeError("No TTS backend available")
+        raise RuntimeError("Local TTS model is not loaded and no fallbacks are allowed")
     
     async def _synthesize_local(
         self,
@@ -272,91 +251,7 @@ class IndicTTS:
             provider="indictts"
         )
     
-    async def _synthesize_edge(
-        self,
-        text: str,
-        language: str,
-        voice: str,
-    ) -> SynthesisResult:
-        """Synthesize using Microsoft Edge TTS (free, no API key)"""
-        try:
-            import edge_tts
-        except ImportError:
-            # Fallback to gTTS
-            return await self._synthesize_gtts(text, language)
-        
-        # Map language to Edge voice
-        edge_voice = self._get_edge_voice(language, voice)
-        
-        logger.info(f"Using Edge TTS with voice: {edge_voice}")
-        
-        # Generate audio
-        communicate = edge_tts.Communicate(text, edge_voice)
-        
-        # Collect audio chunks
-        audio_chunks = []
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_chunks.append(chunk["data"])
-        
-        audio_bytes = b"".join(audio_chunks)
-        
-        # Convert MP3 to WAV if needed
-        # Edge TTS outputs MP3
-        audio_bytes = await self._mp3_to_wav(audio_bytes)
-        
-        # Estimate duration (rough estimate from byte size)
-        duration = len(audio_bytes) / (self.OUTPUT_SAMPLE_RATE * 2)
-        
-        return SynthesisResult(
-            audio=audio_bytes,
-            format="wav",
-            sample_rate=self.OUTPUT_SAMPLE_RATE,
-            duration_seconds=duration,
-            language=language,
-            voice=edge_voice,
-            provider="edge"
-        )
-    
-    async def _synthesize_gtts(
-        self,
-        text: str,
-        language: str,
-    ) -> SynthesisResult:
-        """Fallback to Google Text-to-Speech (gTTS)"""
-        try:
-            from gtts import gTTS
-        except ImportError:
-            raise RuntimeError("Install edge-tts or gtts: pip install edge-tts gtts")
-        
-        logger.info("Using gTTS fallback")
-        
-        # Map language code
-        gtts_lang = self._map_to_gtts_lang(language)
-        
-        # Generate audio
-        tts = gTTS(text=text, lang=gtts_lang, slow=False)
-        
-        # Save to bytes
-        audio_buffer = io.BytesIO()
-        tts.write_to_fp(audio_buffer)
-        audio_buffer.seek(0)
-        mp3_bytes = audio_buffer.read()
-        
-        # Convert MP3 to WAV
-        wav_bytes = await self._mp3_to_wav(mp3_bytes)
-        
-        duration = len(wav_bytes) / (self.OUTPUT_SAMPLE_RATE * 2)
-        
-        return SynthesisResult(
-            audio=wav_bytes,
-            format="wav",
-            sample_rate=self.OUTPUT_SAMPLE_RATE,
-            duration_seconds=duration,
-            language=language,
-            voice="gtts",
-            provider="gtts"
-        )
+    # Edge TTS fallback method removed completely for 100% local operation
     
     def _normalize_text(self, text: str, language: str) -> str:
         """Normalize text for TTS"""
@@ -382,36 +277,7 @@ class IndicTTS:
         
         return voice
     
-    def _get_edge_voice(self, language: str, voice: str) -> str:
-        """Map language to Microsoft Edge TTS voice"""
-        edge_voices = {
-            "hi": "hi-IN-SwaraNeural" if "female" in voice else "hi-IN-MadhurNeural",
-            "kn": "kn-IN-SapnaNeural" if "female" in voice else "kn-IN-GaganNeural",
-            "te": "te-IN-ShrutiNeural" if "female" in voice else "te-IN-MohanNeural",
-            "ta": "ta-IN-PallaviNeural" if "female" in voice else "ta-IN-ValluvarNeural",
-            "ml": "ml-IN-SobhanaNeural" if "female" in voice else "ml-IN-MidhunNeural",
-            "mr": "mr-IN-AarohiNeural" if "female" in voice else "mr-IN-ManoharNeural",
-            "gu": "gu-IN-DhwaniNeural" if "female" in voice else "gu-IN-NiranjanNeural",
-            "bn": "bn-IN-TanishaaNeural" if "female" in voice else "bn-IN-BashkarNeural",
-            "en": "en-IN-NeerjaNeural" if "female" in voice else "en-IN-PrabhatNeural",
-        }
-        return edge_voices.get(language, edge_voices["en"])
-    
-    def _map_to_gtts_lang(self, language: str) -> str:
-        """Map language code to gTTS language"""
-        gtts_map = {
-            "hi": "hi",
-            "kn": "kn",
-            "te": "te",
-            "ta": "ta",
-            "ml": "ml",
-            "mr": "mr",
-            "gu": "gu",
-            "bn": "bn",
-            "pa": "pa",
-            "en": "en-in",
-        }
-        return gtts_map.get(language, "en")
+    # Legacy Edge TTS mappers removed
     
     def _build_voice_prompt(self, voice: str, emotion: str, speed: float) -> str:
         """Build voice description prompt for Parler TTS"""

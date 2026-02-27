@@ -31,6 +31,7 @@ try:
     from src.voice.tts import IndicTTS
     from src.agents.voice_agent import VoiceAgent
     from src.voice.vad import bytes_to_wav
+    from src.orchestrator.llm_provider import create_llm_provider
     VAD_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Voice components not fully available: {e}")
@@ -136,8 +137,15 @@ class VoiceSession:
             # Initialize TTS
             self.tts = IndicTTS()
             
+            # Initialize local vLLM provider (Sarvam-1 or similar) for the "brain"
+            local_llm = create_llm_provider(
+                provider="vllm", 
+                base_url="http://localhost:8000/v1", 
+                model="sarvam-1"
+            )
+            
             # Initialize voice agent
-            self.voice_agent = VoiceAgent(stt=self.stt, tts=self.tts)
+            self.voice_agent = VoiceAgent(stt=self.stt, tts=self.tts, llm_provider=local_llm)
         
         self.is_active = True
         logger.info(f"Session {self.session_id} initialized")

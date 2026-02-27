@@ -214,8 +214,39 @@ class VLLMProvider(BaseLLMProvider):
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Stream using vLLM API."""
-        # Implementation for streaming
-        raise NotImplementedError("vLLM streaming not yet implemented")
+        import json
+        
+        request_data = {
+            "model": self.model,
+            "messages": [m.model_dump() for m in messages],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+            **kwargs,
+        }
+        
+        async with self.client.stream(
+            "POST",
+            f"{self.base_url}/chat/completions",
+            json=request_data,
+        ) as response:
+            response.raise_for_status()
+            
+            async for line in response.aiter_lines():
+                line = line.strip()
+                if not line or line == "data: [DONE]":
+                    continue
+                    
+                if line.startswith("data: "):
+                    try:
+                        data = json.loads(line[6:])
+                        choices = data.get("choices", [])
+                        if choices and "delta" in choices[0]:
+                            content = choices[0]["delta"].get("content", "")
+                            if content:
+                                yield content
+                    except json.JSONDecodeError:
+                        continue
 
 
 def create_llm_provider(
