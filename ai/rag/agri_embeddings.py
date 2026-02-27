@@ -264,8 +264,11 @@ class AgriEmbeddingWrapper(EmbeddingManager):
         """
         Normalize bilingual agricultural terms to expanded English equivalents.
 
-        Replaces known Hindi/Kannada shorthand with domain-standard English
-        to improve cross-lingual retrieval accuracy.
+        Uses a single-pass regex replacement to prevent double-substitution
+        (e.g., 'dhan' inside an already-expanded 'Pradhan Mantri' string).
+
+        Terms are sorted by length (longest first) so more specific multi-word
+        terms like 'kali mitti' are matched before shorter sub-terms.
 
         Args:
             text: Input text (may contain Hindi/Kannada terms)
@@ -274,18 +277,32 @@ class AgriEmbeddingWrapper(EmbeddingManager):
             Text with expanded English equivalents
 
         Example:
-            "tamatar ki kharif kheti" →
-            "tomato Solanum lycopersicum ki kharif summer season June October rainfed monsoon crops kheti"
+            "pm-kisan scheme tamatar apply" →
+            "PM-KISAN Pradhan Mantri Kisan Samman Nidhi income support scheme tomato Solanum lycopersicum apply"
         """
+        import re
+
         text_lower = text.lower()
-        result = text_lower
 
-        # Apply all term replacements (longest-match priority via sorted keys)
-        for term in sorted(self.TERM_MAP.keys(), key=len, reverse=True):
-            if term in result:
-                result = result.replace(term, self.TERM_MAP[term])
+        # Build a single regex that matches all terms at word boundaries
+        # Sort longest first to ensure multi-word terms match before sub-terms
+        sorted_terms = sorted(self.TERM_MAP.keys(), key=len, reverse=True)
 
-        return result
+        # Escape special regex characters in term keys
+        escaped_terms = [re.escape(t) for t in sorted_terms]
+
+        # Build alternation pattern
+        pattern = re.compile(
+            r'\b(' + '|'.join(escaped_terms) + r')\b',
+            re.IGNORECASE,
+        )
+
+        def replace_match(m: re.Match) -> str:
+            matched = m.group(0).lower()
+            return self.TERM_MAP.get(matched, m.group(0))
+
+        return pattern.sub(replace_match, text_lower)
+
 
     def get_domain_stats(self) -> dict:
         """Return stats about the domain wrapper for observability."""

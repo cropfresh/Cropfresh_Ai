@@ -1,9 +1,14 @@
 # ═══════════════════════════════════════════════
 # CropFresh AI — Docker Compose (Local Dev)
-# Services: API + Qdrant + Neo4j + n8n
+# Services: API + Qdrant + Neo4j + Redis + n8n
+#           + Prometheus + Grafana
 # ═══════════════════════════════════════════════
-
-version: '3.8'
+# Usage:
+#   docker compose up -d               # start all
+#   docker compose up -d api qdrant redis  # minimal stack
+#
+# Env vars read from .env file (copy .env.example → .env first)
+# ═══════════════════════════════════════════════
 
 services:
   # ─── CropFresh API ──────────────────────────
@@ -15,13 +20,42 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
     volumes:
       - ./src:/app/src
       - ./ai:/app/ai
     depends_on:
-      - qdrant
-      - neo4j
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ─── Redis (Cache) ───────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # ─── Qdrant Vector Database ─────────────────
   qdrant:
@@ -32,6 +66,11 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:6333/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   # ─── Neo4j Graph Database ──────────────────
   neo4j:
@@ -46,6 +85,45 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7474"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ─── Prometheus ─────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # ─── Grafana ─────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-cropfresh123}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infra/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    restart: unless-stopped
+    depends_on:
+      - prometheus
 
   # ─── n8n Workflow Engine ───────────────────
   n8n:
@@ -65,4 +143,7 @@ volumes:
   qdrant_data:
   neo4j_data:
   neo4j_logs:
+  redis_data:
   n8n_data:
+  prometheus_data:
+  grafana_data:

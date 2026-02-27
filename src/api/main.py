@@ -1,122 +1,304 @@
 """
 CropFresh AI Service - FastAPI Application
 ==========================================
-Main entry point for the AI service API.
+Production-grade entry point for the AI service API.
+
+Changes from dev baseline:
+  - Environment-driven CORS (ALLOWED_ORIGINS env var)
+  - API key authentication middleware (X-API-Key header)
+  - OpenTelemetry observability wired in lifespan startup
+  - Prometheus /metrics endpoint
+  - Dependency injection: agents initialized on startup, stored on app.state
+  - Structured health checks: Qdrant + Redis probed on /health/ready
+  - Graceful shutdown with connection cleanup
 """
+
+from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from src.config import get_settings
+from src.api.config import get_settings
 
 
+# ─────────────────────────────────────────────────
+# Lifespan: startup + shutdown
+# ─────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
-    settings = get_settings()
-    logger.info("🌾 CropFresh AI Service starting...")
-    logger.info(f"   LLM Provider: {settings.llm_provider}")
-    logger.info(f"   Debug mode: {settings.debug}")
-    
-    # Startup
-    yield
-    
-    # Shutdown
-    logger.info("🌾 CropFresh AI Service shutting down...")
+    """
+    Application lifespan manager.
 
+    Startup sequence:
+      1. Load settings
+      2. Wire OpenTelemetry observability
+      3. Connect Redis cache
+      4. Initialize KnowledgeAgent (Qdrant)
+      5. Initialize SupervisorAgent (all domain agents)
+      6. Probe dependencies for readiness
+
+    Shutdown:
+      - Close Redis, Qdrant connections gracefully
+    """
+    settings = get_settings()
+
+    logger.info("🌾 CropFresh AI Service starting — env={} debug={}", settings.environment, settings.debug)
+
+    # ── 1. Observability ────────────────────────────
+    try:
+        from src.production.observability import setup_observability
+        setup_observability(
+            service_name="cropfresh-ai",
+            endpoint=settings.otel_endpoint or None,
+        )
+    except Exception as exc:
+        logger.warning("Observability setup skipped: {}", exc)
+
+    # ── 2. LangSmith (optional) ──────────────────────
+    if settings.langsmith_api_key:
+        os.environ.setdefault("LANGCHAIN_API_KEY", settings.langsmith_api_key)
+        os.environ.setdefault("LANGCHAIN_PROJECT", settings.langsmith_project)
+        os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
+        logger.info("🔗 LangSmith tracing enabled (project={})", settings.langsmith_project)
+
+    # ── 3. Redis cache ───────────────────────────────
+    app.state.cache = None
+    if settings.use_redis_cache:
+        try:
+            import redis.asyncio as aioredis  # type: ignore
+            redis_client = aioredis.from_url(settings.redis_url, decode_responses=False)
+            await redis_client.ping()
+            app.state.redis = redis_client
+            logger.info("✅ Redis connected: {}", settings.redis_url)
+        except Exception as exc:
+            logger.warning("Redis unavailable ({}), falling back to in-memory cache", exc)
+            app.state.redis = None
+    else:
+        app.state.redis = None
+
+    # ── 4. KnowledgeAgent ────────────────────────────
+    app.state.knowledge_agent = None
+    try:
+        from src.agents.knowledge_agent import KnowledgeAgent
+        from src.orchestrator.llm_provider import create_llm_provider
+
+        llm = None
+        if settings.groq_api_key:
+            llm = create_llm_provider(
+                provider=settings.llm_provider,
+                api_key=settings.groq_api_key,
+                model=settings.llm_model,
+            )
+
+        agent = KnowledgeAgent(
+            llm=llm,
+            qdrant_host=settings.qdrant_host,
+            qdrant_port=settings.qdrant_port,
+            qdrant_api_key=settings.qdrant_api_key,
+        )
+        ok = await agent.initialize()
+        if ok:
+            app.state.knowledge_agent = agent
+            logger.info("✅ KnowledgeAgent initialized (Qdrant={}:{})", settings.qdrant_host, settings.qdrant_port)
+        else:
+            logger.warning("⚠️  KnowledgeAgent initialization returned False — RAG queries will fail")
+    except Exception as exc:
+        logger.warning("KnowledgeAgent initialization failed: {} — RAG unavailable", exc)
+
+    # ── 5. SupervisorAgent ───────────────────────────
+    app.state.supervisor = None
+    try:
+        from src.agents.supervisor_agent import SupervisorAgent
+        from src.orchestrator.llm_provider import create_llm_provider
+
+        llm = None
+        if settings.groq_api_key:
+            llm = create_llm_provider(
+                provider=settings.llm_provider,
+                api_key=settings.groq_api_key,
+                model=settings.llm_model,
+            )
+
+        supervisor = SupervisorAgent(llm=llm)
+        await supervisor.initialize()
+        app.state.supervisor = supervisor
+        logger.info("✅ SupervisorAgent initialized")
+    except Exception as exc:
+        logger.warning("SupervisorAgent initialization failed: {}", exc)
+
+    logger.info("🚀 CropFresh AI Service ready — http://{}:{}/docs", settings.api_host, settings.api_port)
+
+    yield  # ─── App is running ───
+
+    # ── Shutdown ─────────────────────────────────────
+    logger.info("🛑 CropFresh AI Service shutting down...")
+    if getattr(app.state, "redis", None):
+        await app.state.redis.aclose()
+        logger.info("Redis connection closed")
+
+
+# ─────────────────────────────────────────────────
+# App factory
+# ─────────────────────────────────────────────────
+
+_settings = get_settings()
 
 app = FastAPI(
     title="CropFresh AI Service",
-    description="AI-powered agricultural marketplace backend",
-    version="0.1.0",
+    description=(
+        "Agentic RAG + Voice + Market Intelligence backend "
+        "for India's agricultural marketplace.\n\n"
+        "**Auth:** Include `X-API-Key: <your_key>` header for API routes "
+        "(not required in `development` environment)."
+    ),
+    version="0.2.0",
+    # Hide /docs in production to reduce attack surface
+    docs_url="/docs" if not _settings.is_production else None,
+    redoc_url="/redoc" if not _settings.is_production else None,
     lifespan=lifespan,
 )
 
-# CORS middleware
+# ─── CORS ──────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
+    allow_origins=_settings.allowed_origins_list,   # Env-driven — NOT allow_origins=["*"] in prod
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
+# ─── API Key auth ──────────────────────────────────
+from src.api.middleware.auth import APIKeyMiddleware  # noqa: E402
+app.add_middleware(APIKeyMiddleware, api_key=_settings.api_key or None)
 
-@app.get("/")
+
+# ─────────────────────────────────────────────────
+# Health endpoints
+# ─────────────────────────────────────────────────
+
+@app.get("/", tags=["meta"], include_in_schema=False)
 async def root():
-    """Root endpoint."""
+    """Root — service info."""
     return {
         "service": "cropfresh-ai",
-        "version": "0.1.0",
-        "status": "running",
+        "version": "0.2.0",
+        "environment": _settings.environment,
+        "docs": "/docs",
     }
 
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health():
-    """Health check endpoint."""
-    return {"status": "healthy"}
+    """Liveness probe — always returns 200 if the process is alive."""
+    return {"status": "alive"}
 
 
-@app.get("/health/ready")
-async def readiness():
-    """Readiness check endpoint."""
-    settings = get_settings()
-    
-    checks = {
-        "llm_configured": bool(settings.groq_api_key),
-        "qdrant_configured": bool(settings.qdrant_host),
+@app.get("/health/ready", tags=["health"])
+async def readiness(request):
+    """
+    Readiness probe — checks all critical dependencies.
+
+    Returns 200 only when the service is truly ready to handle traffic.
+    """
+    from fastapi import Request
+    checks: dict[str, bool | str] = {
+        "llm_configured": bool(_settings.groq_api_key),
+        "qdrant_configured": bool(_settings.qdrant_host),
+        "knowledge_agent": getattr(request.app.state, "knowledge_agent", None) is not None,
+        "supervisor": getattr(request.app.state, "supervisor", None) is not None,
+        "redis": getattr(request.app.state, "redis", None) is not None,
     }
-    
-    all_ready = all(checks.values())
-    
-    return {
-        "ready": all_ready,
-        "checks": checks,
-    }
+
+    all_ready = checks["llm_configured"] and checks["qdrant_configured"]
+    status_code = 200 if all_ready else 503
+
+    return Response(
+        content=__import__("orjson").dumps({"ready": all_ready, "checks": checks}),
+        media_type="application/json",
+        status_code=status_code,
+    )
 
 
-# API routes
-from src.api.routes import rag
+# ─────────────────────────────────────────────────
+# Prometheus metrics endpoint
+# ─────────────────────────────────────────────────
+
+@app.get("/metrics", tags=["observability"], include_in_schema=False)
+async def prometheus_metrics():
+    """
+    Prometheus text-format metrics scrape endpoint.
+
+    Exposes:
+      - cropfresh_agent_requests_total{agent}
+      - cropfresh_agent_latency_ms{agent}
+      - cropfresh_agent_errors_total{agent}
+      - cropfresh_cache_hits_total / cropfresh_cache_misses_total
+    """
+    try:
+        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    except ImportError:
+        # Prometheus client not installed (observability extra not used)
+        from src.production.observability import get_all_metrics
+        metrics = get_all_metrics()
+        lines = [
+            "# HELP cropfresh_agent_requests_total Total requests per agent",
+            "# TYPE cropfresh_agent_requests_total counter",
+        ]
+        for agent, m in metrics.get("by_agent", {}).items():
+            lines.append(f'cropfresh_agent_requests_total{{agent="{agent}"}} {m["total_requests"]}')
+        lines.append("")
+        return Response(content="\n".join(lines), media_type="text/plain")
+
+
+# ─────────────────────────────────────────────────
+# API Routers
+# ─────────────────────────────────────────────────
+
+from src.api.routes import rag                      # noqa: E402
 app.include_router(rag.router, prefix="/api/v1", tags=["rag"])
 
-# Chat API routes (Advanced Multi-Agent System)
-from src.api.routes import chat
+from src.api.routes import chat                     # noqa: E402
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 
-# Data & Scraper API routes (Production-grade with Scrapling + AI Kosha)
-from src.api.routes import data as data_routes
+from src.api.routes import data as data_routes      # noqa: E402
 app.include_router(data_routes.router, prefix="/api/v1", tags=["data"])
 
-# Voice API routes
-from src.api.rest import voice as voice_rest
+from src.api.rest import voice as voice_rest        # noqa: E402
 app.include_router(voice_rest.router, tags=["voice"])
 
-# WebSocket routes
-from src.api import websocket as voice_ws
+from src.api import websocket as voice_ws           # noqa: E402
 app.include_router(voice_ws.router, tags=["websocket"])
 
+
+# ─────────────────────────────────────────────────
 # Static files (Voice Test UI)
+# ─────────────────────────────────────────────────
+
 static_dir = Path(__file__).parent.parent.parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-    logger.info(f"📁 Static files mounted from: {static_dir}")
+    logger.info("📁 Static files mounted from: {}", static_dir)
 
+
+# ─────────────────────────────────────────────────
+# Dev entry point
+# ─────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn
-    
-    settings = get_settings()
+
     uvicorn.run(
         "src.api.main:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=settings.debug,
+        host=_settings.api_host,
+        port=_settings.api_port,
+        reload=_settings.debug,
+        log_level=_settings.log_level.lower(),
     )

@@ -462,9 +462,22 @@ class AdaptiveQueryRouter:
                 pre_filter_matched=True,
             )
 
-        # Greeting or platform FAQ
-        q_words = set(q.split())
-        if any(token in q for token in self.GREETING_TOKENS) or q_words & self.GREETING_TOKENS:
+        # Greeting or platform FAQ — use word-boundary check to avoid
+        # substring false positives (e.g. 'hi' inside 'which', 'this year')
+        # Strip punctuation from tokens before set-comparison
+        q_words = {w.strip("?!.,;:'\"") for w in q.split()}
+        short_greetings = {"hi", "hey", "hello", "thanks", "bye", "help"}
+        long_greetings = {
+            "namaste", "namaskar", "vanakkam", "sat sri akal",
+            "thank you", "shukriya", "dhanyavad", "goodbye",
+            "who are you", "what is cropfresh", "what can you do",
+            "help me", "how are you",
+        }
+        # Short form: only match as whole words
+        short_match = bool(q_words & short_greetings)
+        # Long form: substring is fine (phrases like 'thank you' span multiple words)
+        long_match = any(token in q for token in long_greetings)
+        if short_match or long_match:
             return RoutingDecision(
                 strategy=RetrievalRoute.DIRECT_LLM,
                 confidence=0.98,
@@ -472,6 +485,7 @@ class AdaptiveQueryRouter:
                 estimated_cost_inr=ROUTE_COST_MAP[RetrievalRoute.DIRECT_LLM],
                 pre_filter_matched=True,
             )
+
 
         # Live price query: price keyword + time token
         has_price = any(p in q for p in self.PRICE_SUBSTRINGS)
@@ -581,6 +595,7 @@ class AdaptiveQueryRouter:
         complex_patterns = [
             "should i sell", "is it better to", "compare", "vs ", "versus",
             "sell or store", "hold or sell", "when should i", "market trend",
+            "profitability", "profit comparison", "better crop",
         ]
         if any(p in q for p in complex_patterns):
             return RoutingDecision(
@@ -592,8 +607,10 @@ class AdaptiveQueryRouter:
 
         # Browser scrape patterns
         browser_patterns = [
-            "latest scheme", "new scheme", "new policy", "recently launched",
-            "just announced", "news", "update", "ban", "banned pesticide",
+            "latest scheme", "new scheme", "new policy", "government policy",
+            "policy for", "recently launched", "just announced", "news",
+            "update", "ban", "banned pesticide", "new government",
+            "2026 scheme", "2026 policy", "newly announced",
         ]
         if any(p in q for p in browser_patterns):
             return RoutingDecision(
