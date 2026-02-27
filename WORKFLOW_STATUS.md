@@ -1,6 +1,6 @@
 # CropFresh AI — Development Workflow & Status Guide
 
-> **Last Updated:** 2026-02-27 (15:01 IST)
+> **Last Updated:** 2026-02-27 (15:27 IST)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -391,3 +391,55 @@ uv run ruff format src/
 ---
 
 _This file is the companion to `AGENTS.md`. Together they are the complete onboarding for any AI agent or developer joining CropFresh AI._
+
+---
+
+### 2026-02-27 — RAG 2027: Advanced Agentic RAG Research & Documentation (Sprint 05 Prep)
+
+**Research conducted**: Comprehensive RAG paradigm shift analysis for 2027 competitiveness. Identified 10 major innovation areas. Created sprint-integrated implementation roadmap.
+
+#### New ADR Files
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `docs/decisions/ADR-007-agentic-rag-orchestrator.md` | Decision: Replace fixed 4-node pipeline with autonomous retrieval planner + speculative draft engine |
+| CREATE | `docs/decisions/ADR-008-adaptive-query-router.md` | Decision: 8-strategy adaptive router with explicit cost signals (₹0.03–₹0.55/query) |
+| CREATE | `docs/decisions/ADR-009-agri-embeddings.md` | Decision: Two-layer agri embedding strategy (wrapper L1 Sprint 05 + fine-tuned L2 Phase 4) |
+| CREATE | `docs/decisions/ADR-010-browser-scraping-rag.md` | Decision: Browser-augmented RAG using Scrapling for live gov/news data |
+
+#### New Architecture Docs
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `docs/architecture/agentic_rag_system.md` | Full architecture: Retrieval Planner → Speculative Engine → Verifier → Self-Evaluator |
+| CREATE | `docs/architecture/adaptive_query_router.md` | 8-strategy router: decision tree, cost table, A/B rollout plan |
+| CREATE | `docs/architecture/agri_embeddings.md` | Layer 1 (AgriEmbeddingWrapper) + Layer 2 (fine-tuned model) architecture |
+| CREATE | `docs/architecture/browser_scraping_rag.md` | Source registry, SourceSelector, ContentExtractor, TTL lifecycle, fallbacks |
+
+#### Updated Docs
+
+| Action | File | Description |
+|--------|------|-------------|
+| UPDATE | `docs/rag_architecture.md` | Full rewrite: 9-component architecture diagram, performance targets table, mermaid data flow, linked to all new ADRs + architecture docs |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this entry; updated Last Updated timestamp |
+
+#### Key Design Decisions (Sprint 05-06)
+
+- **Adaptive Router** reduces avg query cost ₹0.44 → ₹0.21 (–52%) by routing simple queries to `DIRECT_LLM`
+- **Speculative RAG** reduces voice latency –51% via 3 parallel Groq 8B drafts + Gemini Flash verifier
+- **AgriEmbeddingWrapper** wraps BGE-M3 with domain instruction prefix + 50-term Hindi/Kannada normalization map
+- **Browser RAG** extends Scrapling infrastructure to 14+ ag-specific gov/news sources with TTL-gated Qdrant live collection
+- All new components are **feature-flagged** to allow A/B testing and gradual rollout
+
+#### Next Actions (Sprint 05 Implementation)
+
+```
+[ ] Create ai/rag/agri_embeddings.py (AgriEmbeddingWrapper, Layer 1)
+[ ] Create ai/rag/agentic_orchestrator.py (Retrieval Planner, basic version)
+[ ] Upgrade ai/rag/query_analyzer.py (AdaptiveQueryRouter, 8 strategies)
+[ ] Create ai/rag/browser_rag.py (BrowserRAGIntegration)
+[ ] Create scripts/test_adaptive_router.py
+[ ] Register for eNAM API access (enam.gov.in/register)
+[ ] Establish RAGAS evaluation baseline (20 golden queries)
+```
+

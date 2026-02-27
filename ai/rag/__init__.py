@@ -190,3 +190,67 @@ __all__ = [
 ]
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Sprint 05: Agentic RAG & Adaptive Intelligence
+# ─────────────────────────────────────────────────────────────────────────────
+
+from ai.rag.agri_embeddings import AgriEmbeddingWrapper, get_agri_embedding_manager
+from ai.rag.query_analyzer import (
+    RetrievalRoute,
+    RoutingDecision,
+    AdaptiveQueryRouter,
+    ROUTE_COST_MAP,
+)
+from ai.rag.agentic_orchestrator import (
+    AgenticOrchestrator,
+    SpeculativeDraftEngine,
+    AgenticSelfEvaluator,
+    RetrievalPlanner,
+    RetrievalPlan,
+    ToolCall,
+    EvalGate,
+    Draft,
+    OrchestratorResult,
+)
+
+# Sprint 06: Browser-Augmented RAG
+from ai.rag.browser_rag import (
+    BrowserRAGIntegration,
+    CitedAnswer,
+    Citation,
+    AgriSourceSelector,
+    ContentExtractor,
+    QualityFilter,
+    ScrapeIntent,
+    TargetSource,
+)
+
+__all__ += [
+    # AgriEmbeddings (Sprint 05)
+    "AgriEmbeddingWrapper",
+    "get_agri_embedding_manager",
+    # Adaptive Query Router (Sprint 05)
+    "RetrievalRoute",
+    "RoutingDecision",
+    "AdaptiveQueryRouter",
+    "ROUTE_COST_MAP",
+    # Agentic Orchestrator (Sprint 05)
+    "AgenticOrchestrator",
+    "SpeculativeDraftEngine",
+    "AgenticSelfEvaluator",
+    "RetrievalPlanner",
+    "RetrievalPlan",
+    "ToolCall",
+    "EvalGate",
+    "Draft",
+    "OrchestratorResult",
+    # Browser RAG (Sprint 06)
+    "BrowserRAGIntegration",
+    "CitedAnswer",
+    "Citation",
+    "AgriSourceSelector",
+    "ContentExtractor",
+    "QualityFilter",
+    "ScrapeIntent",
+    "TargetSource",
+]
