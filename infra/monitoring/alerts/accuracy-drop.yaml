@@ -1,0 +1,3 @@
+﻿# Alert: Accuracy regression
+condition: accuracy_delta < -0.05
+action: notify_slack

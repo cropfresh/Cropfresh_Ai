@@ -1,0 +1,68 @@
+# ═══════════════════════════════════════════════
+# CropFresh AI — Docker Compose (Local Dev)
+# Services: API + Qdrant + Neo4j + n8n
+# ═══════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  # ─── CropFresh API ──────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./ai:/app/ai
+    depends_on:
+      - qdrant
+      - neo4j
+    restart: unless-stopped
+
+  # ─── Qdrant Vector Database ─────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  # ─── Neo4j Graph Database ──────────────────
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-cropfresh123}
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    restart: unless-stopped
+
+  # ─── n8n Workflow Engine ───────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_PASSWORD:-cropfresh123}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./src/workflows:/home/node/workflows
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+  neo4j_data:
+  neo4j_logs:
+  n8n_data:

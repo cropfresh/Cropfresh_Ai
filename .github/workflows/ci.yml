@@ -1,0 +1,11 @@
+﻿name: CI — Lint + Test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-extras
+      - run: uv run ruff check src/ ai/
+      - run: uv run pytest tests/ -v --tb=short

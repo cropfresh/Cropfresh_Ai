@@ -1,0 +1,1 @@
+﻿{"tasks":[{"name":"Run Dev Server","command":"uv run uvicorn src.api.main:app --reload"},{"name":"Run Tests","command":"uv run pytest tests/ -v"}]}

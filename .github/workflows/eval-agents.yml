@@ -1,0 +1,12 @@
+﻿name: Evaluate Agents
+on:
+  pull_request:
+    paths: ['src/agents/**', 'ai/evals/**']
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run python ai/evals/run_evals.py

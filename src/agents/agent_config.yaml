@@ -1,0 +1,15 @@
+﻿# CropFresh Agent Configuration
+agents:
+  supervisor:
+    enabled: true
+    model: groq/llama-3.3-70b
+  agronomy:
+    enabled: true
+  pricing:
+    enabled: true
+  commerce:
+    enabled: true
+  voice:
+    enabled: true
+  knowledge:
+    enabled: true

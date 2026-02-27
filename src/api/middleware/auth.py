@@ -1,0 +1,1 @@
+﻿"""JWT/Firebase auth middleware."""

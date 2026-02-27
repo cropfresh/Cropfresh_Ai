@@ -1,0 +1,12 @@
+﻿name: Scheduled Data Scraping
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run python -m src.scrapers

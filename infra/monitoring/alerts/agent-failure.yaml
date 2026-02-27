@@ -1,0 +1,3 @@
+﻿# Alert: Agent failure
+condition: agent_success_rate < 0.9
+action: notify_slack

@@ -1,0 +1,1 @@
+﻿{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"phone":{"type":"string"},"name":{"type":"string"},"role":{"type":"string","enum":["farmer","buyer","admin"]}}}

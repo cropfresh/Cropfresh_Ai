@@ -1,0 +1,1 @@
+﻿"""Kannada language utilities."""

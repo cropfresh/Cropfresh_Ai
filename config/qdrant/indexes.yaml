@@ -1,0 +1,7 @@
+﻿indexes:
+  crop_embeddings:
+    payload_indexes:
+      - field: crop_type
+        type: keyword
+      - field: grade
+        type: keyword

@@ -1,0 +1,1 @@
+﻿{"hosting":{"public":"static","rewrites":[{"source":"**","destination":"/index.html"}]}}

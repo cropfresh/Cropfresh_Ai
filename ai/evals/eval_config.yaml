@@ -1,0 +1,6 @@
+﻿# Eval configuration
+agents_to_eval:
+  - crop_listing
+  - price_prediction
+datasets:
+  crop_listing: ai/data/eval/crop_listing_eval.json

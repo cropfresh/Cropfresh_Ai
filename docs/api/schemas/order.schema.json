@@ -1,0 +1,1 @@
+﻿{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"listing_id":{"type":"string"},"buyer_id":{"type":"string"},"quantity_kg":{"type":"number"},"total_price":{"type":"number"}}}

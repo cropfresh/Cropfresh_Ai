@@ -1,0 +1,1 @@
+﻿"""Generate daily log from git commits."""`nimport subprocess`nfrom datetime import date`n`ndef main():`n    today = date.today().isoformat()`n    print(f"Generating daily log for {today}...")`n`nif __name__ == "__main__":`n    main()

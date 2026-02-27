@@ -1,0 +1,14 @@
+﻿# Cloud Run service config
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: cropfresh-ai
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/cropfresh/api
+          resources:
+            limits:
+              memory: 2Gi
+              cpu: '2'

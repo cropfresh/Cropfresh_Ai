@@ -1,0 +1,8 @@
+﻿# Cloud Scheduler cron jobs
+jobs:
+  - name: daily-scrape
+    schedule: '0 6 * * *'
+    target: /api/scrapers/run
+  - name: price-update
+    schedule: '0 */4 * * *'
+    target: /api/prices/update

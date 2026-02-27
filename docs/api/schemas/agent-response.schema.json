@@ -1,0 +1,1 @@
+﻿{"type":"object","properties":{"agent_type":{"type":"string"},"output":{"type":"object"},"latency_ms":{"type":"integer"},"token_usage":{"type":"object"}}}

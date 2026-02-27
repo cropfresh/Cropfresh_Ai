@@ -1,0 +1,5 @@
+﻿# Model Registry
+active_models:
+  crop_classifier: v1
+  price_predictor: v1
+  quality_grader: v1

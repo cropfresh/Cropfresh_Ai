@@ -1,0 +1,3 @@
+﻿# Alert: Budget exceeded
+condition: monthly_cost > 5000
+action: notify_email

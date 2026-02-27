@@ -1,0 +1,1 @@
+﻿{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name_en":{"type":"string"},"name_kn":{"type":"string"},"category":{"type":"string","enum":["vegetable","fruit","grain","spice"]}}}

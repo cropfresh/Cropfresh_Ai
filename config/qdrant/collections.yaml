@@ -1,0 +1,10 @@
+﻿collections:
+  - name: crop_embeddings
+    vector_size: 768
+    distance: Cosine
+  - name: knowledge_base
+    vector_size: 768
+    distance: Cosine
+  - name: price_history
+    vector_size: 768
+    distance: Cosine

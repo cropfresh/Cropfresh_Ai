@@ -1,0 +1,5 @@
+﻿# Scraper Configuration
+schedules:
+  apmc: '0 6 * * *'  # 6 AM daily
+  weather: '0 */6 * * *'  # Every 6 hours
+  news: '0 8 * * *'  # 8 AM daily

@@ -1,0 +1,1 @@
+﻿"""Index documents into Qdrant."""

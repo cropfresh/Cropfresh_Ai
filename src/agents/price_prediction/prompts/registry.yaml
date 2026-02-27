@@ -1,0 +1,7 @@
+﻿# Prompt Version Registry
+active_version: v1
+versions:
+  v1:
+    file: v1_system.md
+    created: 2026-02-27
+    status: active
