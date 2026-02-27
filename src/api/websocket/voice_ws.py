@@ -404,91 +404,26 @@ _session_manager = SessionManager()
 async def voice_websocket(
     websocket: WebSocket,
     user_id: str = "anonymous",
+    language: str = "hi"
 ):
     """
-    WebSocket endpoint for real-time voice communication.
+    WebSocket endpoint for real-time Pipecat voice communication.
     
-    Message protocol:
-    - Client sends: init, audio_chunk, language_hint, webrtc_offer, webrtc_ice
-    - Server sends: ready, vad_start/end, transcript_*, response_*, error
-    
-    Audio format:
+    Audio format (Binary WebSocket payload):
     - 16-bit PCM
     - Mono (1 channel)
     - 16kHz sample rate
-    - Encoded as base64 in audio_chunk messages
     """
     await websocket.accept()
     
-    session = _session_manager.create_session(user_id, websocket)
+    session_id = str(uuid.uuid4())
+    logger.info(f"Accepted WebSocket connection for {user_id}. Booting Pipecat Pipeline...")
     
+    from src.voice.pipecat_bot import run_voice_bot
     try:
-        # Initialize session
-        await session.initialize()
-        
-        # Send ready message
-        await websocket.send_json({
-            "type": MessageType.READY.value,
-            "session_id": session.session_id,
-            "timestamp": datetime.now().isoformat(),
-        })
-        
-        # Message loop
-        while True:
-            try:
-                message = await websocket.receive_json()
-            except Exception as e:
-                logger.error(f"Error receiving message: {e}")
-                break
-            
-            msg_type = message.get("type")
-            
-            if msg_type == MessageType.AUDIO_CHUNK.value:
-                # Process audio chunk
-                audio_b64 = message.get("audio_base64", "")
-                await session.handle_audio_chunk(audio_b64)
-            
-            elif msg_type == MessageType.LANGUAGE_HINT.value:
-                # Set language hint
-                session.detected_language = message.get("language", "auto")
-                logger.info(f"Language hint set: {session.detected_language}")
-            
-            elif msg_type == MessageType.WEBRTC_OFFER.value:
-                # Handle WebRTC offer
-                offer = message.get("offer", {})
-                answer = await session.handle_webrtc_offer(offer)
-                await websocket.send_json({
-                    "type": MessageType.WEBRTC_ANSWER.value,
-                    "answer": answer,
-                })
-            
-            elif msg_type == MessageType.WEBRTC_ICE.value:
-                # Handle ICE candidate
-                candidate = message.get("candidate", {})
-                await session.handle_ice_candidate(candidate)
-            
-            elif msg_type == MessageType.STOP.value:
-                # Stop the session
-                logger.info(f"Session {session.session_id} stopped by client")
-                break
-            
-            elif msg_type == MessageType.CLOSE.value:
-                # Close the session
-                break
-            
-    except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected: {session.session_id}")
-    
+        await run_voice_bot(websocket, session_id, language)
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        try:
-            await websocket.send_json({
-                "type": MessageType.ERROR.value,
-                "error": str(e),
-            })
-        except:
-            pass
-    
+        logger.error(f"Pipecat pipeline error for {session_id}: {e}")
     finally:
         await _session_manager.remove_session(session.session_id)
 

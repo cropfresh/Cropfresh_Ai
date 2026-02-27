@@ -1,176 +1,242 @@
-# CropFresh AI Service - Workflow Status
+# CropFresh AI — Development Workflow & Status Guide
 
-**Last Updated:** January 10, 2026 (11:55 IST)  
-**Package Manager:** uv  
-**Python Version:** 3.11+
+> **Last Updated:** 2026-02-27 (15:01 IST)
+> **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant
 
----
-
-## 📊 Current Status
-
-| Component | Status | Progress |
-|-----------|--------|----------|
-| Voice Agent | ✅ Complete | 100% |
-| RAG System | ✅ Complete | 100% |
-| Multi-Agent System | ✅ Complete | 100% |
-| Memory System | ✅ Complete | 100% |
-| Tool Integration | ✅ Complete | 90% |
-| Vision Agent | ❌ Not Started | 0% |
-| Pricing Agent | ⚠️ Partial | 60% |
-| LangGraph Orchestrator | ⚠️ Partial | 70% |
+This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
 
 ---
 
-## 📁 File Changes Log
-
-### January 10, 2026 (Afternoon Session)
-
-#### Advanced RAG Phase 1: Real-Time Data Integration
-| Action | File | Description |
-|--------|------|-------------|
-| CREATE | `src/tools/enam_client.py` | eNAM API client for live mandi prices, trends, market summaries |
-| CREATE | `src/tools/imd_weather.py` | IMD Weather client with forecasts and agro advisories |
-| CREATE | `src/tools/google_amed.py` | Google AMED for satellite crop monitoring and season info |
-| CREATE | `src/tools/realtime_data.py` | Unified RealTimeDataManager with fallbacks and health checks |
-| UPDATE | `src/tools/__init__.py` | Added exports for all new real-time data modules |
-| CREATE | `scripts/test_realtime_data.py` | Test suite for Phase 1 components |
-| CREATE | `docs/diagrams/advanced_rag_architecture.png` | Architecture diagram for advanced RAG |
-| CREATE | `docs/diagrams/raptor_tree_structure.png` | RAPTOR hierarchical retrieval diagram |
-| UPDATE | `docs/rag_architecture.md` | Updated with diagrams and new components |
-| CREATE | `docs/advanced_rag_implementation_plan.md` | Comprehensive implementation plan |
-
-#### Advanced RAG Phase 2: Advanced Retrieval Techniques
-| Action | File | Description |
-|--------|------|-------------|
-| CREATE | `src/rag/raptor.py` | RAPTOR hierarchical tree indexing with GMM clustering |
-| CREATE | `src/rag/contextual_chunker.py` | Contextual chunking with entity extraction |
-| UPDATE | `src/rag/__init__.py` | Added exports for RAPTOR and contextual chunking |
-| CREATE | `scripts/test_advanced_retrieval.py` | Test suite for Phase 2 components |
-
-#### Advanced RAG Phase 3-4: Query Processing & Enhanced Retrieval
-| Action | File | Description |
-|--------|------|-------------|
-| CREATE | `src/rag/query_processor.py` | HyDE, multi-query, step-back, decomposition, rewriting |
-| CREATE | `src/rag/enhanced_retriever.py` | Parent Document, Sentence Window, MMR retrievers |
-| UPDATE | `src/rag/__init__.py` | Added exports for Phase 3-4 modules |
-| CREATE | `scripts/test_query_retrieval.py` | Test suite for Phase 3-4 components |
-
----
-
-### January 10, 2026 (Morning Session)
-
-#### Next-Level RAG Enhancements
-| Action | File | Description |
-|--------|------|-------------|
-| CREATE | `src/rag/hybrid_search.py` | BM25 sparse retrieval + RRF fusion for hybrid search |
-| CREATE | `src/rag/reranker.py` | Cross-encoder reranking with MiniLM fallback |
-| CREATE | `src/rag/graph_retriever.py` | Neo4j Graph RAG with entity extraction |
-| CREATE | `src/rag/observability.py` | LangSmith tracing + RAG evaluation metrics |
-| UPDATE | `src/rag/__init__.py` | Added exports for all new enhancement modules |
-| CREATE | `scripts/test_rag_enhancements.py` | Comprehensive test suite for enhancements |
-| UPDATE | `.env` | Added LangSmith configuration section |
-
----
-
-### January 9, 2026 (Evening Session)
-
-#### Advanced Agentic RAG System
-| Action | File | Description |
-|--------|------|-------------|
-| CREATE | `src/memory/state_manager.py` | Conversation memory, session management, Redis support |
-| CREATE | `src/tools/registry.py` | Dynamic tool registration with OpenAI/Anthropic schemas |
-| CREATE | `src/agents/base_agent.py` | Abstract base with LLM, tools, memory integration |
-| CREATE | `src/agents/supervisor_agent.py` | Query routing (0.9 confidence), multi-agent orchestration |
-| CREATE | `src/agents/agronomy_agent.py` | Crop cultivation, pest management, farming advice |
-| CREATE | `src/agents/commerce_agent.py` | Market prices, AISP calculations, sell/hold decisions |
-| CREATE | `src/agents/platform_agent.py` | CropFresh app features, registration, support |
-| CREATE | `src/agents/general_agent.py` | Greetings, fallback, unclear queries |
-| CREATE | `src/tools/weather.py` | Agricultural weather with advisories (mock) |
-| CREATE | `src/tools/calculator.py` | AISP, yield estimates, unit conversions |
-| CREATE | `src/tools/web_search.py` | Real-time web search (mock) |
-| CREATE | `src/api/routes/chat.py` | Multi-turn chat + SSE streaming + session management |
-| UPDATE | `src/rag/knowledge_base.py` | Fixed Qdrant API compatibility (query_points/search) |
-| UPDATE | `src/api/main.py` | Added chat API routes |
-| CREATE | `scripts/populate_qdrant.py` | 12 agricultural documents for testing |
-| CREATE | `scripts/test_multi_agent.py` | Comprehensive multi-agent test suite |
-
-#### Voice Agent Implementation (Morning Session)
-| Action | File | Description |
-|--------|------|-------------|
-| CREATE | `src/voice/__init__.py` | Module exports |
-| CREATE | `src/voice/audio_utils.py` | Audio format detection, FFmpeg |
-| CREATE | `src/voice/stt.py` | IndicWhisper STT + Groq fallback |
-| CREATE | `src/voice/tts.py` | IndicTTS + Edge TTS + gTTS |
-| CREATE | `src/voice/entity_extractor.py` | Intent + entity extraction |
-| CREATE | `src/agents/voice_agent.py` | Two-way voice orchestrator |
-| CREATE | `src/api/rest/voice.py` | REST API endpoints |
-| CREATE | `src/api/websocket.py` | WebSocket streaming |
-
----
-
-## ✅ All Tests Passing
+## 📂 Documentation Map
 
 ```
-============================================================
-  TEST SUMMARY
-============================================================
-   state_manager: ✅ PASS
-   tool_registry: ✅ PASS
-   agent_routing: ✅ PASS
-   general_agent: ✅ PASS
-   commerce_agent: ✅ PASS
-   multi_agent_pipeline: ✅ PASS
-   llm_pipeline: ✅ PASS
-
-🎉 All tests passed!
+/ (repo root)
+  PLAN.md                      ← Master product + architecture plan (start here)
+  ROADMAP.md                   ← Phase milestones (Feb–Aug 2026) 
+  AGENTS.md                    ← AI agent rules, prompts, file structure map
+  WORKFLOW_STATUS.md           ← This file: dev workflow + file changes log
+  CHANGELOG.md                 ← Version history
+  
+  tracking/
+    PROJECT_STATUS.md          ← Current state (update every sprint)
+    sprints/sprint-0X-*.md     ← Each sprint's goals + outcomes
+    daily/YYYY-MM-DD.md        ← Per-session work logs
+    milestones/                ← Phase completion records  
+    retros/                    ← Sprint retrospective notes
+  
+  docs/
+    decisions/ADR-*.md         ← Architecture Decision Records
+    agents/REGISTRY.md         ← Agent specs and prompt versions
+    api/                       ← API reference docs
+    architecture/              ← System architecture docs
+  
+  TESTING/
+    STRATEGY.md                ← Test philosophy, pyramid, AI prompts
+    CHECKLISTS.md              ← Per-feature done checklists
 ```
 
 ---
 
-## 🔧 Quick Start
+## 🧭 Core Development Principles
 
-### 1. Start Qdrant
+**1. Specs Before Code**  
+Always read `PLAN.md`, `tracking/PROJECT_STATUS.md`, and the active sprint file before writing any code. Context-first development produces better results with AI agents.
+
+**2. Documentation as Code**  
+All docs live in the repo (`docs/`, `tracking/`, `TESTING/`), versioned in Git alongside source. Update docs in the same commit as the code changes.
+
+**3. Small, Reviewable Changes**  
+One endpoint, one agent, one refactor per change. Use branches for risky experiments. Even as a solo founder, review your own diffs before committing.
+
+**4. Tests in the Loop**  
+Ask AI to generate tests alongside every function. Run the test checklist from `TESTING/CHECKLISTS.md` before marking any task done.
+
+**5. Continuous Refinement**  
+After each sprint, update goals, outcomes, and documents so AI has the latest context. Stale docs produce hallucinations.
+
+---
+
+## 🔄 Sprint Workflow Loop
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CropFresh Dev Loop                           │
+│                                                                 │
+│  Step 1: Refine PLAN.md + ROADMAP.md (once per phase)          │
+│    └─→ AI prompt: "Act as senior architect, review my plan…"   │
+│                                                                 │
+│  Step 2: Create sprint-XXX.md (start of each sprint)           │
+│    └─→ AI prompt: "Based on PLAN.md + last sprint, plan 2-wk…" │
+│                                                                 │
+│  Step 3: Daily Execution                                        │
+│    ├─→ Update tracking/daily/YYYY-MM-DD.md each session        │
+│    ├─→ Implement with AI: spec → code → tests → docs           │
+│    └─→ Commit with message: "Sprint-04: [task name]"           │
+│                                                                 │
+│  Step 4: Testing in Loop                                        │
+│    ├─→ AI generates tests for every function/endpoint           │
+│    └─→ AI reviews diff for bugs before merging                 │
+│                                                                 │
+│  Step 5: End-of-Sprint Review                                   │
+│    ├─→ Fill sprint-XXX.md "Outcome" section                    │
+│    ├─→ Update PROJECT_STATUS.md                                │
+│    ├─→ Create ADRs for any architecture decisions              │
+│    └─→ Git tag milestone releases                              │
+│                                                                 │
+│  Step 6: Refine Next Sprint                                     │
+│    ├─→ Move unfinished but important tasks forward             │
+│    ├─→ Adjust ROADMAP.md if macro milestones slip              │
+│    └─→ Start back at Step 2                                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 💬 Standard AI Prompts (Copy-Paste Ready)
+
+### 🏗️ Start of Sprint
+```
+"Here is my PLAN.md and ROADMAP.md. Based on last sprint's outcome in
+tracking/sprints/sprint-03-*.md, propose a 2-week sprint plan with
+5–7 concrete, testable tasks focused on [theme].
+Format it into the sprint template at tracking/sprints/_template.md."
+```
+
+### ⚙️ Implement a Feature
+```
+"Read PLAN.md, tracking/PROJECT_STATUS.md, and tracking/sprints/sprint-04-voice-pipeline.md.
+Implement [feature/endpoint name] in [file path].
+Follow coding standards in docs/architecture/coding-standards.md.
+Generate unit tests in tests/unit/ as part of this change.
+Update WORKFLOW_STATUS.md with the new file in the changes log."
+```
+
+### 🧪 Generate Tests
+```
+"Read TESTING/STRATEGY.md for our test philosophy.
+Generate pytest unit tests for [FunctionName] in [file path].
+Cover: happy path, edge cases, and error cases.
+Mock all external dependencies (Qdrant, Groq, Redis).
+Add descriptive docstrings to each test."
+```
+
+### 🔍 Pre-merge Review
+```
+"Analyze this diff and identify:
+- Functions or endpoints missing tests
+- Unhandled error cases or missing validation
+- Potential regressions
+Reference TESTING/STRATEGY.md checklist and our coding standards."
+```
+
+### 📊 End-of-Sprint Summary
+```
+"Read tracking/sprints/sprint-04-voice-pipeline.md and the last 5 daily logs.
+Summarize: what shipped, what slipped, 3 key learnings.
+Format as the Sprint Outcome section and also update tracking/PROJECT_STATUS.md."
+```
+
+### 📐 Architecture Decision
+```
+"I need to decide [decision topic]. Context: [brief context].
+Options: [option A], [option B].
+Analyze the tradeoffs for a solo founder building CropFresh AI.
+Format your recommendation as an ADR using docs/decisions/_template.md."
+```
+
+---
+
+## 🗂️ Keeping History (Git-Centric Approach)
+
+The user expressed concern about AI overwriting and losing history. Here is how this is prevented:
+
+### Rule 1: Append, Never Overwrite Logs
+- Sprint files: fill in the **Outcome section at sprint end**, never delete the goals section
+- Daily logs: create a **new file** per day (`tracking/daily/YYYY-MM-DD.md`)
+- PROJECT_STATUS.md: **update in place** but Git preserves all prior versions
+
+### Rule 2: Meaningful Commits
 ```bash
+git commit -m "Sprint-04: pipecat_bot.py WebSocket integration + unit tests"
+git commit -m "Sprint-04: APMC scraper with Redis cache + APScheduler"
+git commit -m "Docs: ADR-007 - chose Pipecat over raw WebSocket for voice"
+```
+
+### Rule 3: Tag Milestones
+```bash
+git tag -a v0.3-foundation -m "Phase 1 foundation complete"
+git tag -a v0.4-mvp -m "MVP: farmer listing + voice + price query"
+```
+
+### Rule 4: Branch for Risky Changes
+```bash
+git checkout -b feature/sprint-04-apmc-scraper
+# work, commit, test
+git checkout main && git merge feature/sprint-04-apmc-scraper
+```
+
+---
+
+## 📊 Current Component Status
+
+| Component | Status | Progress | Sprint |
+|-----------|--------|----------|--------|
+| Project Structure | ✅ Complete | 100% | Sprint 01 |
+| RAG Pipeline (RAPTOR + Hybrid) | ✅ Complete | 100% | Sprint 01 |
+| Multi-Agent System | ✅ Complete | 100% | Sprint 01 |
+| Memory System (Redis) | ✅ Complete | 100% | Sprint 01 |
+| Voice Agent v1 (Edge-TTS + Whisper) | ✅ Complete | 90% | Sprint 01 |
+| Pipecat Voice Pipeline | 🟡 In Progress | 40% | Sprint 04 |
+| APMC Mandi Scraper | ❌ Not Started | 0% | Sprint 04 |
+| Supabase Schema | ❌ Not Started | 0% | Sprint 05 |
+| Vision Agent (YOLOv12 + DINOv2) | ❌ Not Started | 0% | Phase 3 |
+| Evaluation Framework (LangSmith) | ❌ Not Started | 0% | Sprint 05 |
+| Flutter Mobile App | ❌ Not Started | 0% | Phase 4 |
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# 1. Start Qdrant
 docker run -d -p 6333:6333 --name qdrant qdrant/qdrant
-```
 
-### 2. Populate Knowledge Base
-```bash
-.venv\Scripts\python scripts\populate_qdrant.py
-```
+# 2. Populate Knowledge Base  
+uv run python scripts/populate_qdrant.py
 
-### 3. Run the Service
-```bash
+# 3. Run the service
 uv run uvicorn src.api.main:app --reload --port 8000
-```
 
-### 4. Open Swagger UI
-```
-http://localhost:8000/docs
+# 4. Open Swagger UI
+# http://localhost:8000/docs
+
+# 5. Run tests
+uv run pytest -v
+
+# 6. Type checking + linting
+uv run mypy src/
+uv run ruff check src/
 ```
 
 ---
 
-## � API Endpoints
+## 🌐 API Endpoints Reference
 
-### Chat API (NEW)
+### Chat API
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/v1/chat` | POST | Multi-turn conversation with agent routing |
 | `/api/v1/chat/stream` | POST | SSE streaming responses |
 | `/api/v1/chat/session` | POST | Create new session |
-| `/api/v1/chat/session/{id}` | GET | Get session info |
 | `/api/v1/chat/agents` | GET | List available agents |
-| `/api/v1/chat/tools` | GET | List available tools |
 
 ### Voice API
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/v1/voice/process` | POST | Full voice-in → voice-out |
-| `/api/v1/voice/transcribe` | POST | Audio → Text |
-| `/api/v1/voice/synthesize` | POST | Text → Audio |
-| `/api/v1/voice/languages` | GET | Supported languages |
-| `/ws/voice/{user_id}` | WebSocket | Real-time streaming |
+| `/api/v1/voice/transcribe` | POST | Audio → Text (STT) |
+| `/api/v1/voice/synthesize` | POST | Text → Audio (TTS) |
+| `/ws/voice/{user_id}` | WebSocket | Real-time streaming (Pipecat) |
 
 ### RAG API
 | Endpoint | Method | Description |
@@ -187,158 +253,141 @@ http://localhost:8000/docs
 
 ---
 
-## 🤖 Multi-Agent Architecture
+## 📝 File Changes Log
 
+### 2026-02-27 — Workflow Documentation System
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `ROADMAP.md` | 6-phase milestone roadmap (Feb–Aug 2026) |
+| UPDATE | `PLAN.md` | Full architecture diagram, user flows, NFRs, risk register, tech stack |
+| UPDATE | `AGENTS.md` | Complete AI agent instructions: dev rules, file map, prompts, do-not-do list |
+| UPDATE | `WORKFLOW_STATUS.md` | This file — comprehensive dev workflow + methodology |
+| CREATE | `tracking/PROJECT_STATUS.md` | Always-current project state dashboard |
+| CREATE | `tracking/sprints/sprint-04-voice-pipeline.md` | Current sprint: Pipecat + APMC scraping |
+| CREATE | `tracking/daily/_template.md` | Daily log template |
+| CREATE | `tracking/daily/2026-02-27.md` | Today's session log |
+| CREATE | `TESTING/STRATEGY.md` | Test pyramid, philosophy, AI prompts for testing |
+| CREATE | `TESTING/CHECKLISTS.md` | Per-feature-type done checklists |
+
+### 2026-02-27 — Production Scraping Upgrade (Earlier Session)
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/scrapers/base_scraper.py` | Scrapling-based browser scraper with Camoufox stealth |
+| UPDATE | `src/scrapers/apmc/` | Production-grade APMC scraper upgrade |
+| UPDATE | `src/pipelines/` | Data pipeline with caching + APScheduler |
+
+### 2026-02-26 — Voice Domain Separation
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/voice/pipecat/` | Pipecat submodule (STT, TTS services) |
+| CREATE | `src/voice/pipecat/stt_service.py` | IndicWhisper STT + Groq fallback |
+| CREATE | `src/voice/pipecat/tts_service.py` | Edge-TTS in Kannada/Hindi/English |
+| CREATE | `src/voice/pipecat/__init__.py` | Module init with exports |
+| CREATE | `src/voice/pipecat_bot.py` | Main Pipecat bot entry point |
+| CREATE | `src/api/websocket/voice_ws.py` | WebSocket handler for Pipecat stream |
+
+### 2026-02-26 — Domain Separation (RAG, Vision, Voice)
+
+| Action | File | Description |
+|--------|------|-------------|
+| RESTRUCTURE | `ai/rag/` | Advanced RAG pipeline moved to dedicated AI folder |
+| RESTRUCTURE | `ai/vision/` | Vision domain separated (YOLOv12 + DINOv2 placeholder) |
+| RESTRUCTURE | `src/voice/` | Voice domain with dedicated agent |
+| UPDATE | `ai/__init__.py` | Unified exports for all AI domains |
+
+### 2026-02-27 — Advanced Folder Structure (Earliest Session)
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `ai/` | New top-level AI module (rag, vision, evaluations) |
+| CREATE | `tracking/` | Development tracking (goals, sprints, daily, milestones) |
+| CREATE | `infra/` | Deployment & monitoring configs |
+| CREATE | `config/` | Database & service configurations |
+| MOVE | `src/rag/` → `ai/rag/` | RAG pipeline moved to ai/ |
+
+### January 10, 2026 — Advanced RAG Phase 1–4
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/tools/enam_client.py` | eNAM API client for live mandi prices |
+| CREATE | `src/tools/imd_weather.py` | IMD Weather client with agro-advisories |
+| CREATE | `src/rag/raptor.py` | RAPTOR hierarchical tree indexing with GMM clustering |
+| CREATE | `src/rag/contextual_chunker.py` | Contextual chunking with entity extraction |
+| CREATE | `src/rag/query_processor.py` | HyDE, multi-query, step-back, decomposition |
+| CREATE | `src/rag/enhanced_retriever.py` | Parent Document, Sentence Window, MMR |
+| CREATE | `src/rag/hybrid_search.py` | BM25 sparse + RRF fusion hybrid search |
+| CREATE | `src/rag/reranker.py` | Cross-encoder reranking with MiniLM fallback |
+| CREATE | `src/rag/graph_retriever.py` | Neo4j Graph RAG with entity extraction |
+| CREATE | `src/rag/observability.py` | LangSmith tracing + RAG eval metrics |
+
+### January 9, 2026 — Multi-Agent System + Voice v1
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/memory/state_manager.py` | Conversation memory + Redis session manager |
+| CREATE | `src/agents/supervisor_agent.py` | LLM query routing with 0.9 confidence threshold |
+| CREATE | `src/agents/agronomy_agent.py` | Crop cultivation, pest management, farming advice |
+| CREATE | `src/agents/commerce_agent.py` | Market prices, AISP calculations, sell/hold |
+| CREATE | `src/agents/platform_agent.py` | CropFresh app features, registration, support |
+| CREATE | `src/agents/general_agent.py` | Greetings, fallback for unclear queries |
+| CREATE | `src/voice/stt.py` | IndicWhisper STT + Groq fallback |
+| CREATE | `src/voice/tts.py` | IndicTTS + Edge-TTS + gTTS |
+| CREATE | `src/api/routes/chat.py` | Multi-turn chat + SSE streaming |
+
+---
+
+## ⚠️ Known Issues & Workarounds
+
+### BGE-M3 Embedding Model Memory
+Requires ~1GB RAM. Use `MiniLM-L6-v2` (90MB) for low-memory deployments.
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     User Query                              │
-└────────────────────────┬────────────────────────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Supervisor Agent                            │
-│         (LLM Routing with 0.9 confidence)                  │
-└────────────────────────┬────────────────────────────────────┘
-                         ▼
-        ┌────────────────┼────────────────┐
-        ▼                ▼                ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  Agronomy    │ │  Commerce    │ │   Platform   │
-│    Agent     │ │    Agent     │ │    Agent     │
-├──────────────┤ ├──────────────┤ ├──────────────┤
-│ Crop guides  │ │ Market prices│ │ App features │
-│ Pest mgmt    │ │ AISP calcs   │ │ Registration │
-│ Irrigation   │ │ Sell/hold    │ │ FAQs         │
-└──────────────┘ └──────────────┘ └──────────────┘
-        │                │                │
-        └────────────────┴────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Knowledge Base                            │
-│           (Qdrant - 32+ documents indexed)                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🛠️ Tools Available
-
-| Tool | Category | Purpose |
-|------|----------|---------|
-| `get_current_weather` | weather | Current conditions + agricultural advisories |
-| `get_weather_forecast` | weather | 5-day forecast with farm recommendations |
-| `calculate_aisp` | calculator | All-Inclusive Sourcing Price breakdown |
-| `estimate_yield` | calculator | Crop yield estimates |
-| `convert_units` | calculator | Agricultural unit conversions |
-| `web_search` | search | Real-time information retrieval |
-
----
-
-## 📦 Knowledge Base
-
-**32 documents indexed** across 4 categories:
-
-| Category | Documents | Topics |
-|----------|-----------|--------|
-| Agronomy | 5 | Tomato, onion, organic farming, drip irrigation, pest management |
-| Market | 2 | Mandi pricing, sell/hold decisions |
-| Platform | 3 | Registration, quality grades, payments |
-| General | 2 | About CropFresh, Prashna Krishi AI |
-
----
-
-## 📝 Future Improvements
-
-### High Priority
-- [x] **Hybrid Search**: BM25 sparse retrieval + RRF fusion ✅ DONE
-- [x] **Cross-Encoder Re-ranking**: MiniLM-based reranking ✅ DONE
-- [ ] **Lighter Embedding Model**: Add MiniLM option for low-memory systems
-- [ ] **True LLM Token Streaming**: Stream tokens directly from Groq API
-
-### Medium Priority
-- [ ] **Vision Agent**: YOLOv12 + DINOv2 for crop disease detection
-- [ ] **Database Query Tool**: Access order/transaction data
-- [x] **LangSmith/LangFuse Tracing**: Observability + evaluation ✅ DONE
-- [x] **Graph RAG**: Neo4j integration for relationships ✅ DONE
-- [ ] **Redis Session Storage**: Production-grade session persistence
-
-### Lower Priority
-- [ ] **Multi-hop Reasoning**: Complex queries requiring multiple KB lookups
-- [ ] **Contextual Compression**: Extract only relevant chunks from documents
-- [ ] **Agent Collaboration**: Multi-agent responses for complex queries
-- [ ] **Voice + Chat Integration**: Unified interface for voice and text
-
----
-
-## ⚠️ Known Issues
-
-### Embedding Model Memory
-The BGE-M3 embedding model requires ~1GB RAM. On low-memory systems, retrieval may fail but LLM fallback ensures responses still work.
-
-```
-Solution: Use MiniLM-L6-v2 (90MB) for lighter deployments
+Workaround: Set EMBEDDING_MODEL=minilm in .env
 ```
 
 ### Qdrant Client Compatibility
-Fixed API compatibility for Qdrant client 1.7+ (use `query_points` instead of deprecated `search`).
+Use `query_points` not deprecated `search` for Qdrant 1.7+.
+Fixed in: `ai/rag/knowledge_base.py`
 
----
-
-## 🧪 Testing Commands
-
-```bash
-# Run all multi-agent tests
-uv run python scripts/test_multi_agent.py
-
-# Run knowledge base search test
-uv run python scripts/test_kb_search.py
-
-# Run RAG enhancements tests (NEW)
-uv run python scripts/test_rag_enhancements.py
-
-# Populate Qdrant with sample data
-uv run python scripts/populate_qdrant.py
-
-# Run pytest suite
-uv run pytest -v
-
-# Type checking
-uv run mypy src/
-
-# Linting
-uv run ruff check src/
+### Pipecat WebSocket on Windows
+Pipecat requires event loop policy adjustment on Windows:
+```python
+import asyncio
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 ```
 
 ---
 
-## 🛠️ Common Issues
+## 🛠️ Common Commands
 
-### Qdrant not connecting
 ```bash
-# Start container
+# Start all required services
 docker start qdrant
 
-# Or restart fresh
-docker rm -f qdrant && docker run -d -p 6333:6333 --name qdrant qdrant/qdrant
+# Run full test suite
+uv run pytest -v --cov=src --cov-report=term-missing
+
+# Run multi-agent test
+uv run python scripts/test_multi_agent.py
+
+# Run RAG enhancements test
+uv run python scripts/test_rag_enhancements.py
+
+# Populate Qdrant knowledge base
+uv run python scripts/populate_qdrant.py
+
+# Type check
+uv run mypy src/
+
+# Lint
+uv run ruff check src/
+
+# Format
+uv run ruff format src/
 ```
 
-### FFmpeg not found
-```bash
-# Windows (with chocolatey)
-choco install ffmpeg
+---
 
-# macOS
-brew install ffmpeg
-```
-
-### GROQ_API_KEY missing
-```bash
-# Edit .env file
-GROQ_API_KEY=your_api_key_here
-```
-
-### Virtual environment not activating
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\.venv\Scripts\Activate.ps1
-```
+_This file is the companion to `AGENTS.md`. Together they are the complete onboarding for any AI agent or developer joining CropFresh AI._
