@@ -96,10 +96,9 @@ CropFresh AI is the **intelligence layer** of an agri-marketplace connecting Ind
 │  ├── agentic_orchestrator  │            │                          │
 │  └── adaptive_query_router │            │  APScheduler: 6h refresh │
 │                            │            │  Redis TTL cache         │
-│  ai/vision/                │            │                          │
-│  ├── quality_grader.py     │            └──────────────────────────┘
-│  ├── digital_twin.py       │
-│  └── defect_library.py     │
+│  src/agents/quality_       │            └──────────────────────────┘
+│  assessment/ + digital_    │
+│  twin/ (Task 3 + 10)       │
 └─────────────────┬──────────┘
                   │
                   ▼
@@ -129,7 +128,7 @@ CropFresh AI is the **intelligence layer** of an agri-marketplace connecting Ind
 |---|---|---|
 | **DPLE** (Dynamic Pricing & Logistics Engine) | `src/agents/pricing_agent.py` + `src/agents/logistics_routing_agent.py` | Calculates AISP = Farmer Ask + Logistics + Margin(4–8%) + Risk Buffer(2%) |
 | **Matchmaking Engine** | `src/agents/matchmaking_agent.py` | Clusters farmers by GPS, matches to buyers by grade/demand/route |
-| **CV-QG** (Computer Vision Quality Grader) | `ai/vision/quality_grader.py` + `ai/vision/digital_twin.py` | YOLOv8 grading + HITL trigger + Digital Twin + Dispute Diff Engine |
+| **CV-QG** (Computer Vision Quality Grader) | `src/agents/quality_assessment/` + `src/agents/digital_twin/` | YOLOv8 grading + HITL trigger + Digital Twin + Dispute Diff Engine |
 | **Voice Accessibility Agent** | `src/agents/voice_agent.py` + `src/voice/` | Voice-first in 10+ Indian languages, all farmer flows voice-driven |
 | **RAG Advisory Agent** | `src/agents/agronomy_agent.py` + `ai/rag/` + `src/agents/adcl_agent.py` | Crop advisory, ADCL (weekly demand list), pest alerts, price forecasts |
 

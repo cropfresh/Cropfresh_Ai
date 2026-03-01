@@ -97,11 +97,80 @@ class ListingResponse(BaseModel):
 
 ## ✅ Acceptance Criteria
 
-| # | Criterion | Weight |
-|---|-----------|--------|
-| 1 | CRUD endpoints work with proper validation | 25% |
-| 2 | Auto-price suggestion when no price given | 20% |
-| 3 | Quality assessment triggered on photo upload | 15% |
-| 4 | Shelf-life-based auto-expiry | 15% |
-| 5 | Search with commodity + location + grade filters | 15% |
-| 6 | Voice agent `create_listing` intent creates real DB record | 10% |
+| # | Criterion | Weight | Status |
+|---|-----------|--------|--------|
+| 1 | CRUD endpoints work with proper validation | 25% | ✅ |
+| 2 | Auto-price suggestion when no price given | 20% | ✅ |
+| 3 | Quality assessment triggered on photo upload | 15% | ✅ |
+| 4 | Shelf-life-based auto-expiry | 15% | ✅ |
+| 5 | Search with commodity + location + grade filters | 15% | ✅ |
+| 6 | Voice agent `create_listing` intent creates real DB record | 10% | ✅ |
+
+---
+
+## 🏁 Completion — 2026-03-01
+
+**Status:** ✅ Completed
+
+### Files Created / Modified
+
+| File | Change |
+|------|--------|
+| `src/agents/crop_listing/agent.py` | REWRITTEN — fixed corrupted class name; full `CropListingAgent` with NL parsing for create/my_listings/cancel/update_price intents |
+| `src/agents/crop_listing/__init__.py` | UPDATED — exports `CropListingAgent` |
+| `src/api/services/listing_service.py` | IMPLEMENTED — full `ListingService` with Pydantic models, auto-enrichment pipeline |
+| `src/api/routers/listings.py` | NEW — 7 REST endpoints (POST, GET, GET farmer, GET id, PATCH, DELETE, POST grade) |
+| `src/api/main.py` | UPDATED — registered listings router at `/api/v1` |
+| `tests/unit/test_listing_service.py` | NEW — 50 unit tests covering all AC criteria |
+
+### ListingService: Auto-Enrichment Pipeline
+
+```
+create_listing(request):
+  1. Auto-suggest price ← PricingAgent.predict() if no price given
+  2. Compute expires_at ← commodity shelf-life calendar (7–90 days)
+  3. Generate batch_qr_code ← CF-{CROP}-{UUID8}
+  4. ADCL tag check ← ADCLAgent.get_weekly_demand()
+  5. Quality assessment trigger ← QualityAssessmentAgent.assess() if photos given
+  6. Persist to DB ← AuroraPostgresClient.create_listing()
+```
+
+### Commodity Shelf-Life Calendar
+
+| Commodity | Days |
+|-----------|------|
+| Tomato | 7 |
+| Onion | 60 |
+| Potato | 90 |
+| Beans | 5 |
+| Okra | 4 |
+| Carrot | 21 |
+| Cauliflower | 7 |
+| Default | 14 |
+
+### HITL Logic for Grade Attachment
+
+- `cv_confidence < 0.70` → `hitl_required = True`
+- `grade == "A+"` → always `hitl_required = True` (premium verification)
+- No quality agent + photos given → default `hitl_required = True`
+
+### REST Endpoints
+
+```
+POST   /api/v1/listings              → 201 ListingResponse (auto-enriched)
+GET    /api/v1/listings              → 200 PaginatedListings (filters: commodity/district/grade/price/adcl)
+GET    /api/v1/listings/farmer/{id}  → 200 list[ListingResponse]
+GET    /api/v1/listings/{id}         → 200 ListingResponse | 404
+PATCH  /api/v1/listings/{id}         → 200 ListingResponse | 404
+DELETE /api/v1/listings/{id}         → 204 No Content | 404
+POST   /api/v1/listings/{id}/grade   → 200 ListingResponse | 404
+```
+
+### Bug Fixed
+- `cancel` keyword check moved before `my listing` check in `CropListingAgent.process()` to avoid "cancel my listing" being caught by the `my listing` pattern
+
+### Test Results
+```
+50 passed in 0.28s  (test_listing_service.py)
+203 passed in 1.05s (full suite — zero regressions)
+```

@@ -121,8 +121,8 @@ Real-time agricultural data pipeline:
             ▼              ▼              ▼
 ┌──────────────────────────────────────────────────────────────┐
 │                       Data Layer                              │
-│   🐘 Supabase        🔮 Qdrant          🕸️ Neo4j             │
-│   (PostgreSQL)       (Vectors)          (Graph)              │
+│   🐘 RDS PostgreSQL  🔮 pgvector        🕸️ Neo4j             │
+│   + pgvector         (Semantic Search)  (Graph)              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -132,12 +132,14 @@ Real-time agricultural data pipeline:
 |-------|-----------|---------|
 | **API** | FastAPI + Uvicorn | Async REST + WebSocket server |
 | **AI Framework** | LangGraph + LangChain | Multi-agent orchestration |
-| **LLM** | Groq (Llama/Mixtral) | Fast, cost-effective inference |
-| **Vector DB** | Qdrant Cloud | Semantic search & RAG retrieval |
-| **Graph DB** | Neo4j | Buyer-seller matching & relationships |
-| **Primary DB** | Supabase (PostgreSQL) | Users, listings, orders, prices |
-| **Voice** | Whisper + Edge-TTS | Kannada speech-to-text & text-to-speech |
-| **Scraping** | Crawl4AI + Playwright | APMC, eNAM, weather data collection |
+| **LLM (Production)** | AWS Bedrock — Claude Sonnet 4 | High-quality inference |
+| **LLM (Router/Dev)** | Groq — Llama-3.1-8B (~80ms) | Fast, cost-effective routing |
+| **Primary DB + Vectors** | RDS PostgreSQL + pgvector | Users, listings, orders, prices + semantic search |
+| **Graph DB** | Neo4j | Buyer-seller relationships |
+| **Cache** | Redis | Match results, chat sessions |
+| **Voice** | Pipecat + IndicWhisper + Edge-TTS | Kannada/Hindi/English STT & TTS |
+| **Vision** | YOLOv8 + ViT-B/16 + ONNX Runtime | Crop quality grading |
+| **Scraping** | Scrapling + Camoufox | APMC, eNAM, weather data collection |
 | **Package Manager** | uv | 10-100x faster than pip |
 
 ---
@@ -190,15 +192,22 @@ cp .env.example .env
 ```
 
 ```env
-# Required
+# LLM providers (at least one required)
 GROQ_API_KEY=gsk_xxxxx
+AWS_ACCESS_KEY_ID=xxxxx
+AWS_SECRET_ACCESS_KEY=xxxxx
+AWS_REGION=ap-south-1
 
-# Optional (for full features)
-QDRANT_URL=https://xxx.qdrant.io
-QDRANT_API_KEY=xxxxx
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_KEY=xxxxx
+# Database (required for full features)
+DATABASE_URL=postgresql://user:pass@host:5432/cropfresh
+
+# Cache
+REDIS_URL=redis://localhost:6379
+
+# Optional — Neo4j knowledge graph
 NEO4J_URI=neo4j+s://xxx
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=xxxxx
 ```
 
 ### 4. Run
@@ -225,12 +234,38 @@ uv run uvicorn src.api.main:app --reload
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/v1/chat` | POST | Multi-agent chat (text) |
+| `/api/v1/chat/stream` | POST | Streaming chat (SSE token events) |
 | `/api/v1/rag/query` | POST | Knowledge base query |
+| `/api/v1/rag/search` | POST | Semantic search |
+
+### Listings API
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/listings` | POST | Create a new produce listing |
+| `/api/v1/listings` | GET | Search listings with filters |
+| `/api/v1/listings/farmer/{id}` | GET | All listings for a farmer |
+| `/api/v1/listings/{id}` | GET | Get listing by ID |
+| `/api/v1/listings/{id}` | PATCH | Update price / quantity / status |
+| `/api/v1/listings/{id}` | DELETE | Soft-cancel a listing |
+| `/api/v1/listings/{id}/grade` | POST | Attach quality grade |
+
+### Orders API
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/orders` | POST | Create order from matched listing |
+| `/api/v1/orders` | GET | List orders (filter by farmer_id or buyer_id) |
+| `/api/v1/orders/{id}` | GET | Get order details with AISP breakdown |
+| `/api/v1/orders/{id}/status` | PATCH | Advance through state machine |
+| `/api/v1/orders/{id}/dispute` | POST | Raise dispute with arrival evidence |
+| `/api/v1/orders/{id}/settle` | POST | Settle order and release escrow |
+| `/api/v1/orders/{id}/aisp` | GET | Get AISP price breakdown |
 
 ### Health
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/health` | GET | Service health check |
+| `/health` | GET | Liveness probe |
+| `/health/ready` | GET | Readiness probe (checks Qdrant, Redis, LLM) |
+| `/metrics` | GET | Prometheus metrics scrape |
 
 ---
 
@@ -298,8 +333,8 @@ cropfresh-ai/
 │   └── monitoring/            #   Dashboards & alert rules
 │
 ├── ⚙️ config/                 # Database & Service Configs
-│   ├── supabase/              #   SQL migrations + seed data
-│   ├── qdrant/                #   Vector collection definitions
+│   ├── migrations/            #   SQL migrations + seed data (PostgreSQL)
+│   ├── pgvector/              #   Vector index configurations
 │   ├── neo4j/                 #   Graph constraints + seed
 │   ├── firebase/              #   Auth & storage rules
 │   └── n8n/                   #   Workflow credentials
@@ -342,14 +377,14 @@ See the [Makefile](Makefile) for all available commands.
 
 | Phase | Timeline | Focus | Status |
 |-------|----------|-------|--------|
-| **1. Foundation** | Feb 2026 | Project setup, RAG, voice | ✅ Complete |
-| **2. Data Pipeline** | Mar 2026 | APMC scraping, Supabase, indexing | 🔄 In Progress |
-| **3. First Agent** | Apr 2026 | Crop Listing Agent MVP | ⬜ Planned |
-| **4. Market Intelligence** | May 2026 | Price prediction, weather | ⬜ Planned |
-| **5. Mobile & Voice** | Jun 2026 | Flutter app, WhatsApp bot | ⬜ Planned |
-| **6. Beta Launch** | Jul 2026 | 50 farmers in Karnataka | ⬜ Planned |
+| **1. Foundation & Core Agents** | Feb–Mar 2026 | Multi-agent system, voice, pricing, matching, quality | ✅ Complete — Tasks 1–5 done |
+| **2. Business Services** | Mar–Apr 2026 | DB schema, Crop Listing API, Order Management | 🟢 Active — Tasks 6–8 done |
+| **3. Intelligence & Digital Twin** | Apr–May 2026 | Digital Twin, DPLE routing, ADCL agent, APMC scraper | 🔲 Planned |
+| **4. Mobile & WhatsApp** | Apr–Jun 2026 | Flutter app, WhatsApp bot, 10+ language voice | 🔲 Planned |
+| **5. Testing & Evaluation** | Jun–Jul 2026 | RAGAS framework, E2E tests, 60% coverage | 🔲 Planned |
+| **6. Beta Launch** | Jul–Aug 2026 | 50 farmers in Karnataka pilot | 🔲 Planned |
 
-See [PLAN.md](PLAN.md) and [docs/planning/roadmap.md](docs/planning/roadmap.md) for detailed roadmap.
+See [ROADMAP.md](ROADMAP.md) for the detailed phase breakdown with deliverables and success criteria.
 
 ---
 
@@ -361,7 +396,7 @@ See [PLAN.md](PLAN.md) and [docs/planning/roadmap.md](docs/planning/roadmap.md) 
 | [Architecture](docs/architecture/ARCHITECTURE.md) | System design overview |
 | [Tech Stack](docs/architecture/tech-stack.md) | Every technology + why chosen |
 | [API Design](docs/architecture/api-design.md) | API conventions & auth |
-| [Database Schema](docs/architecture/database-schema.md) | Supabase + Qdrant + Neo4j schemas |
+| [Database Schema](docs/architecture/database-schema.md) | RDS PostgreSQL + pgvector + Neo4j schemas |
 | [Agent Registry](docs/agents/REGISTRY.md) | All AI agents listed |
 | [PRD](docs/planning/PRD.md) | Product Requirements Document |
 | [Coding Standards](docs/architecture/coding-standards.md) | Python style guide |
@@ -369,15 +404,17 @@ See [PLAN.md](PLAN.md) and [docs/planning/roadmap.md](docs/planning/roadmap.md) 
 
 ---
 
-## 🎯 Key Metrics (Targets)
+## 🎯 Key Metrics
 
-| Metric | Target | Description |
-|--------|--------|-------------|
-| 🎯 Agent Accuracy | >90% | Across all task types |
-| ⚡ Response Latency | <2s | End-to-end response time |
-| 💰 Cost per Query | <₹0.50 | API + LLM cost per interaction |
-| 👨‍🌾 Farmer Adoption | 50+ | Beta test in Karnataka |
-| 📈 Price Improvement | >20% | vs. middleman prices |
+| Metric | Target | Current | Status |
+|--------|--------|---------|--------|
+| 🎯 Agent Routing Accuracy | >90% | ~87% (mock) | 🟡 Near |
+| ⚡ Voice P95 Latency | <2s | ~4.5s (est.) | 🔴 Behind |
+| 💰 API Cost per Query | <₹0.25 | ~₹0.44 | 🔴 Behind |
+| 🧪 Test Coverage | >80% (Phase 6) | **~56%** (276 tests) | ✅ Sprint target met |
+| 🏪 REST Endpoints | — | **15** (7 listings + 8 orders) | ✅ Active |
+| 👨‍🌾 Farmer Adoption | 50+ (Beta) | 0 (pre-pilot) | 🔲 Phase 6 |
+| 📈 Price Improvement | >20% vs. middlemen | — | 🔲 Phase 6 |
 
 ---
 

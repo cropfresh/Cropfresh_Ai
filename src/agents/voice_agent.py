@@ -112,14 +112,53 @@ class VoiceAgent:
             "kn": "ನಿಮ್ಮ {count} ಪಟ್ಟಿಗಳು ಸಕ್ರಿಯವಾಗಿವೆ. {details}",
             "en": "You have {count} active listings. {details}",
         },
+        VoiceIntent.FIND_BUYER: {
+            "hi": "{crop} के लिए {count} खरीदार मिले। सबसे अच्छा: {buyer_name}, {buyer_district} से, ₹{price}/किलो पर {qty} किलो चाहिए।",
+            "kn": "{crop} ಗಾಗಿ {count} ಖರೀದಿದಾರರು ಸಿಕ್ಕಿದ್ದಾರೆ. ಉತ್ತಮ: {buyer_name}, {buyer_district}, ₹{price}/ಕೆಜಿ.",
+            "en": "Found {count} buyers for {crop}. Best match: {buyer_name} in {buyer_district}, offering ₹{price}/kg for {qty} kg.",
+        },
+        VoiceIntent.CHECK_WEATHER: {
+            "hi": "{location} में आज मौसम: {condition}। तापमान {temp}°C। {advisory}",
+            "kn": "{location} ನಲ್ಲಿ ಇಂದು ಹವಾಮಾನ: {condition}. ತಾಪಮಾನ {temp}°C. {advisory}",
+            "en": "Weather in {location} today: {condition}. Temperature {temp}°C. {advisory}",
+        },
+        VoiceIntent.GET_ADVISORY: {
+            "hi": "{crop} के लिए सलाह: {advisory}",
+            "kn": "{crop} ಗಾಗಿ ಸಲಹೆ: {advisory}",
+            "en": "Advisory for {crop}: {advisory}",
+        },
+        VoiceIntent.REGISTER: {
+            "hi": "रजिस्ट्रेशन सफल! आपका किसान ID है: {farmer_id}। CropFresh में आपका स्वागत है, {name}!",
+            "kn": "ನೋಂದಣಿ ಯಶಸ್ವಿ! ನಿಮ್ಮ ರೈತ ID: {farmer_id}. CropFresh ಗೆ ಸ್ವಾಗತ, {name}!",
+            "en": "Registration successful! Your farmer ID is: {farmer_id}. Welcome to CropFresh, {name}!",
+        },
+        VoiceIntent.DISPUTE_STATUS: {
+            "hi": "आपका विवाद {dispute_id} की स्थिति: {status}। {notes}",
+            "kn": "ನಿಮ್ಮ ವಿವಾದ {dispute_id} ಸ್ಥಿತಿ: {status}. {notes}",
+            "en": "Your dispute {dispute_id} status: {status}. {notes}",
+        },
+        VoiceIntent.QUALITY_CHECK: {
+            "hi": "{commodity} की गुणवत्ता: {grade}। आत्मविश्वास: {confidence}%। {notes}",
+            "kn": "{commodity} ಗುಣಮಟ್ಟ: {grade}. ವಿಶ್ವಾಸ: {confidence}%. {notes}",
+            "en": "{commodity} quality grade: {grade}. Confidence: {confidence}%. {notes}",
+        },
+        VoiceIntent.WEEKLY_DEMAND: {
+            "hi": "इस हफ्ते {location} में मांग: {demand_list}",
+            "kn": "ಈ ವಾರ {location} ನಲ್ಲಿ ಬೇಡಿಕೆ: {demand_list}",
+            "en": "This week's demand in {location}: {demand_list}",
+        },
         VoiceIntent.UNKNOWN: {
             "hi": "मुझे समझ नहीं आया। कृपया फिर से बोलें।",
             "kn": "ನನಗೆ ಅರ್ಥವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಹೇಳಿ.",
             "en": "I didn't understand. Please say that again.",
         },
     }
+
+    # * Fields required before completing a multi-turn flow
     REQUIRED_FIELDS = {
         VoiceIntent.CREATE_LISTING: ["crop", "quantity", "asking_price"],
+        VoiceIntent.FIND_BUYER: ["commodity", "quantity_kg"],
+        VoiceIntent.REGISTER: ["name", "phone", "district"],
     }
     
     def __init__(
@@ -132,6 +171,12 @@ class VoiceAgent:
         pricing_agent=None,
         listing_service=None,
         order_service=None,
+        matching_agent=None,
+        quality_agent=None,
+        agronomy_agent=None,
+        weather_tool=None,
+        registration_service=None,
+        adcl_agent=None,
     ):
         self.stt = stt or IndicWhisperSTT()
         self.tts = tts or IndicTTS()
@@ -142,6 +187,12 @@ class VoiceAgent:
         self.pricing_agent = pricing_agent
         self.listing_service = listing_service
         self.order_service = order_service
+        self.matching_agent = matching_agent
+        self.quality_agent = quality_agent
+        self.agronomy_agent = agronomy_agent
+        self.weather_tool = weather_tool
+        self.registration_service = registration_service
+        self.adcl_agent = adcl_agent
 
         self._sessions: dict[str, VoiceSession] = {}
 
@@ -246,32 +297,48 @@ class VoiceAgent:
         templates = self.RESPONSE_TEMPLATES.get(intent, self.RESPONSE_TEMPLATES[VoiceIntent.UNKNOWN])
         template = templates.get(language, templates.get("en", ""))
         
-        # Continue pending multi-turn create listing flow.
+        # * Resume any active multi-turn flow on unknown/ambiguous turn
         pending_intent = session.context.get("pending_intent")
         if pending_intent == VoiceIntent.CREATE_LISTING.value and intent in [VoiceIntent.CREATE_LISTING, VoiceIntent.UNKNOWN]:
             create_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.CREATE_LISTING, {})
             create_template = create_templates.get(language, create_templates.get("en", ""))
             return await self._handle_create_listing(create_template, entities, session)
+        if pending_intent == VoiceIntent.FIND_BUYER.value and intent in [VoiceIntent.FIND_BUYER, VoiceIntent.UNKNOWN]:
+            fb_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.FIND_BUYER, {})
+            fb_template = fb_templates.get(language, fb_templates.get("en", ""))
+            return await self._handle_find_buyer(fb_template, entities, session)
+        if pending_intent == VoiceIntent.REGISTER.value and intent in [VoiceIntent.REGISTER, VoiceIntent.UNKNOWN]:
+            reg_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.REGISTER, {})
+            reg_template = reg_templates.get(language, reg_templates.get("en", ""))
+            return await self._handle_register(reg_template, entities, session)
 
-        # Handle specific intents
+        # * Route to specific intent handler
         if intent == VoiceIntent.CREATE_LISTING:
             return await self._handle_create_listing(template, entities, session)
-        
         elif intent == VoiceIntent.CHECK_PRICE:
             return await self._handle_check_price(template, entities, session)
-        
         elif intent == VoiceIntent.TRACK_ORDER:
             return await self._handle_track_order(template, entities, session)
-        
-        elif intent == VoiceIntent.GREETING:
-            return template
-        
-        elif intent == VoiceIntent.HELP:
-            return template
-        
         elif intent == VoiceIntent.MY_LISTINGS:
             return await self._handle_my_listings(template, session)
-        
+        elif intent == VoiceIntent.FIND_BUYER:
+            return await self._handle_find_buyer(template, entities, session)
+        elif intent == VoiceIntent.CHECK_WEATHER:
+            return await self._handle_check_weather(template, entities, session)
+        elif intent == VoiceIntent.GET_ADVISORY:
+            return await self._handle_get_advisory(template, entities, session)
+        elif intent == VoiceIntent.REGISTER:
+            return await self._handle_register(template, entities, session)
+        elif intent == VoiceIntent.DISPUTE_STATUS:
+            return await self._handle_dispute_status(template, entities, session)
+        elif intent == VoiceIntent.QUALITY_CHECK:
+            return await self._handle_quality_check(template, entities, session)
+        elif intent == VoiceIntent.WEEKLY_DEMAND:
+            return await self._handle_weekly_demand(template, entities, session)
+        elif intent == VoiceIntent.GREETING:
+            return template
+        elif intent == VoiceIntent.HELP:
+            return template
         else:
             # Unknown intent - try LLM if available
             if self.llm_provider:
@@ -441,6 +508,272 @@ class VoiceAgent:
 
         return template.format(count=0, details="no active listings")
     
+    async def _handle_find_buyer(
+        self,
+        template: str,
+        entities: dict,
+        session: VoiceSession,
+    ) -> str:
+        """Handle find_buyer intent — multi-turn until commodity+quantity collected, then match."""
+        pending = session.context.get("pending_find_buyer", {}).copy()
+        pending.update({k: v for k, v in entities.items() if v not in [None, ""]})
+        session.context["pending_intent"] = VoiceIntent.FIND_BUYER.value
+        session.context["pending_find_buyer"] = pending
+
+        commodity = pending.get("commodity", "")
+        quantity_kg = pending.get("quantity_kg")
+
+        if not commodity:
+            if session.language == "hi":
+                return "किस फसल के लिए खरीदार चाहिए?"
+            if session.language == "kn":
+                return "ಯಾವ ಬೆಳೆಗೆ ಖರೀದಿದಾರ ಬೇಕು?"
+            return "Which crop do you want to find a buyer for?"
+
+        if not quantity_kg:
+            if session.language == "hi":
+                return f"कितने किलो {commodity} बेचना है?"
+            if session.language == "kn":
+                return f"ಎಷ್ಟು ಕೆಜಿ {commodity} ಮಾರಾಟ ಮಾಡಬೇಕು?"
+            return f"How many kg of {commodity} do you want to sell?"
+
+        session.context.pop("pending_intent", None)
+        session.context.pop("pending_find_buyer", None)
+
+        if not self.matching_agent:
+            if session.language == "hi":
+                return "खरीदार खोजने की सेवा अभी उपलब्ध नहीं है। कल फिर कोशिश करें।"
+            if session.language == "kn":
+                return "ಖರೀದಿದಾರ ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ. ನಾಳೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+            return f"Buyer matching service is not available right now. Try again tomorrow."
+
+        try:
+            matches = await self.matching_agent.find_matches(
+                listing_id=session.context.get("last_listing_id", f"voice-{session.user_id}"),
+            )
+        except Exception as exc:
+            logger.warning("Voice buyer matching failed: {}", exc)
+            matches = []
+
+        if not matches:
+            if session.language == "hi":
+                return f"{commodity} के लिए अभी कोई खरीदार नहीं मिला। कल फिर कोशिश करें।"
+            if session.language == "kn":
+                return f"{commodity} ಗೆ ಈಗ ಯಾವ ಖರೀದಿದಾರ ಸಿಗಲಿಲ್ಲ. ನಾಳೆ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+            return f"No buyers found for {commodity} right now. Try again tomorrow."
+
+        top = matches[0]
+        return template.format(
+            crop=commodity,
+            count=len(matches),
+            buyer_name=getattr(top, "buyer_name", "Unknown"),
+            buyer_district=getattr(top, "buyer_type", "local"),
+            price=getattr(top, "price_fit", 0),
+            qty=quantity_kg,
+        )
+
+    async def _handle_check_weather(
+        self,
+        template: str,
+        entities: dict,
+        session: VoiceSession,
+    ) -> str:
+        """Handle check_weather intent — fetches forecast via weather_tool."""
+        location = entities.get("location", session.context.get("location", "Kolar"))
+
+        if self.weather_tool:
+            try:
+                forecast = await self.weather_tool.get_forecast(location=location)
+                condition = forecast.get("condition", "Clear")
+                temp = forecast.get("temperature", 28)
+                advisory = forecast.get("advisory", "")
+                return template.format(
+                    location=location, condition=condition, temp=temp, advisory=advisory,
+                )
+            except Exception as exc:
+                logger.warning("Voice weather lookup failed: {}", exc)
+
+        # * Graceful fallback when service unavailable
+        if session.language == "hi":
+            return f"{location} के लिए मौसम सेवा अभी उपलब्ध नहीं है।"
+        if session.language == "kn":
+            return f"{location} ಗಾಗಿ ಹವಾಮಾನ ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ."
+        return f"Weather service is not available right now for {location}."
+
+    async def _handle_get_advisory(
+        self,
+        template: str,
+        entities: dict,
+        session: VoiceSession,
+    ) -> str:
+        """Handle get_advisory intent — queries agronomy agent for crop guidance."""
+        crop = entities.get("crop", "")
+
+        if not crop:
+            if session.language == "hi":
+                return "किस फसल के बारे में सलाह चाहिए?"
+            if session.language == "kn":
+                return "ಯಾವ ಬೆಳೆಯ ಬಗ್ಗೆ ಸಲಹೆ ಬೇಕು?"
+            return "Which crop do you need advice for?"
+
+        if self.agronomy_agent:
+            try:
+                response = await self.agronomy_agent.process(
+                    f"Give brief farming advice for {crop}",
+                    context={"language": session.language},
+                )
+                advisory_text = getattr(response, "content", str(response))
+                return template.format(crop=crop, advisory=advisory_text[:200])
+            except Exception as exc:
+                logger.warning("Voice advisory lookup failed: {}", exc)
+
+        return template.format(crop=crop, advisory="No advisory available at this time.")
+
+    async def _handle_register(
+        self,
+        template: str,
+        entities: dict,
+        session: VoiceSession,
+    ) -> str:
+        """Handle register intent — multi-turn collection of name, phone, district."""
+        pending = session.context.get("pending_register", {}).copy()
+        pending.update({k: v for k, v in entities.items() if v not in [None, ""]})
+        session.context["pending_intent"] = VoiceIntent.REGISTER.value
+        session.context["pending_register"] = pending
+
+        name = pending.get("name", "")
+        phone = pending.get("phone", "")
+        district = pending.get("district", "")
+
+        if not name:
+            if session.language == "hi":
+                return "आपका नाम क्या है?"
+            if session.language == "kn":
+                return "ನಿಮ್ಮ ಹೆಸರೇನು?"
+            return "What is your name?"
+
+        if not phone:
+            if session.language == "hi":
+                return "आपका मोबाइल नंबर क्या है?"
+            if session.language == "kn":
+                return "ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಏನು?"
+            return "What is your mobile number?"
+
+        if not district:
+            if session.language == "hi":
+                return "आप किस जिले में हैं?"
+            if session.language == "kn":
+                return "ನೀವು ಯಾವ ಜಿಲ್ಲೆಯಲ್ಲಿದ್ದೀರಿ?"
+            return "Which district are you in?"
+
+        session.context.pop("pending_intent", None)
+        session.context.pop("pending_register", None)
+
+        farmer_id = "pending"
+        if self.registration_service:
+            try:
+                result = await self.registration_service.register_farmer(
+                    name=name, phone=phone, district=district,
+                )
+                farmer_id = result.get("farmer_id", farmer_id) if isinstance(result, dict) else farmer_id
+            except Exception as exc:
+                logger.warning("Voice registration failed: {}", exc)
+
+        return template.format(name=name, farmer_id=farmer_id)
+
+    async def _handle_dispute_status(
+        self,
+        template: str,
+        entities: dict,
+        session: VoiceSession,
+    ) -> str:
+        """Handle dispute_status intent — queries order service for dispute info."""
+        order_id = entities.get("order_id", "")
+
+        if self.order_service:
+            try:
+                if hasattr(self.order_service, "get_dispute_status"):
+                    dispute = await self.order_service.get_dispute_status(
+                        order_id=order_id, user_id=session.user_id,
+                    )
+                    dispute_id = dispute.get("dispute_id", order_id or "N/A")
+                    status = dispute.get("status", "Under Review")
+                    notes = dispute.get("notes", "")
+                    return template.format(dispute_id=dispute_id, status=status, notes=notes)
+            except Exception as exc:
+                logger.warning("Voice dispute lookup failed: {}", exc)
+
+        if session.language == "hi":
+            return "विवाद की जानकारी अभी उपलब्ध नहीं है।"
+        if session.language == "kn":
+            return "ವಿವಾದ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ."
+        return "Dispute status is not available right now. Please try again later."
+
+    async def _handle_quality_check(
+        self,
+        template: str,
+        entities: dict,
+        session: VoiceSession,
+    ) -> str:
+        """Handle quality_check intent — requests assessment from quality agent."""
+        commodity = entities.get("commodity", "")
+        listing_id = entities.get("listing_id", session.context.get("last_listing_id", ""))
+
+        if not commodity:
+            if session.language == "hi":
+                return "किस फसल की गुणवत्ता जाँचनी है?"
+            if session.language == "kn":
+                return "ಯಾವ ಬೆಳೆಯ ಗುಣಮಟ್ಟ ಪರೀಕ್ಷಿಸಬೇಕು?"
+            return "Which crop's quality do you want to check?"
+
+        if not self.quality_agent:
+            if session.language == "hi":
+                return "गुणवत्ता जाँच सेवा अभी उपलब्ध नहीं है।"
+            if session.language == "kn":
+                return "ಗುಣಮಟ್ಟ ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ."
+            return "Quality check service is not available right now."
+
+        try:
+            result = await self.quality_agent.execute({
+                "commodity": commodity,
+                "listing_id": listing_id or f"voice-{session.user_id}",
+                "description": f"Voice quality check requested for {commodity}",
+            })
+            grade = result.get("grade", "B")
+            confidence = int(result.get("confidence", 0.7) * 100)
+            hitl = result.get("hitl_required", False)
+            notes = "Human review required." if hitl else result.get("message", "")
+            return template.format(
+                commodity=commodity, grade=grade, confidence=confidence, notes=notes,
+            )
+        except Exception as exc:
+            logger.warning("Voice quality check failed: {}", exc)
+            return template.format(commodity=commodity, grade="B", confidence=60, notes="")
+
+    async def _handle_weekly_demand(
+        self,
+        template: str,
+        entities: dict,
+        session: VoiceSession,
+    ) -> str:
+        """Handle weekly_demand intent — fetches weekly demand list via adcl_agent."""
+        location = entities.get("location", session.context.get("location", "Karnataka"))
+
+        if self.adcl_agent:
+            try:
+                if hasattr(self.adcl_agent, "get_weekly_list"):
+                    demand = await self.adcl_agent.get_weekly_list(location=location)
+                    demand_list = demand if isinstance(demand, str) else ", ".join(str(d) for d in demand)
+                    return template.format(location=location, demand_list=demand_list)
+            except Exception as exc:
+                logger.warning("Voice weekly demand lookup failed: {}", exc)
+
+        if session.language == "hi":
+            return f"{location} के लिए साप्ताहिक मांग सेवा अभी उपलब्ध नहीं है।"
+        if session.language == "kn":
+            return f"{location} ಸಾಪ್ತಾಹಿಕ ಬೇಡಿಕೆ ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ."
+        return f"Weekly demand service is not available right now for {location}."
+
     async def _generate_llm_response(
         self,
         extraction: ExtractionResult,

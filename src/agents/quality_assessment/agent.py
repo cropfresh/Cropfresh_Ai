@@ -18,6 +18,8 @@ from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.memory.state_manager import AgentExecutionState
 from src.orchestrator.llm_provider import BaseLLMProvider
 from src.agents.quality_assessment.vision_models import CropVisionPipeline, QualityResult
+from src.agents.digital_twin.engine import DigitalTwinEngine, get_digital_twin_engine
+from src.agents.digital_twin.models import DiffReport, DigitalTwin
 
 
 # * ═══════════════════════════════════════════════════════════════
@@ -67,7 +69,12 @@ class QualityAssessmentAgent(BaseAgent):
                                      description="Red, firm, no spots")
     """
 
-    def __init__(self, llm: Optional[BaseLLMProvider] = None, **kwargs: Any):
+    def __init__(
+        self,
+        llm: Optional[BaseLLMProvider] = None,
+        twin_engine: Optional[DigitalTwinEngine] = None,
+        **kwargs: Any,
+    ):
         config = AgentConfig(
             name="quality_assessment",
             description="AI produce grading with HITL fallback for dispute-proof quality verification",
@@ -78,6 +85,8 @@ class QualityAssessmentAgent(BaseAgent):
         )
         super().__init__(config=config, llm=llm, **kwargs)
         self.vision_pipeline = CropVisionPipeline()
+        # NOTE: twin_engine injected for testability; defaults to in-memory engine
+        self.twin_engine: DigitalTwinEngine = twin_engine or get_digital_twin_engine()
         self._digital_twin_store: dict[str, QualityReport] = {}
 
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
@@ -220,6 +229,80 @@ Grade definitions:
             assessment_id,
         )
         return report
+
+    # ─────────────────────────────────────────────────────────
+    # * Digital Twin Integration
+    # ─────────────────────────────────────────────────────────
+
+    async def create_departure_twin(
+        self,
+        listing_id: str,
+        farmer_photos: list[str],
+        agent_photos: list[str],
+        quality_result: QualityResult,
+        gps: tuple[float, float] = (0.0, 0.0),
+    ) -> DigitalTwin:
+        """
+        Create an immutable departure twin snapshot for a listing.
+
+        Delegates to DigitalTwinEngine.create_departure_twin().
+        Stores twin_id in _digital_twin_store for fast lookup.
+
+        Args:
+            listing_id:     UUID of the crop listing.
+            farmer_photos:  S3 URLs of farmer-submitted photos.
+            agent_photos:   S3 URLs of field agent verification photos.
+            quality_result: QualityResult from the assess() pipeline.
+            gps:            (lat, lng) at farm gate.
+
+        Returns:
+            DigitalTwin with stable twin_id.
+        """
+        twin = await self.twin_engine.create_departure_twin(
+            listing_id=listing_id,
+            farmer_photos=farmer_photos,
+            agent_photos=agent_photos,
+            quality_result=quality_result,
+            gps=gps,
+        )
+        logger.info(
+            "Departure twin {} linked to listing {} (grade={})",
+            twin.twin_id, listing_id, twin.grade,
+        )
+        return twin
+
+    async def compare_twin(
+        self,
+        twin_id: str,
+        arrival_photos: list[str],
+        arrival_gps: tuple[float, float] = (0.0, 0.0),
+    ) -> DiffReport:
+        """
+        Compare a departure twin against buyer arrival photos.
+
+        Called by OrderService._trigger_twin_diff() during dispute resolution.
+        Delegates to DigitalTwinEngine.compare_arrival().
+
+        Args:
+            twin_id:        Digital twin ID from create_departure_twin().
+            arrival_photos: S3 URLs of buyer arrival photos.
+            arrival_gps:    (lat, lng) at buyer delivery point.
+
+        Returns:
+            DiffReport with quality delta, liability, and explanation.
+
+        Raises:
+            ValueError: If departure twin not found.
+        """
+        logger.info(
+            "Comparing twin {} against {} arrival photo(s)",
+            twin_id, len(arrival_photos),
+        )
+        return await self.twin_engine.compare_arrival(
+            twin_id=twin_id,
+            arrival_photos=arrival_photos,
+            arrival_gps=arrival_gps,
+        )
 
     def _rule_based_response(self, query: str) -> str:
         """Quick text response for supervisor routing."""

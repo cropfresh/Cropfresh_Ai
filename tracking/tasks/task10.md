@@ -1,8 +1,10 @@
 # Task 10: Implement Digital Twin Engine
 
 > **Priority:** 🟠 P1 | **Phase:** 3 | **Effort:** 4–5 days  
-> **Files:** `src/agents/digital_twin.py` [NEW]  
-> **Score Target:** 9/10 — Critical for <2% dispute target
+> **Status:** ✅ COMPLETE — 2026-03-01  
+> **Files:** `src/agents/digital_twin/` [NEW PACKAGE]  
+> **Score Target:** 9/10 — Critical for <2% dispute target  
+> **Tests:** 42/42 passing (`tests/unit/test_digital_twin.py`)
 
 ---
 
@@ -117,10 +119,35 @@ class DiffReport:
 
 ## ✅ Acceptance Criteria
 
-| # | Criterion | Weight |
-|---|-----------|--------|
-| 1 | Departure twin captures photos + grade + GPS | 25% |
-| 2 | Arrival comparison generates diff report | 25% |
-| 3 | Liability recommendation with reasoning | 20% |
-| 4 | Image similarity metric (SSIM or perceptual hash) | 15% |
-| 5 | Linked to dispute resolution in order service | 15% |
+| # | Criterion | Weight | Status |
+|---|-----------|--------|--------|
+| 1 | Departure twin captures photos + grade + GPS | 25% | ✅ `engine.create_departure_twin()` |
+| 2 | Arrival comparison generates diff report | 25% | ✅ `engine.compare_arrival()` → `DiffReport` |
+| 3 | Liability recommendation with reasoning | 20% | ✅ `liability.determine_liability()` — 6-rule matrix |
+| 4 | Image similarity metric (SSIM or perceptual hash) | 15% | ✅ SSIM → pHash → rule-based fallback chain |
+| 5 | Linked to dispute resolution in order service | 15% | ✅ `OrderService._trigger_twin_diff()` wired |
+
+## Implementation Summary
+
+### New Files Created
+- `src/agents/digital_twin/__init__.py` — package exports
+- `src/agents/digital_twin/models.py` — `DigitalTwin`, `ArrivalData`, `DiffReport` dataclasses
+- `src/agents/digital_twin/diff_analysis.py` — SSIM → perceptual hash → rule-based similarity chain
+- `src/agents/digital_twin/liability.py` — 6-rule liability matrix with tunable thresholds
+- `src/agents/digital_twin/engine.py` — `DigitalTwinEngine` + `get_digital_twin_engine()` factory
+- `tests/unit/test_digital_twin.py` — 42 unit tests (100% pass)
+
+### Modified Files
+- `src/agents/quality_assessment/agent.py` — added `compare_twin()` + `create_departure_twin()` methods
+- `src/api/services/order_service.py` — upgraded `_trigger_twin_diff()` with dual-path resolution + liability persistence; added `twin_engine` DI parameter
+- `src/db/postgres_client.py` — added `get_digital_twin()` + `update_dispute_diff_report()` methods
+
+### Liability Matrix Decision Tree
+| Priority | Condition | Outcome |
+|----------|-----------|---------|
+| 1 | No arrival photos submitted | Claim rejected (0%) |
+| 2 | Quantity mismatch > 5% | Shared (farmer + hauler) |
+| 3 | No quality degradation | No liability (0%) |
+| 4 | Grade drop + transit > 6h | Hauler (cold-chain) |
+| 5 | Grade drop + transit < 2h | Farmer (pre-existing) |
+| 6 | Grade drop + transit 2–6h | Shared |

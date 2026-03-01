@@ -19,6 +19,13 @@ class VoiceIntent(Enum):
     CHECK_PRICE = "check_price"
     TRACK_ORDER = "track_order"
     MY_LISTINGS = "my_listings"
+    FIND_BUYER = "find_buyer"
+    CHECK_WEATHER = "check_weather"
+    GET_ADVISORY = "get_advisory"
+    REGISTER = "register"
+    DISPUTE_STATUS = "dispute_status"
+    QUALITY_CHECK = "quality_check"
+    WEEKLY_DEMAND = "weekly_demand"
     HELP = "help"
     GREETING = "greeting"
     UNKNOWN = "unknown"
@@ -86,6 +93,41 @@ class VoiceEntityExtractor:
             "hi": ["नमस्ते", "नमस्कार", "हेलो", "राम राम"],
             "kn": ["ನಮಸ್ಕಾರ", "ಹಲೋ"],
             "en": ["hello", "hi", "hey", "good morning"],
+        },
+        VoiceIntent.FIND_BUYER: {
+            "hi": ["खरीदार", "बायर", "ग्राहक", "कौन खरीदेगा", "खरीद"],
+            "kn": ["ಖರೀದಿದಾರ", "ಬೈಯರ್", "ಯಾರು ಖರೀದಿಸುತ್ತಾರೆ"],
+            "en": ["buyer", "find buyer", "who will buy", "buyers"],
+        },
+        VoiceIntent.CHECK_WEATHER: {
+            "hi": ["मौसम", "बारिश", "तापमान", "हवा", "वर्षा"],
+            "kn": ["ಹವಾಮಾನ", "ಮಳೆ", "ತಾಪಮಾನ"],
+            "en": ["weather", "rain", "temperature", "forecast", "climate"],
+        },
+        VoiceIntent.GET_ADVISORY: {
+            "hi": ["सलाह", "सुझाव", "क्या करें", "कैसे उगाएं", "खेती", "फसल"],
+            "kn": ["ಸಲಹೆ", "ಬೆಳೆ ಮಾಹಿತಿ", "ಕೃಷಿ", "ಏನು ಮಾಡಬೇಕು"],
+            "en": ["advice", "advisory", "farming", "crop advice", "how to grow"],
+        },
+        VoiceIntent.REGISTER: {
+            "hi": ["रजिस्टर", "नया खाता", "साइन अप", "जुड़ना", "पंजीकरण"],
+            "kn": ["ನೋಂದಣಿ", "ಹೊಸ ಖಾತೆ", "ಸೇರು"],
+            "en": ["register", "sign up", "new account", "join"],
+        },
+        VoiceIntent.DISPUTE_STATUS: {
+            "hi": ["विवाद", "शिकायत", "समस्या", "complaint", "dispute"],
+            "kn": ["ವಿವಾದ", "ದೂರು", "ಸಮಸ್ಯೆ"],
+            "en": ["dispute", "complaint", "issue", "problem"],
+        },
+        VoiceIntent.QUALITY_CHECK: {
+            "hi": ["गुणवत्ता", "क्वालिटी", "जाँच", "ग्रेड", "परीक्षण"],
+            "kn": ["ಗುಣಮಟ್ಟ", "ಕ್ವಾಲಿಟಿ", "ಪರೀಕ್ಷೆ", "ಗ್ರೇಡ್"],
+            "en": ["quality", "grade", "check quality", "quality test", "grading"],
+        },
+        VoiceIntent.WEEKLY_DEMAND: {
+            "hi": ["साप्ताहिक", "हफ्ते की मांग", "डिमांड", "इस हफ्ते"],
+            "kn": ["ಸಾಪ್ತಾಹಿಕ", "ಈ ವಾರ", "ಬೇಡಿಕೆ"],
+            "en": ["weekly demand", "week demand", "weekly list", "this week"],
         },
     }
     
@@ -236,6 +278,20 @@ class VoiceEntityExtractor:
             entities = self._extract_price_entities(text, language)
         elif intent == VoiceIntent.TRACK_ORDER:
             entities = self._extract_order_entities(text, language)
+        elif intent == VoiceIntent.FIND_BUYER:
+            entities = self._extract_find_buyer_entities(text, language)
+        elif intent == VoiceIntent.CHECK_WEATHER:
+            entities = self._extract_location_entities(text, language)
+        elif intent == VoiceIntent.GET_ADVISORY:
+            entities = self._extract_advisory_entities(text, language)
+        elif intent == VoiceIntent.REGISTER:
+            entities = self._extract_register_entities(text, language)
+        elif intent == VoiceIntent.DISPUTE_STATUS:
+            entities = self._extract_order_entities(text, language)
+        elif intent == VoiceIntent.QUALITY_CHECK:
+            entities = self._extract_quality_entities(text, language)
+        elif intent == VoiceIntent.WEEKLY_DEMAND:
+            entities = self._extract_location_entities(text, language)
         
         # Calculate overall confidence
         confidence = intent_confidence
@@ -324,6 +380,67 @@ class VoiceEntityExtractor:
         
         return entities
     
+    def _extract_find_buyer_entities(self, text: str, language: str) -> dict:
+        """Extract entities for find_buyer intent."""
+        entities = {}
+        for crop_name, crop_english in self.CROP_NAMES.items():
+            if crop_name.lower() in text.lower():
+                entities["commodity"] = crop_english
+                break
+        pattern = self.QUANTITY_PATTERNS.get(language, self.QUANTITY_PATTERNS["en"])
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            entities["quantity_kg"] = float(match.group(1))
+            unit_raw = match.group(2).lower()
+            entities["unit"] = self.UNIT_MAP.get(unit_raw, unit_raw)
+        return entities
+
+    def _extract_location_entities(self, text: str, language: str) -> dict:
+        """Extract location-only entities (weather, weekly demand)."""
+        entities = {}
+        pattern = self.LOCATION_PATTERNS.get(language, self.LOCATION_PATTERNS["en"])
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            entities["location"] = match.group(1)
+        return entities
+
+    def _extract_advisory_entities(self, text: str, language: str) -> dict:
+        """Extract entities for advisory intent."""
+        entities = {}
+        for crop_name, crop_english in self.CROP_NAMES.items():
+            if crop_name.lower() in text.lower():
+                entities["crop"] = crop_english
+                break
+        location_pattern = self.LOCATION_PATTERNS.get(language, self.LOCATION_PATTERNS["en"])
+        loc_match = re.search(location_pattern, text, re.IGNORECASE)
+        if loc_match:
+            entities["location"] = loc_match.group(1)
+        return entities
+
+    def _extract_register_entities(self, text: str, language: str) -> dict:
+        """Extract partial registration fields if voiced in one utterance."""
+        entities = {}
+        phone_match = re.search(r"\b(\d{10})\b", text)
+        if phone_match:
+            entities["phone"] = phone_match.group(1)
+        location_pattern = self.LOCATION_PATTERNS.get(language, self.LOCATION_PATTERNS["en"])
+        loc_match = re.search(location_pattern, text, re.IGNORECASE)
+        if loc_match:
+            entities["district"] = loc_match.group(1)
+        return entities
+
+    def _extract_quality_entities(self, text: str, language: str) -> dict:
+        """Extract entities for quality check intent."""
+        entities = {}
+        for crop_name, crop_english in self.CROP_NAMES.items():
+            if crop_name.lower() in text.lower():
+                entities["commodity"] = crop_english
+                break
+        listing_match = re.search(r"(?:listing|lst)[- ]?(\w+)", text, re.IGNORECASE)
+        if listing_match:
+            entities["listing_id"] = listing_match.group(1)
+        return entities
+
     async def _extract_with_llm(self, text: str, language: str) -> ExtractionResult:
         """Extract using LLM for complex cases"""
         if not self.llm_provider:
@@ -341,7 +458,7 @@ Query (language: {language}): "{text}"
 
 Respond in JSON format:
 {{
-    "intent": "create_listing" | "check_price" | "track_order" | "my_listings" | "help" | "greeting" | "unknown",
+    "intent": "create_listing" | "check_price" | "track_order" | "my_listings" | "find_buyer" | "check_weather" | "get_advisory" | "register" | "dispute_status" | "quality_check" | "weekly_demand" | "help" | "greeting" | "unknown",
     "entities": {{
         "crop": "crop name in English",
         "quantity": number,
@@ -389,4 +506,4 @@ Only include entities that are clearly mentioned. Return only JSON."""
     
     def get_supported_intents(self) -> list[str]:
         """Get list of supported intents"""
-        return [intent.value for intent in VoiceIntent if intent != VoiceIntent.UNKNOWN]
+        return [intent.value for intent in VoiceIntent if intent not in (VoiceIntent.UNKNOWN,)]

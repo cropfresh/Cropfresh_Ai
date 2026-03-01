@@ -105,7 +105,7 @@ Hauler Assignment (from logistics routing)
 Buyer Raises Dispute
        │  arrival_photos[], reason
        ▼
-Digital Twin Diff Engine (ai/vision/digital_twin.py)
+Digital Twin Diff Engine (src/agents/digital_twin/engine.py)
        │
        │  Compare: departure_twin.photos vs arrival_photos
        │  Detect: color changes, shape deformations, qty loss
@@ -124,7 +124,7 @@ DifferenceReport
        └─ < ₹500 claim        ──→ Risk buffer pool covers it
               │
               ▼
-       Supabase: disputes.status = 'resolved'
+       PostgreSQL: disputes.status = 'resolved'
        orders.escrow_status = 'released'
 ```
 

@@ -1,6 +1,6 @@
 # Task 5: Fix & Implement Price Prediction Agent
 
-> **Priority:** 🔴 P0 | **Phase:** 1 | **Effort:** 3–4 days  
+> **Priority:** 🔴 P0 | **Phase:** 1 | **Effort:** 3–4 days | **Status:** ✅ Completed (2026-03-01)  
 > **Files:** `src/agents/price_prediction/agent.py` (fix + implement)  
 > **Score Target:** 9/10 — Predictions within ±10% of actual mandi price
 
@@ -212,3 +212,43 @@ SEASONAL_CALENDAR = {
 - `numpy` — trend analysis, moving averages
 - `src/db/postgres_client.py` → `price_history` table
 - `src/scrapers/agmarknet.py` → real-time price data
+
+---
+
+## ✅ Completion (2026-03-01)
+
+### What Was Implemented
+
+**`src/agents/price_prediction/agent.py`** — full rewrite:
+- Fixed corrupted class name (`priceprediction.Value...` → `PricePredictionAgent`)
+- Added `PricePrediction` Pydantic model with all spec fields
+- Implemented `predict()` with 90-day history fetch → feature extraction → rule-based prediction → trend analysis → recommendation
+- `_extract_features()` — 7d/14d/30d moving averages, 7d/30d momentum, seasonal multiplier
+- `_rule_based_predict()` — `avg_7d × (1 + momentum × days/7) × seasonal_mult`
+- `_analyze_trend()` — numpy linear regression slope, normalized to relative slope, returns (rising/falling/stable, strength 0–1)
+- `_get_seasonal_factor()` / `_get_seasonal_multiplier()` — Karnataka calendar for 6 crops × 12 months
+- `_generate_recommendation()` — sell_now / hold_3d / hold_7d / hold_30d from price delta + trend context
+- `_explain_factors()` — human-readable drivers list (momentum, trend, seasonal)
+- `_llm_based_prediction()` — LLM fallback when no history; hard fallback if LLM also fails
+- `process()` — natural language query interface for supervisor routing
+- `execute()` — structured dict interface for API/orchestrator
+
+**`src/agents/price_prediction/__init__.py`** — exports `PricePredictionAgent`, `PricePrediction`
+
+**`tests/unit/test_price_prediction.py`** — 25 tests covering all 8 acceptance criteria
+
+### Test Results
+- Validation: `uv run pytest tests/unit/test_price_prediction.py -v` → **25 passed**
+- Full suite: `uv run pytest tests/unit/ -v` → **121 passed** (zero regressions)
+
+### Acceptance Criteria Status
+| # | Criterion | Status |
+|---|-----------|--------|
+| 1 | Class name fixed, no syntax errors | ✅ Done |
+| 2 | Rule-based prediction within ±15% of actual | ✅ Done |
+| 3 | Trend analysis (rising/falling/stable) correct | ✅ Done |
+| 4 | Seasonal factor for Karnataka crops included | ✅ Done |
+| 5 | Sell/hold recommendation generated | ✅ Done |
+| 6 | Graceful fallback when no historical data | ✅ Done |
+| 7 | LLM natural language factors explanation | ✅ Done |
+| 8 | Unit tests pass with mock historical data | ✅ Done |

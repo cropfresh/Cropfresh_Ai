@@ -278,6 +278,15 @@ app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 from src.api.routes import data as data_routes      # noqa: E402
 app.include_router(data_routes.router, prefix="/api/v1", tags=["data"])
 
+from src.api.routers import listings as listings_router  # noqa: E402
+app.include_router(listings_router.router, prefix="/api/v1", tags=["listings"])
+
+from src.api.routers import orders as orders_router      # noqa: E402
+app.include_router(orders_router.router, prefix="/api/v1", tags=["orders"])
+
+from src.api.routers import auth as auth_router          # noqa: E402
+app.include_router(auth_router.router, prefix="/api/v1", tags=["auth"])
+
 from src.api.rest import voice as voice_rest        # noqa: E402
 app.include_router(voice_rest.router, tags=["voice"])
 

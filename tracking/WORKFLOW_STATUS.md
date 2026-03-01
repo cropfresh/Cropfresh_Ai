@@ -1,6 +1,6 @@
 # CropFresh AI Service - Workflow Status
 
-**Last Updated:** March 01, 2026 (14:15 IST)  
+**Last Updated:** March 01, 2026 (Task 10 complete)  
 **Package Manager:** uv  
 **Python Version:** 3.11+
 
@@ -10,7 +10,7 @@
 
 | Component | Status | Progress |
 |-----------|--------|----------|
-| Voice Agent | ✅ Complete | 100% |
+| Voice Agent | ✅ Task 4 Complete | 100% (all 10+ intents, multi-turn, 3-language) |
 | RAG System | ✅ Complete | 100% |
 | Multi-Agent System | ✅ Complete | 100% |
 | Memory System | ✅ Complete | 100% |
@@ -18,21 +18,112 @@
 | **LLM Provider (Bedrock+Groq)** | ✅ Complete | 100% |
 | **DB Migration (pgvector)** | 🟡 In Progress | 70% |
 | Vision Agent | ✅ Task 3 Complete | 100% (for Task 3 scope) |
+| **Price Prediction Agent** | ✅ Task 5 Complete | 100% (rule-based + trend + seasonal + LLM fallback) |
 | Pricing Agent | ✅ Task 1 Complete | 100% (for Task 1 scope) |
 | Buyer Matching Agent | ✅ Task 2 Complete | 100% (for Task 2 scope) |
+| **Crop Listing Service** | ✅ Task 7 Complete | 100% (auto-price, shelf-life, QR code, 7 REST endpoints) |
+| **Order Management Service** | ✅ Task 8 Complete | 100% (state machine, escrow, AISP, dispute diff, 8 REST endpoints) |
+| **Registration & Auth Service** | ✅ Task 9 Complete | 100% (OTP, JWT, profile CRUD, district→language, GPS→district, 6 REST endpoints) |
+| **Digital Twin Engine** | ✅ Task 10 Complete | 100% (departure twin, arrival diff, SSIM/pHash/rule-based, 6-rule liability matrix) |
 | LangGraph Orchestrator | ⚠️ Partial | 70% |
 
 ---
 
 ## 📁 File Changes Log
 
-### March 01, 2026 — Task 4 Progress + Live Streaming UI Validation
+### March 01, 2026 — Task 10 Complete (Digital Twin Engine)
 
 | Action | File | Description |
 |--------|------|-------------|
-| UPDATE | `src/agents/voice_agent.py` | Added multi-turn `create_listing` flow and improved service-backed handlers for price/order intents |
-| UPDATE | `src/voice/entity_extractor.py` | Added asking-price extraction for listing turn completion |
-| CREATE | `tests/unit/test_voice_agent.py` | Added unit tests for multi-turn listing, pricing service usage, and order-status service usage |
+| NEW | `src/agents/digital_twin/__init__.py` | Package exports: DigitalTwinEngine, DigitalTwin, DiffReport, ArrivalData, LiabilityResult |
+| NEW | `src/agents/digital_twin/models.py` | DigitalTwin, ArrivalData, DiffReport dataclasses with to_dict() for JSONB |
+| NEW | `src/agents/digital_twin/diff_analysis.py` | SSIM → perceptual hash → rule-based similarity chain; compute_grade_delta, compute_new_defects |
+| NEW | `src/agents/digital_twin/liability.py` | 6-rule liability matrix (no photos / quantity mismatch / no degradation / long transit / short transit / mid transit) |
+| NEW | `src/agents/digital_twin/engine.py` | DigitalTwinEngine: create_departure_twin(), compare_arrival(), generate_diff_report(); get_digital_twin_engine() factory |
+| UPDATED | `src/agents/quality_assessment/agent.py` | Added compare_twin(), create_departure_twin(); twin_engine DI; delegates to DigitalTwinEngine |
+| UPDATED | `src/api/services/order_service.py` | twin_engine DI; _trigger_twin_diff() dual-path (engine + QA fallback); _save_diff_report() persists liability + claim_percent |
+| UPDATED | `src/db/postgres_client.py` | get_digital_twin(), update_dispute_diff_report() |
+| NEW | `tests/unit/test_digital_twin.py` | 42 unit tests — grade delta, new defects, similarity, transit, liability matrix, engine e2e, QA agent integration |
+| UPDATED | `tracking/tasks/task10.md` | Marked complete with implementation summary and liability matrix table |
+| UPDATED | `ROADMAP.md` | Digital Twin Engine deliverable checked |
+| UPDATED | `tracking/PROJECT_STATUS.md` | Digital Twin status, version v0.8-digital-twin, Task 10 milestone |
+| UPDATED | `tracking/WORKFLOW_STATUS.md` | This file — Task 10 session log |
+| UPDATED | `docs/agents/REGISTRY.md` | Digital Twin Engine entry added |
+
+Test results: 42 passed in test_digital_twin.py | Full suite: **382 passed** (0 regressions from 340 baseline)
+
+---
+
+### March 01, 2026 — Task 9 Complete (Registration & Auth Service)
+
+| Action | File | Description |
+|--------|------|-------------|
+| NEW | `src/api/services/registration_service.py` | Full `RegistrationService`: OTP flow (6-digit, 10-min expiry, in-memory store), stdlib HS256 JWT (no pyjwt dep), phone normalisation, 31-district Karnataka language map, GPS→district centroid lookup, Aadhaar SHA-256 hash, `register_farmer()` voice compat. Pydantic models: `RegisterRequest`, `VerifyOTPRequest`, `UpdateFarmerProfileRequest`, `UpdateBuyerProfileRequest`, `TokenResponse`, `ProfileResponse`. Factory: `get_registration_service()` |
+| NEW | `src/api/routers/auth.py` | 6 REST endpoints: `POST /auth/register`, `POST /auth/verify-otp`, `GET /auth/me`, `GET /auth/profile/{user_id}`, `PATCH /auth/profile/{user_id}`, `PATCH /auth/buyer-profile/{user_id}` |
+| UPDATED | `src/db/postgres_client.py` | Added 5 DB methods: `get_buyer()`, `get_farmer_by_phone()`, `get_buyer_by_phone()`, `update_farmer()`, `update_buyer()` |
+| UPDATED | `src/api/main.py` | Registered auth router at `/api/v1` |
+| NEW | `tests/unit/test_registration_service.py` | 64 unit tests across 7 test classes — full AC coverage |
+| UPDATED | `tracking/tasks/task9.md` | Marked Task 9 complete with full AC evidence |
+| UPDATED | `tracking/PROJECT_STATUS.md` | Registration service row added, version v0.7-registration-auth |
+| UPDATED | `tracking/WORKFLOW_STATUS.md` | This file — Task 9 session log |
+
+Test results: 64 passed in 0.20s | Full suite: 340 passed (0 regressions from 276 baseline)
+
+---
+
+### March 01, 2026 — Task 8 Complete (Order Management Service)
+
+| Action | File | Description |
+|--------|------|-------------|
+| UPDATED | `src/db/postgres_client.py` | Added 4 new DB methods: `get_order()` (order + listing + buyer join), `get_orders_by_farmer()` (optional status filter), `get_orders_by_buyer()` (optional status filter), `update_dispute()` (diff_report, status, liability, claim_percent) |
+| IMPLEMENTED | `src/api/services/order_service.py` | Full OrderService: VALID_TRANSITIONS (11 statuses), ESCROW_ON_TRANSITION map, create_order, update_status, raise_dispute (Digital Twin diff trigger), settle_order, get_order, get_orders_by_farmer, get_orders_by_buyer, get_aisp_breakdown. Pydantic models: CreateOrderRequest, UpdateStatusRequest, RaiseDisputeRequest, OrderResponse, DisputeResponse, AISPBreakdown. Factory: get_order_service() |
+| NEW | `src/api/routers/orders.py` | 8 REST endpoints: POST /orders, GET /orders, GET /orders/{id}, PATCH /orders/{id}/status, POST /orders/{id}/dispute, POST /orders/{id}/settle, GET /orders/{id}/aisp |
+| UPDATED | `src/api/main.py` | Registered orders router at /api/v1 |
+| NEW | `tests/unit/test_order_service.py` | 73 unit tests across 14 test classes — full AC coverage, state machine, AISP ratios, escrow, dispute, Digital Twin diff trigger |
+| UPDATED | `tracking/tasks/task8.md` | Marked Task 8 complete with full AC evidence |
+| UPDATED | `tracking/PROJECT_STATUS.md` | Order service row added, test count 276, version v0.6-order-management |
+| UPDATED | `tracking/OUTCOMES.md` | Test coverage ~56% (276 tests / 14 files) |
+| UPDATED | `tracking/sprints/sprint-05-core-agents.md` | Task 8 added; sprint metrics updated |
+| UPDATED | `tracking/daily/2026-03-01.md` | Task 8 session log appended |
+
+Test results: 73 passed in 0.37s | Full suite: 276 passed (0 regressions)
+
+### March 01, 2026 — Task 7 Complete (Crop Listing Service)
+
+| Action | File | Description |
+|--------|------|-------------|
+| REWRITTEN | `src/agents/crop_listing/agent.py` | Fixed corrupted class name; full CropListingAgent NL interface (create/cancel/update/my_listings intents) |
+| UPDATED | `src/agents/crop_listing/__init__.py` | Exports CropListingAgent |
+| IMPLEMENTED | `src/api/services/listing_service.py` | Full ListingService: auto-price, shelf-life expiry, QR code, ADCL tag, quality trigger, paginated search |
+| NEW | `src/api/routers/listings.py` | 7 REST endpoints: POST/GET/PATCH/DELETE listings + farmer listings + grade attachment |
+| UPDATED | `src/api/main.py` | Registered listings router at /api/v1 |
+| NEW | `tests/unit/test_listing_service.py` | 50 unit tests — shelf life, create enrichment, search/filter, CRUD, grade HITL, voice AC6 |
+| UPDATED | `tracking/tasks/task7.md` | Marked Task 7 complete with full completion evidence |
+| UPDATED | `tracking/PROJECT_STATUS.md` | Crop listing service added to component table |
+| UPDATED | `docs/agents/crop-listing/spec.md` | Full spec written (replaces placeholder) |
+| UPDATED | `docs/agents/crop-listing/changelog.md` | Task 7 release entry added |
+| UPDATED | `docs/features/F002-crop-listing-agent.md` | Status + acceptance criteria updated |
+
+### March 01, 2026 — Task 6 Complete (Database Schema Extension)
+
+| Action | File | Description |
+|--------|------|-------------|
+| NEW | `src/db/migrations/001_initial_schema.sql` | Baseline 4-table schema versioned as migration |
+| NEW | `src/db/migrations/002_business_tables.sql` | 10 business tables: field_agents, haulers, buyers, farmers, listings, digital_twins, orders, disputes, price_history, adcl_reports |
+| NEW | `src/db/migrations/003_indexes_and_constraints.sql` | 5 GIST geospatial, 6 composite/partial, 3 GIN JSONB indexes + auto updated_at triggers |
+| NEW | `src/db/migrations/migration_runner.py` | MigrationRunner: schema_migrations tracking, run_pending(), get_status(), SHA-256 checksum validation |
+| UPDATED | `src/db/postgres_client.py` | 13 new CRUD methods + run_migrations() delegation |
+| NEW | `tests/unit/test_db_crud.py` | 32 unit tests for migration runner + all CRUD methods |
+| UPDATED | `tracking/tasks/task6.md` | Marked Task 6 complete |
+| UPDATED | `tracking/sprints/sprint-05-core-agents.md` | Task 9 marked done |
+
+### March 01, 2026 — Task 4 Complete + Live Streaming UI Validation
+
+| Action | File | Description |
+|--------|------|-------------|
+| UPDATE | `src/agents/voice_agent.py` | Task 4: all 10+ intents wired, 7 new handlers, multi-turn find_buyer + register flows |
+| UPDATE | `src/voice/entity_extractor.py` | Task 4: 7 new intents, multilingual keywords, entity extractors |
+| UPDATE | `tests/unit/test_voice_agent.py` | Task 4: 20 tests — all intents, multi-turn, fallbacks, language templates |
 | UPDATE | `static/voice_realtime.html` | Rebuilt as ChatGPT-style streaming chat surface |
 | UPDATE | `static/assets/css/voice-realtime.css` | Added conversation bubbles, stream metadata, and typing caret animation |
 | UPDATE | `static/assets/js/voice-realtime.js` | Implemented SSE-based token streaming UI (`/api/v1/chat/stream`) with stop/clear controls |
@@ -480,3 +571,4 @@ psql -U cropfresh_app -d cropfresh -c "SELECT 1"
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\.venv\Scripts\Activate.ps1
 ```
+
