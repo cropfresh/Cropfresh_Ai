@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     # ═══════════════════════════════════════════════════════════════
     # Vector Database
     # ═══════════════════════════════════════════════════════════════
+    vector_db_provider: Literal["pgvector", "qdrant"] = "pgvector"
+    # Qdrant (dev/legacy fallback)
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_api_key: str = ""
@@ -65,22 +67,24 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     # ═══════════════════════════════════════════════════════════════
-    # Supabase (PostgreSQL)
+    # Amazon Aurora PostgreSQL (replaces Supabase + Qdrant vectors)
     # ═══════════════════════════════════════════════════════════════
+    pg_host: str = ""
+    pg_database: str = "cropfresh"
+    pg_port: int = 5432
+    pg_user: str = "cropfresh_app"
+    pg_password: str = ""
+    pg_use_iam_auth: bool = False
+    # Legacy Supabase (migration period)
     supabase_url: str = ""
     supabase_key: str = ""
 
     # ═══════════════════════════════════════════════════════════════
-    # Neo4j (Graph Database)
+    # Neo4j (Graph Database) — kept as-is
     # ═══════════════════════════════════════════════════════════════
     neo4j_uri: str = ""
     neo4j_user: str = "neo4j"
     neo4j_password: str = ""
-
-    # ═══════════════════════════════════════════════════════════════
-    # Database (Legacy - use Supabase instead)
-    # ═══════════════════════════════════════════════════════════════
-    database_url: str = "postgresql://user:password@localhost:5432/cropfresh"
 
     # ═══════════════════════════════════════════════════════════════
     # API Settings

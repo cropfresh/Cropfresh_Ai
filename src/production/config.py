@@ -41,10 +41,20 @@ class LLMConfig(BaseModel):
 
 class DatabaseConfig(BaseModel):
     """Database configuration."""
+    # Vector DB provider: "pgvector" (production) | "qdrant" (dev)
+    vector_db_provider: str = "pgvector"
+    # Aurora PostgreSQL (pgvector + relational)
+    pg_host: str = ""
+    pg_database: str = "cropfresh"
+    pg_port: int = 5432
+    pg_user: str = "cropfresh_app"
+    pg_password: Optional[SecretStr] = None
+    pg_use_iam_auth: bool = True
+    # Qdrant (dev/legacy fallback)
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_api_key: Optional[SecretStr] = None
-    
+    # Neo4j (kept as-is)
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: Optional[SecretStr] = None
@@ -144,6 +154,13 @@ def load_config(env_file: Optional[Path] = None) -> ProductionConfig:
         ),
         
         database=DatabaseConfig(
+            vector_db_provider=os.getenv("VECTOR_DB_PROVIDER", "pgvector"),
+            pg_host=os.getenv("PG_HOST", ""),
+            pg_database=os.getenv("PG_DATABASE", "cropfresh"),
+            pg_port=int(os.getenv("PG_PORT", "5432")),
+            pg_user=os.getenv("PG_USER", "cropfresh_app"),
+            pg_password=SecretStr(os.getenv("PG_PASSWORD", "")) if os.getenv("PG_PASSWORD") else None,
+            pg_use_iam_auth=os.getenv("PG_USE_IAM_AUTH", "true").lower() == "true",
             qdrant_host=os.getenv("QDRANT_HOST", "localhost"),
             qdrant_port=int(os.getenv("QDRANT_PORT", "6333")),
             qdrant_api_key=SecretStr(os.getenv("QDRANT_API_KEY", "")) if os.getenv("QDRANT_API_KEY") else None,
