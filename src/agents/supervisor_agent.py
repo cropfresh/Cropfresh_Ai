@@ -46,8 +46,8 @@ Available agents:
 2. **commerce_agent**: Expert in market prices, trading, sell/hold recommendations, AISP calculations
    - Keywords: price, sell, buy, mandi, market, rate, cost, profit, AISP, logistics
 
-3. **platform_agent**: Expert in CropFresh app features, registration, quality grades, how to use the platform
-   - Keywords: register, login, app, feature, quality, grade, logistics, order, payment
+3. **platform_agent**: Expert in CropFresh app features, registration, account support, and platform usage
+   - Keywords: register, login, app, feature, account, logistics, order, payment
 
 4. **web_scraping_agent**: Expert in fetching LIVE data from websites - current mandi prices, weather, news
    - Keywords: live, current, today, real-time, fetch, scrape, website, portal, eNAM, Agmarknet, weather
@@ -63,6 +63,12 @@ Available agents:
 
 7. **general_agent**: Fallback for greetings, general questions, or unclear intents
    - Keywords: hello, hi, thanks, help, who are you
+
+8. **buyer_matching_agent**: Expert in matching farmers and buyers using grade, price, and distance
+   - Keywords: find buyer, match buyer, who will buy, find farmer, supplier match, buyer matching, sell my produce
+
+9. **quality_assessment_agent**: Expert in produce grading (A+/A/B/C), defect detection, shelf life, and HITL verification
+   - Keywords: quality check, grade produce, defects, bruise, fungal, shelf life, quality assessment, inspect crop
 
 Analyze the user query and respond with a JSON object:
 {{
@@ -258,8 +264,38 @@ class SupervisorAgent(BaseAgent):
         # Platform keywords
         platform_kw = [
             "register", "login", "app", "feature", "account", "order",
-            "payment", "cropfresh", "quality grade", "digital twin"
+            "payment", "cropfresh", "digital twin"
         ]
+
+        # Buyer matching keywords
+        matching_kw = [
+            "find buyer", "match buyer", "buyer matching", "who wants to buy",
+            "find farmer", "find supplier", "supplier match", "sell my produce",
+            "need tomatoes", "need onion", "procurement"
+        ]
+
+        # Quality assessment keywords
+        quality_kw = [
+            "quality check", "quality assessment", "grade produce", "produce grade",
+            "defect", "bruise", "worm hole", "fungal", "shelf life", "inspect quality",
+            "a+ grade", "quality grading"
+        ]
+
+        # Prefer explicit matching intents before weighted keyword scoring.
+        if any(keyword in query_lower for keyword in matching_kw):
+            return RoutingDecision(
+                agent_name="buyer_matching_agent",
+                confidence=0.85,
+                reasoning="Rule-based routing",
+            )
+
+        # Prefer explicit quality assessment intents before weighted scoring.
+        if any(keyword in query_lower for keyword in quality_kw):
+            return RoutingDecision(
+                agent_name="quality_assessment_agent",
+                confidence=0.84,
+                reasoning="Rule-based routing",
+            )
         
         # Web scraping keywords (live data)
         scraping_kw = [
@@ -291,6 +327,8 @@ class SupervisorAgent(BaseAgent):
             "agronomy_agent": sum(1 for kw in agronomy_kw if kw in query_lower),
             "commerce_agent": sum(1 for kw in commerce_kw if kw in query_lower),
             "platform_agent": sum(1 for kw in platform_kw if kw in query_lower),
+            "buyer_matching_agent": sum(1 for kw in matching_kw if kw in query_lower),
+            "quality_assessment_agent": sum(1 for kw in quality_kw if kw in query_lower),
             "web_scraping_agent": sum(1 for kw in scraping_kw if kw in query_lower),
             "browser_agent": sum(1 for kw in browser_kw if kw in query_lower),
             "research_agent": sum(1 for kw in research_kw if kw in query_lower),

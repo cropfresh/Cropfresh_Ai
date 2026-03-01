@@ -8,7 +8,7 @@ API Sources:
 - Backup: CEDA API (Ashoka University)
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import httpx
@@ -144,6 +144,37 @@ class AgmarknetTool:
         self._cache[cache_key] = (datetime.now(), prices)
         
         return prices
+
+    async def get_historical_prices(
+        self,
+        commodity: str,
+        state: str = "Karnataka",
+        district: Optional[str] = None,
+        days: int = 30,
+    ) -> list[AgmarknetPrice]:
+        """
+        Fetch historical prices for trend analysis.
+
+        Falls back to synthetic mock history if live history is unavailable.
+        """
+        if days <= 0:
+            raise ValueError("days must be greater than 0")
+
+        if not self.api_key:
+            return self._get_mock_price_history(commodity, state, district or "Kolar", days)
+
+        prices = await self.get_prices(
+            commodity=commodity,
+            state=state,
+            district=district,
+            limit=max(days, 30),
+        )
+        if len(prices) >= min(days, 7):
+            sorted_prices = sorted(prices, key=lambda price: price.date)
+            return sorted_prices[-days:]
+
+        logger.warning("Insufficient live historical data, using mock history fallback")
+        return self._get_mock_price_history(commodity, state, district or "Kolar", days)
     
     async def _fallback_ceda(
         self,
@@ -225,3 +256,35 @@ class AgmarknetTool:
                 modal_price=prices["modal"],
             )
         ]
+
+    def _get_mock_price_history(
+        self,
+        commodity: str,
+        state: str,
+        district: str,
+        days: int,
+    ) -> list[AgmarknetPrice]:
+        """
+        Build synthetic historical prices for local trend testing.
+        """
+        base_price = self.get_mock_prices(commodity, state, district)[0].modal_price
+        history: list[AgmarknetPrice] = []
+        for day_index in range(days):
+            day = datetime.now() - timedelta(days=(days - day_index - 1))
+            oscillation = ((day_index % 7) - 3) * 0.01
+            trend = (day_index / max(days, 1)) * 0.04
+            factor = 1 + trend + oscillation
+            modal_price = max(base_price * factor, 100.0)
+            history.append(
+                AgmarknetPrice(
+                    commodity=commodity,
+                    state=state,
+                    district=district,
+                    market=f"{district} Main Market",
+                    date=day,
+                    min_price=modal_price * 0.85,
+                    max_price=modal_price * 1.15,
+                    modal_price=modal_price,
+                )
+            )
+        return history

@@ -1,0 +1,75 @@
+.rt-layout {
+  display: grid;
+  gap: 12px;
+}
+
+.chat-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chat-stream {
+  min-height: 380px;
+  max-height: 58vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: #0a1325;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-message {
+  max-width: 86%;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.chat-message.user {
+  align-self: flex-end;
+  background: rgba(79, 70, 229, 0.25);
+  border: 1px solid rgba(99, 102, 241, 0.45);
+}
+
+.chat-message.assistant {
+  align-self: flex-start;
+  background: rgba(15, 118, 110, 0.16);
+  border: 1px solid rgba(20, 184, 166, 0.35);
+}
+
+.chat-message.system {
+  align-self: center;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  font-size: 0.8rem;
+}
+
+.stream-metadata {
+  display: flex;
+  gap: 16px;
+  margin: 10px 0 8px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.typing-caret::after {
+  content: "▋";
+  display: inline-block;
+  margin-left: 2px;
+  color: #5eead4;
+  animation: blink-caret 1s steps(2, start) infinite;
+}
+
+@keyframes blink-caret {
+  to {
+    visibility: hidden;
+  }
+}

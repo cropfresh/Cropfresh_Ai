@@ -1,4 +1,4 @@
-﻿# 📊 Outcomes Dashboard — CropFresh AI
+# 📊 Outcomes Dashboard — CropFresh AI
 
 > **Last Updated:** 2026-02-27
 
@@ -28,7 +28,7 @@
 | Sprint 02 — Data Pipeline | ✅ Complete | — | — |
 | Sprint 03 — Crop Agent | ✅ Complete | — | — |
 | Sprint 04 — Voice Pipeline | 🟡 In Progress | 0/5 (ongoing) | Pipecat e2e test, APMC scraper |
-| **Sprint 05 — Agentic RAG** | 🔲 Planning | — | — |
+| **Sprint 05 — Core Agent Completion** | 🟡 In Progress | Task 1 complete | Matchmaking, QA, Voice wiring pending |
 | Sprint 06 — Browser RAG | 🔲 Planned | — | — |
 
 ---

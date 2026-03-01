@@ -85,6 +85,8 @@ async def get_supervisor_agent():
         from src.agents.supervisor_agent import SupervisorAgent
         from src.agents.agronomy_agent import AgronomyAgent
         from src.agents.commerce_agent import CommerceAgent
+        from src.agents.buyer_matching.agent import BuyerMatchingAgent
+        from src.agents.quality_assessment.agent import QualityAssessmentAgent
         from src.agents.platform_agent import PlatformAgent
         from src.agents.general_agent import GeneralAgent
         from src.orchestrator.llm_provider import create_llm_provider
@@ -141,6 +143,21 @@ async def get_supervisor_agent():
             state_manager=state_manager,
             knowledge_base=kb,
         )
+
+        buyer_matching = BuyerMatchingAgent(
+            llm=llm,
+            tool_registry=tool_registry,
+            state_manager=state_manager,
+            knowledge_base=kb,
+            redis_url=settings.redis_url,
+        )
+
+        quality_assessment = QualityAssessmentAgent(
+            llm=llm,
+            tool_registry=tool_registry,
+            state_manager=state_manager,
+            knowledge_base=kb,
+        )
         
         platform = PlatformAgent(
             llm=llm,
@@ -159,6 +176,8 @@ async def get_supervisor_agent():
         # Register agents with supervisor
         _supervisor_agent.register_agent("agronomy_agent", agronomy)
         _supervisor_agent.register_agent("commerce_agent", commerce)
+        _supervisor_agent.register_agent("buyer_matching_agent", buyer_matching)
+        _supervisor_agent.register_agent("quality_assessment_agent", quality_assessment)
         _supervisor_agent.register_agent("platform_agent", platform)
         _supervisor_agent.register_agent("general_agent", general)
         _supervisor_agent.set_fallback_agent(general)

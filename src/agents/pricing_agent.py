@@ -11,6 +11,7 @@ Uses:
 """
 
 from datetime import datetime
+from statistics import mean, pstdev
 from typing import Any, Optional
 
 from loguru import logger
@@ -81,22 +82,30 @@ class PricingAgent:
         rec = await agent.get_recommendation("Tomato", "Kolar", quantity_kg=200)
     """
     
-    PLATFORM_FEE_TIERS = [
-        (0, 100, 0.08),
-        (100, 500, 0.06),
-        (500, float("inf"), 0.04),
+    DEADHEAD_FACTOR_TABLE = [
+        (80, 101, 0.00),
+        (60, 80, 0.10),
+        (40, 60, 0.20),
+        (0, 40, 0.35),
     ]
 
-    LOGISTICS_RATES = [
-        (0, 25, 2.0),
-        (25, 50, 2.5),
-        (50, 100, 3.0),
-        (100, float("inf"), 4.0),
+    LOGISTICS_RATE_TABLE = [
+        (0, 15, 1.5),
+        (15, 50, 1.2),
+        (50, 100, 1.0),
+        (100, 1000000, 0.8),
+    ]
+
+    PLATFORM_FEE_TIERS = [
+        (1000, float("inf"), 0.05),
+        (500, 1000, 0.06),
+        (100, 500, 0.07),
+        (0, 100, 0.08),
     ]
 
     RISK_BUFFER_PCT = 0.02
-    DEADHEAD_THRESHOLD_KM = 15.0
-    DEADHEAD_SURCHARGE_PER_KG = 0.50
+    MANDI_CAP_MULTIPLIER = 1.05
+    COLD_CHAIN_PREMIUM_PER_KM = 0.5
     
     def __init__(
         self,
@@ -255,24 +264,31 @@ class PricingAgent:
         distance_km: float = 30,
         handling_per_kg: float = 0.5,
         mandi_modal_per_kg: Optional[float] = None,
+        route_utilization_pct: float = 50.0,
+        cold_chain: bool = False,
     ) -> AISPCalculation:
         """
-        Calculate All-Inclusive Sourcing Price (business-aligned).
-
-        AISP = Farmer_Payout + Logistics + Deadhead + Handling
-               + Platform_Fee + Risk_Buffer
-
-        The final AISP is capped so it never exceeds the mandi modal
-        price (when available), ensuring the buyer always saves vs. mandi.
+        Calculate business-aligned AISP:
+        Farmer_Payout + Logistics + Deadhead + Handling + Platform_Fee + Risk_Buffer.
         """
+        if quantity_kg <= 0:
+            raise ValueError("quantity_kg must be greater than 0")
+        if farmer_price_per_kg < 0:
+            raise ValueError("farmer_price_per_kg cannot be negative")
+        if distance_km < 0:
+            raise ValueError("distance_km cannot be negative")
+        if not 0 <= route_utilization_pct <= 100:
+            raise ValueError("route_utilization_pct must be between 0 and 100")
+
         farmer_payout = farmer_price_per_kg * quantity_kg
 
         logistics_rate = self._get_logistics_rate(distance_km)
-        logistics_cost = logistics_rate * quantity_kg
+        logistics_cost = distance_km * logistics_rate * quantity_kg / 1000
+        if cold_chain:
+            logistics_cost += distance_km * self.COLD_CHAIN_PREMIUM_PER_KM
 
-        deadhead_surcharge = 0.0
-        if distance_km > self.DEADHEAD_THRESHOLD_KM:
-            deadhead_surcharge = self.DEADHEAD_SURCHARGE_PER_KG * quantity_kg
+        deadhead_factor = self._get_deadhead_factor(route_utilization_pct)
+        deadhead_surcharge = logistics_cost * deadhead_factor
 
         handling_cost = handling_per_kg * quantity_kg
 
@@ -286,13 +302,12 @@ class PricingAgent:
         aisp_per_kg = total_aisp / quantity_kg
 
         mandi_cap_applied = False
-        if mandi_modal_per_kg and aisp_per_kg > mandi_modal_per_kg:
-            aisp_per_kg = mandi_modal_per_kg
-            total_aisp = aisp_per_kg * quantity_kg
-            scale = total_aisp / (subtotal + platform_fee + risk_buffer)
-            platform_fee *= scale
-            risk_buffer *= scale
-            mandi_cap_applied = True
+        if mandi_modal_per_kg:
+            mandi_cap = mandi_modal_per_kg * self.MANDI_CAP_MULTIPLIER
+            if aisp_per_kg > mandi_cap:
+                aisp_per_kg = mandi_cap
+                total_aisp = mandi_cap * quantity_kg
+                mandi_cap_applied = True
 
         return AISPCalculation(
             farmer_price_per_kg=farmer_price_per_kg,
@@ -305,24 +320,107 @@ class PricingAgent:
             platform_fee_pct=platform_fee_pct,
             risk_buffer=risk_buffer,
             risk_buffer_pct=self.RISK_BUFFER_PCT,
-            total_aisp=total_aisp,
-            aisp_per_kg=aisp_per_kg,
+            total_aisp=round(total_aisp, 2),
+            aisp_per_kg=round(aisp_per_kg, 2),
             mandi_cap_applied=mandi_cap_applied,
         )
     
     def _get_logistics_rate(self, distance_km: float) -> float:
-        """Get logistics rate based on distance."""
-        for min_d, max_d, rate in self.LOGISTICS_RATES:
+        """Get logistics rate (₹/km/kg) based on distance."""
+        for min_d, max_d, rate in self.LOGISTICS_RATE_TABLE:
             if min_d <= distance_km < max_d:
                 return rate
-        return self.LOGISTICS_RATES[-1][2]
+        return self.LOGISTICS_RATE_TABLE[-1][2]
+
+    def _get_deadhead_factor(self, route_utilization_pct: float) -> float:
+        """Get deadhead surcharge factor based on route utilization."""
+        for min_u, max_u, factor in self.DEADHEAD_FACTOR_TABLE:
+            if min_u <= route_utilization_pct < max_u:
+                return factor
+        return self.DEADHEAD_FACTOR_TABLE[-1][2]
     
     def _get_platform_fee(self, quantity_kg: float) -> float:
         """Get platform fee percentage based on quantity."""
-        for min_q, max_q, fee in self.PLATFORM_FEE_TIERS:
-            if min_q <= quantity_kg < max_q:
-                return fee
-        return self.PLATFORM_FEE_TIERS[-1][2]
+        if quantity_kg > 1000:
+            return 0.05
+        if quantity_kg >= 500:
+            return 0.06
+        if quantity_kg >= 100:
+            return 0.07
+        return 0.08
+
+    async def get_price_trend(
+        self,
+        commodity: str,
+        district: str = "Bangalore",
+        days: int = 30,
+    ) -> dict[str, float | str]:
+        """
+        Analyze trend using historical mandi prices.
+
+        Returns: trend, volatility_index, 7d_avg, 30d_avg, recommendation.
+        """
+        if days <= 0:
+            raise ValueError("days must be greater than 0")
+
+        history = await self.agmarknet.get_historical_prices(
+            commodity=commodity,
+            state="Karnataka",
+            district=district,
+            days=max(days, 30),
+        )
+        if not history:
+            return {
+                "trend": "stable",
+                "volatility_index": 0.0,
+                "7d_avg": 0.0,
+                "30d_avg": 0.0,
+                "recommendation": "hold_3_days",
+            }
+
+        sorted_history = sorted(history, key=lambda price: price.date)
+        prices_per_kg = [price.modal_price_per_kg for price in sorted_history[-days:]]
+        seven_day_window = prices_per_kg[-7:] if len(prices_per_kg) >= 7 else prices_per_kg
+        thirty_day_window = prices_per_kg[-30:] if len(prices_per_kg) >= 30 else prices_per_kg
+        avg_7d = mean(seven_day_window)
+        avg_30d = mean(thirty_day_window)
+        volatility = pstdev(prices_per_kg) / avg_30d if avg_30d > 0 else 0.0
+        volatility_index = min(max(volatility, 0.0), 1.0)
+
+        if avg_7d > avg_30d * 1.03:
+            trend = "rising"
+            recommendation = "sell_now"
+        elif avg_7d < avg_30d * 0.97:
+            trend = "falling"
+            recommendation = "hold_7_days"
+        else:
+            trend = "stable"
+            recommendation = "hold_3_days"
+
+        return {
+            "trend": trend,
+            "volatility_index": round(volatility_index, 4),
+            "7d_avg": round(avg_7d, 2),
+            "30d_avg": round(avg_30d, 2),
+            "recommendation": recommendation,
+        }
+
+    def get_seasonal_adjustment(self, commodity: str, month: int) -> float:
+        """Return seasonal multiplier for major Karnataka crops."""
+        if month < 1 or month > 12:
+            raise ValueError("month must be between 1 and 12")
+
+        seasonal_factors = {
+            "tomato": {5: 1.30, 6: 1.20, 7: 1.15, 11: 0.90, 12: 0.85},
+            "onion": {11: 0.80, 12: 0.82, 1: 0.88, 5: 1.10, 6: 1.15},
+            "potato": {2: 0.90, 3: 0.88, 9: 1.08, 10: 1.12},
+            "cabbage": {12: 0.85, 1: 0.86, 4: 1.10, 5: 1.12},
+            "cauliflower": {12: 0.86, 1: 0.88, 4: 1.10, 5: 1.15},
+        }
+
+        commodity_key = commodity.strip().lower()
+        commodity_factors = seasonal_factors.get(commodity_key, {})
+        return commodity_factors.get(month, 1.0)
     
     async def get_price_with_llm_analysis(
         self,

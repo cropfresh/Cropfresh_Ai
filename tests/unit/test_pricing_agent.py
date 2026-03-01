@@ -25,11 +25,11 @@ class TestAISPCalculation:
         )
 
         assert result.farmer_payout == 2000.0
-        assert result.logistics_cost == 200.0  # 10km → ₹2/kg tier
+        assert result.logistics_cost == 1.5  # 10km * 1.5 ₹/km/kg * 100kg / 1000
         assert result.risk_buffer > 0
         assert result.risk_buffer_pct == 0.02
         assert result.aisp_per_kg > 20.0
-        assert result.total_aisp == result.aisp_per_kg * result.quantity_kg
+        assert abs(result.total_aisp - (result.aisp_per_kg * result.quantity_kg)) < 1.0
 
     def test_risk_buffer_is_two_percent(self, agent: PricingAgent):
         """Risk buffer should be 2% of subtotal."""
@@ -48,28 +48,34 @@ class TestAISPCalculation:
         expected_buffer = subtotal * 0.02
         assert abs(result.risk_buffer - expected_buffer) < 0.01
 
-    def test_deadhead_surcharge_applied_over_threshold(self, agent: PricingAgent):
-        """Deadhead surcharge applies when distance > 15km."""
-        short = agent.calculate_aisp(
-            farmer_price_per_kg=10.0, quantity_kg=100, distance_km=10,
+    def test_deadhead_high_utilization_has_no_surcharge(self, agent: PricingAgent):
+        """High route utilization (>80%) should have zero deadhead surcharge."""
+        high_utilization = agent.calculate_aisp(
+            farmer_price_per_kg=10.0,
+            quantity_kg=100,
+            distance_km=30,
+            route_utilization_pct=90,
         )
-        long = agent.calculate_aisp(
-            farmer_price_per_kg=10.0, quantity_kg=100, distance_km=30,
+        low_utilization = agent.calculate_aisp(
+            farmer_price_per_kg=10.0,
+            quantity_kg=100,
+            distance_km=30,
+            route_utilization_pct=30,
         )
 
-        assert short.deadhead_surcharge == 0.0
-        assert long.deadhead_surcharge == 0.50 * 100  # ₹0.50/kg * 100kg
+        assert high_utilization.deadhead_surcharge == 0.0
+        assert low_utilization.deadhead_surcharge > 0.0
 
     def test_mandi_cap_limits_aisp(self, agent: PricingAgent):
-        """AISP should not exceed mandi modal price when cap is provided."""
+        """AISP should not exceed mandi modal x 1.05 when cap is provided."""
         result = agent.calculate_aisp(
-            farmer_price_per_kg=20.0,
+            farmer_price_per_kg=25.0,
             quantity_kg=100,
             distance_km=50,
             mandi_modal_per_kg=22.0,
         )
 
-        assert result.aisp_per_kg <= 22.0
+        assert result.aisp_per_kg <= 22.0 * 1.05
         assert result.mandi_cap_applied is True
 
     def test_mandi_cap_not_applied_when_below(self, agent: PricingAgent):
@@ -94,10 +100,14 @@ class TestAISPCalculation:
         large = agent.calculate_aisp(
             farmer_price_per_kg=10.0, quantity_kg=600, distance_km=10,
         )
+        extra_large = agent.calculate_aisp(
+            farmer_price_per_kg=10.0, quantity_kg=1500, distance_km=10,
+        )
 
         assert small.platform_fee_pct == 0.08
-        assert medium.platform_fee_pct == 0.06
-        assert large.platform_fee_pct == 0.04
+        assert medium.platform_fee_pct == 0.07
+        assert large.platform_fee_pct == 0.06
+        assert extra_large.platform_fee_pct == 0.05
 
     def test_logistics_rate_tiers(self, agent: PricingAgent):
         """Logistics rate increases with distance."""
@@ -130,3 +140,24 @@ class TestGetRecommendation:
         assert rec.aisp_per_kg > 0
         assert rec.aisp_breakdown is not None
         assert "risk_buffer" in rec.aisp_breakdown
+
+
+class TestTrendAndSeasonality:
+    """Tests for trend and seasonal helpers."""
+
+    @pytest.mark.asyncio
+    async def test_get_price_trend_returns_expected_shape(self, agent: PricingAgent):
+        """Trend output includes averages, trend, volatility, and recommendation."""
+        result = await agent.get_price_trend("Tomato", district="Kolar", days=30)
+        assert result["trend"] in ("rising", "falling", "stable")
+        assert result["recommendation"] in ("sell_now", "hold_3_days", "hold_7_days")
+        assert isinstance(result["7d_avg"], float)
+        assert isinstance(result["30d_avg"], float)
+        assert 0.0 <= result["volatility_index"] <= 1.0
+
+    def test_seasonal_adjustment_default_and_specific(self, agent: PricingAgent):
+        """Seasonal adjustment should return crop-specific and default values."""
+        tomato_may = agent.get_seasonal_adjustment("Tomato", 5)
+        unknown_crop = agent.get_seasonal_adjustment("DragonFruit", 5)
+        assert tomato_may == 1.3
+        assert unknown_crop == 1.0

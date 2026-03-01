@@ -164,6 +164,12 @@ class VoiceEntityExtractor:
         "ton": "ton",
         "tons": "ton",
     }
+
+    PRICE_PATTERNS = {
+        "hi": r"(?:₹|रुपये|रुपया|price|भाव)\s*(\d+(?:\.\d+)?)",
+        "kn": r"(?:₹|ರೂ|ಬೆಲೆ|price)\s*(\d+(?:\.\d+)?)",
+        "en": r"(?:₹|rs|rupees|price)\s*(\d+(?:\.\d+)?)",
+    }
     
     def __init__(self, llm_provider=None):
         """
@@ -280,6 +286,12 @@ class VoiceEntityExtractor:
             entities["quantity"] = float(match.group(1))
             unit_raw = match.group(2).lower()
             entities["unit"] = self.UNIT_MAP.get(unit_raw, unit_raw)
+
+        # Extract asking price
+        price_pattern = self.PRICE_PATTERNS.get(language, self.PRICE_PATTERNS["en"])
+        price_match = re.search(price_pattern, text, re.IGNORECASE)
+        if price_match:
+            entities["asking_price"] = float(price_match.group(1))
         
         return entities
     

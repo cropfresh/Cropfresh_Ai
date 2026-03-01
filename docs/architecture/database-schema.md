@@ -1,7 +1,11 @@
 # Database Schema — CropFresh AI
-> **Last Updated:** 2026-02-28
-> **DB:** Supabase (PostgreSQL)
-> **Status:** Schema defined, migrations pending
+> **Last Updated:** 2026-03-01
+> **DB:** Amazon RDS PostgreSQL + pgvector (replaces Supabase — [ADR-012](../decisions/ADR-012-aurora-pgvector-consolidation.md))
+> **Status:** Core tables implemented (`src/db/schema.sql`), business tables below are planned for Phase 4
+
+> [!NOTE]
+> **Current implementation** (`src/db/schema.sql`): `agri_knowledge` (pgvector), `users`, `chat_history`, `produce`
+> **Business tables below** are the full target schema for production — will be migrated in Phase 4.
 
 ---
 

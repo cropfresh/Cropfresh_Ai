@@ -1,6 +1,6 @@
 # 📊 PROJECT_STATUS.md — CropFresh AI Current State
 
-> **Last Updated:** 2026-02-28 (21:14 IST)
+> **Last Updated:** 2026-03-01 (14:15 IST)
 > **Version/Tag:** `v0.5-business-aligned`
 > **Current Sprint:** Sprint 05 — Core Agent Completion (Phase 1 of Upgrade)
 > **Sprint Status:** 🟢 Active (starts 2026-03-01)
@@ -27,16 +27,17 @@ Build India's most trusted AI-powered agri-marketplace with:
 | Memory System (Redis) | ✅ Stable | ✅ OK |
 | Agronomy Agent | ✅ Stable | ✅ Good, needs ADCL integration |
 | Commerce Agent | ✅ Stable | 🟡 AISP math exists, not fully wired |
-| **Pricing Agent (DPLE)** | 🟡 Partial | ❌ Missing: deadhead factor, risk buffer, mandi cap |
+| **Buyer Matching Agent** | ✅ Updated | ✅ Task 2 complete: 5-factor scoring + reverse matching + cache + routing |
+| **Pricing Agent (DPLE)** | ✅ Updated | ✅ Task 1 complete: deadhead + 2% risk buffer + mandi cap + trend/seasonality |
 | **Voice Agent** | 🟡 Partial | ❌ All major intents have `# TODO` stubs |
 | Pipecat Voice Pipeline | 🟡 In Progress | ❌ WebSocket not fully tested |
-| **Matchmaking Engine** | ❌ Stub | ❌ `NotImplementedError` — highest priority |
-| **CV-QG Vision Agent** | ❌ Not Started | ❌ YOLOv8 code not written |
+| **Matchmaking Engine** | 🟡 In Progress | ✅ Buyer-side matching core implemented; full cluster optimization pending |
+| **CV-QG Vision Agent** | ✅ Task 3 Complete | ✅ Quality pipeline + fallback + HITL + digital twin linkage + supervisor wiring |
 | **Digital Twin Engine** | ❌ Not Started | ❌ Critical for <2% dispute target |
 | **DPLE Logistics Routing** | ❌ Not Started | ❌ Multi-pickup clustering missing |
 | **ADCL Agent** | ❌ Not Started | ❌ Weekly demand list generator |
 | APMC Live Scraper | ❌ Not Started | ❌ eNAM registration still pending |
-| Supabase DB Schema | ❌ Not Started | ❌ All transactional tables missing |
+| RDS PostgreSQL Schema | ✅ Created | ✅ `schema.sql` + `postgres_client.py` ready |
 | Vision Agent (ai/vision/) | ❌ Not Started | ❌ Only placeholder exists |
 | RAGAS Evaluation | ❌ Not Started | ❌ No golden dataset yet |
 
@@ -50,18 +51,18 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 | # | Task | File | Priority |
 |---|------|------|----------|
-| 1 | Fix Pricing Agent (deadhead + risk buffer + mandi cap) | `src/agents/pricing_agent.py` | 🔴 P0 |
-| 2 | Implement Matchmaking Engine | `src/agents/matchmaking_agent.py` | 🔴 P0 |
-| 3 | Implement Quality Assessment Agent | `src/agents/quality_assessment/agent.py` | 🔴 P0 |
+| 1 | ✅ Fix Pricing Agent (deadhead + risk buffer + mandi cap + trend/seasonality) | `src/agents/pricing_agent.py` | 🔴 P0 |
+| 2 | ✅ Implement Buyer Matching Engine core (5-factor score + reverse matching + cache) | `src/agents/buyer_matching/agent.py` | 🔴 P0 |
+| 3 | ✅ Implement Quality Assessment Agent | `src/agents/quality_assessment/agent.py` | 🔴 P0 |
 | 4 | Wire Voice Agent TODOs to real agents | `src/agents/voice_agent.py` | 🔴 P0 |
-| 5 | Write unit tests for all Phase 1 agents | `tests/unit/` | 🟠 P1 |
-| 6 | Create Supabase schema migrations | `config/supabase_schema.sql` | 🟠 P1 |
+| 5 | ✅ Write unit tests for quality + routing increment | `tests/unit/` | 🟠 P1 |
+| 6 | ~~Create Supabase schema~~ → RDS schema done | `src/db/schema.sql` | ✅ Done |
 | 7 | Add 5 new voice intents | `src/agents/voice_agent.py` | 🟡 P2 |
 
 ### Sprint KPIs
 - [ ] 0 `NotImplementedError` in core agents
-- [ ] AISP calculation includes risk buffer
-- [ ] Matching returns at least 1 valid farmer→buyer pair in unit test
+- [x] AISP calculation includes risk buffer
+- [x] Matching returns at least 1 valid farmer→buyer pair in unit test
 - [ ] Voice `create_listing` intent creates a DB record (stub OK)
 - [ ] Test coverage increases from 35% → 45%
 
@@ -74,7 +75,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 | **Phase 1** (Wk 1–4) | Core 5 agents → working | 0 stubs, unit tests | 🟢 Active |
 | **Phase 2** (Wk 3–6) | CV-QG Vision + Digital Twin | <500ms grading | 📋 Planned |
 | **Phase 3** (Wk 5–8) | DPLE Logistics Routing | <₹2.5/kg, >70% util | 📋 Planned |
-| **Phase 4** (Wk 7–10) | Supabase + Live Scraper | Real mandi data | 📋 Planned |
+| **Phase 4** (Wk 7–10) | RDS PostgreSQL + Live Scraper | Real mandi data | 📋 Planned |
 | **Phase 5** (Wk 9–12) | Voice in 10+ languages + ADCL | Zero literacy barrier | 📋 Planned |
 | **Phase 6** (Wk 12–18) | Production hardening | 99.5% uptime | 📋 Planned |
 
@@ -85,7 +86,8 @@ Build India's most trusted AI-powered agri-marketplace with:
 | Blocker | Impact | Owner |
 |---------|--------|-------|
 | eNAM API registration pending | Live mandi data blocked | external |
-| Supabase schema not migrated | Farmer/listing DB flows blocked | Sprint 05 |
+| AWS Free Tier limit blocks RDS creation | Production DB not provisioned yet | manual (upgrade account) |
+| pgvector not installed locally (needs VS Build Tools) | Local vector search uses Qdrant fallback | dev workaround |
 | Pipecat WebSocket untested on Windows | Voice streaming broken | Sprint 05 |
 | YOLOv8 model weights not downloaded | CV-QG grading blocked | Phase 2 |
 
@@ -95,6 +97,14 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 | Date | Milestone |
 |------|-----------|
+| **Mar 01, 2026** | **Task 3 complete — Quality Assessment Agent**: A+/A/B/C grading pipeline, HITL threshold at `0.7`, digital twin assessment IDs, fallback mode without model weights, and supervisor/chat integration with passing tests |
+| **Mar 01, 2026** | **Live streaming static UI validated**: ChatGPT-style token streaming UI shipped on `static/voice_realtime.html` using `POST /api/v1/chat/stream`, with runtime verification for health, static serving, and SSE events |
+| **Mar 01, 2026** | **Task 2 complete — Buyer Matching Engine**: 5-factor weighted scoring, haversine proximity, reverse matching, 5-min cache, and supervisor routing integration with passing unit tests |
+| **Mar 01, 2026** | **Task 1 complete — Pricing Agent (DPLE)**: implemented utilization-based deadhead, fixed 2% risk buffer, mandi cap at `modal × 1.05`, plus trend and seasonality methods with passing unit tests |
+| **Mar 01, 2026** | **LLM provider migration** — Groq → AWS Bedrock (dual-provider strategy with `BedrockProvider`) |
+| **Mar 01, 2026** | **Database migration started** — Qdrant+Supabase → RDS PostgreSQL+pgvector (`AuroraPostgresClient`, `schema.sql`) |
+| **Mar 01, 2026** | **AWS infra provisioned** — subnet group + security group created, RDS blocked by free tier |
+| **Mar 01, 2026** | **Local PostgreSQL setup** — `setup_local_db.sql` for dev, Qdrant fallback for vectors |
 | Feb 28, 2026 | **Business model analysis complete** — PDF mapped to exact code gaps |
 | Feb 28, 2026 | **Architecture docs updated** — ARCHITECTURE.md v0.5 with 5-agent model |
 | Feb 28, 2026 | **Upgrade implementation plan created** — 6 phases, 18 weeks |
@@ -114,11 +124,10 @@ Build India's most trusted AI-powered agri-marketplace with:
 | Backend | FastAPI + Python 3.11+ |
 | AI Framework | LangGraph + LangChain |
 | Vision | YOLOv8 + ViT-B/16 + ONNX Runtime |
-| Vector DB | Qdrant Cloud |
+| **LLM (Production)** | **AWS Bedrock — Claude Sonnet 4** |
+| **LLM (Router/Dev)** | **Groq — Llama-3.1-8B (~80ms)** |
+| **Primary DB + Vectors** | **RDS PostgreSQL + pgvector** (replaces Supabase + Qdrant) |
 | Graph DB | Neo4j |
-| Primary DB | Supabase (PostgreSQL) |
-| LLM (Generation) | Gemini Flash 2.0 + Groq Llama-3.3-70B |
-| LLM (Router) | Groq Llama-3.1-8B-Instant (~80ms, ~₹0.001/call) |
 | Scraping | Scrapling + Camoufox (stealth) |
 | Voice | Pipecat + Edge-TTS + IndicWhisper |
 | Caching | Redis |
@@ -136,7 +145,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 | AI grading accuracy | >95% (Month 12) | N/A (Phase 2) | — |
 | Dispute rate | <2% | — | — |
 | Voice P95 latency | <2s | <3s | ~4.5s (est.) |
-| AISP accuracy | ±5% of real landed cost | Correct formula | Risk buffer missing |
+| AISP accuracy | ±5% of real landed cost | Correct formula | Formula aligned (Task 1 complete) |
 | Logistics cost/kg | <₹2.5/kg | — | — |
 | Agent routing accuracy | >90% | >88% | ~87% (mock) |
 | API cost per query avg | <₹0.25 | <₹0.30 | ~₹0.44 |
@@ -156,7 +165,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 | **Architecture (v0.5)** | `docs/architecture/ARCHITECTURE.md` |
 | **Upgrade Plan** | `C:/Users/shrik/.gemini/antigravity/brain/.../implementation_plan.md` |
 | Current Sprint | `tracking/sprints/sprint-05-core-agents.md` |
-| Architecture Decisions | `docs/decisions/ADR-*.md` (ADR-001 to ADR-010) |
+| Architecture Decisions | `docs/decisions/ADR-*.md` (ADR-001 to ADR-012) |
 | RAG Architecture | `docs/rag_architecture.md` |
 | Test Strategy | `TESTING/STRATEGY.md` |
 | AI Agent Instructions | `AGENTS.md` |

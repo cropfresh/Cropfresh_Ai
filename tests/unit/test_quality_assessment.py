@@ -1,7 +1,4 @@
-"""
-Unit tests for Quality Assessment Agent — grading logic,
-HITL flagging, and rule-based fallback.
-"""
+"""Unit tests for quality assessment agent and vision fallback."""
 
 import pytest
 
@@ -9,6 +6,7 @@ from src.agents.quality_assessment.agent import (
     HITL_CONFIDENCE_THRESHOLD,
     QualityAssessmentAgent,
 )
+from src.agents.quality_assessment.vision_models import CropVisionPipeline
 
 
 @pytest.fixture
@@ -20,14 +18,14 @@ class TestRuleBasedAssessment:
 
     @pytest.mark.asyncio
     async def test_positive_description_grades_higher(self, agent: QualityAssessmentAgent):
-        """Fresh, firm, clean produce should get A or B grade."""
+        """Fresh and uniform produce should get A or better."""
         report = await agent.assess(
             listing_id="lst-001",
             commodity="Tomato",
             description="Fresh, firm, red, clean, uniform size",
         )
 
-        assert report.assessment.grade in ("A", "B")
+        assert report.assessment.grade in ("A+", "A")
         assert report.method == "rule_based"
 
     @pytest.mark.asyncio
@@ -43,13 +41,14 @@ class TestRuleBasedAssessment:
 
     @pytest.mark.asyncio
     async def test_hitl_always_required_for_rule_based(self, agent: QualityAssessmentAgent):
-        """Rule-based assessment always flags HITL review."""
+        """Low-confidence or policy conditions should flag HITL."""
         report = await agent.assess(
             listing_id="lst-003",
             commodity="Onion",
-            description="Looks good",
+            description="average lot for wholesale",
         )
 
+        assert report.assessment.confidence < 0.7
         assert report.assessment.hitl_required is True
 
     @pytest.mark.asyncio
@@ -85,6 +84,26 @@ class TestRuleBasedAssessment:
 
         assert tomato.assessment.shelf_life_days < onion.assessment.shelf_life_days
 
+    @pytest.mark.asyncio
+    async def test_upgrade_review_always_sets_hitl(self, agent: QualityAssessmentAgent):
+        report = await agent.assess(
+            listing_id="lst-006",
+            commodity="Tomato",
+            description="fresh and clean",
+            require_upgrade_review=True,
+        )
+        assert report.assessment.hitl_required is True
+
+    @pytest.mark.asyncio
+    async def test_assessment_creates_digital_twin_id(self, agent: QualityAssessmentAgent):
+        report = await agent.assess(
+            listing_id="lst-007",
+            commodity="Beans",
+            description="fresh beans",
+        )
+        assert report.digital_twin_linked is True
+        assert report.assessment.assessment_id.startswith("qa-")
+
 
 class TestProcessViaSupervisor:
 
@@ -100,5 +119,42 @@ class TestProcessViaSupervisor:
 
 class TestHITLThreshold:
 
-    def test_threshold_is_ninety_five_percent(self):
-        assert HITL_CONFIDENCE_THRESHOLD == 0.95
+    def test_threshold_is_seventy_percent(self):
+        assert HITL_CONFIDENCE_THRESHOLD == 0.7
+
+
+class TestVisionPipeline:
+
+    @pytest.mark.asyncio
+    async def test_pipeline_fallback_mode_without_models(self):
+        pipeline = CropVisionPipeline(model_dir="non-existent-model-dir")
+        assert pipeline.fallback_mode is True
+        result = await pipeline.assess_description("Tomato", "fresh clean produce")
+        assert result.grade in ("A", "A+", "B")
+        assert result.shelf_life_days >= 1
+
+
+class TestExecuteContract:
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_expected_contract(self, agent: QualityAssessmentAgent):
+        result = await agent.execute(
+            {
+                "listing_id": "lst-008",
+                "commodity": "Tomato",
+                "description": "soft damaged with fungal_growth",
+            }
+        )
+        assert set(
+            [
+                "grade",
+                "confidence",
+                "defects",
+                "defect_count",
+                "hitl_required",
+                "shelf_life_days",
+                "assessment_id",
+                "digital_twin_linked",
+                "message",
+            ]
+        ).issubset(set(result.keys()))

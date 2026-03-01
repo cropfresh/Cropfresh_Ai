@@ -42,6 +42,14 @@ class TestRuleBasedRouting:
         decision = supervisor._route_rule_based("How do I register on CropFresh app?")
         assert decision.agent_name == "platform_agent"
 
+    def test_buyer_matching_keywords(self, supervisor):
+        decision = supervisor._route_rule_based("Can you find buyer for my tomato listing?")
+        assert decision.agent_name == "buyer_matching_agent"
+
+    def test_quality_assessment_keywords(self, supervisor):
+        decision = supervisor._route_rule_based("Please do quality check for tomato defects and shelf life")
+        assert decision.agent_name == "quality_assessment_agent"
+
     def test_scraping_keywords(self, supervisor):
         decision = supervisor._route_rule_based("Get the current live price from Agmarknet today")
         assert decision.agent_name == "web_scraping_agent"

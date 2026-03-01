@@ -1,26 +1,14 @@
 """
 Quality Assessment Agent (CV-QG)
 ================================
-AI-powered produce grading with HITL (Human-In-The-Loop) fallback.
-
-Business Logic (from ARCHITECTURE.md):
-  - Grade produce into A / B / C using image analysis
-  - If AI confidence >= 95% → auto-grade
-  - If AI confidence < 95%  → flag for HITL review by field agent
-  - Create Digital Twin record for dispute resolution
-  - Detect defects: bruise, worm_hole, colour_off, size_irregular
-
-Phase 2 adds YOLOv8/ViT inference; this version uses LLM-based
-analysis as the initial working implementation.
-
-Author: CropFresh AI Team
-Version: 2.0.0
+AI-powered produce grading with HITL fallback and digital twin linkage.
 """
 
 from __future__ import annotations
 
 import base64
 from datetime import datetime
+from uuid import uuid4
 from typing import Any, Optional
 
 from loguru import logger
@@ -29,19 +17,16 @@ from pydantic import BaseModel, Field
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.memory.state_manager import AgentExecutionState
 from src.orchestrator.llm_provider import BaseLLMProvider
+from src.agents.quality_assessment.vision_models import CropVisionPipeline, QualityResult
 
 
 # * ═══════════════════════════════════════════════════════════════
 # * DATA MODELS
 # * ═══════════════════════════════════════════════════════════════
 
-VALID_GRADES = ("A", "B", "C", "Unverified")
-DEFECT_TYPES = (
-    "bruise", "worm_hole", "colour_off", "size_irregular",
-    "over_ripe", "under_ripe", "fungal", "mechanical_damage",
-)
+VALID_GRADES = ("A+", "A", "B", "C")
 
-HITL_CONFIDENCE_THRESHOLD = 0.95
+HITL_CONFIDENCE_THRESHOLD = 0.7
 
 
 class GradeAssessment(BaseModel):
@@ -52,8 +37,10 @@ class GradeAssessment(BaseModel):
     confidence: float
     hitl_required: bool
     defects_detected: list[str] = Field(default_factory=list)
+    defect_count: int = 0
     shelf_life_days: int = 0
     reasoning: str = ""
+    assessment_id: str = ""
     assessed_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -61,18 +48,8 @@ class QualityReport(BaseModel):
     """Full quality report that can be stored as a Digital Twin."""
     assessment: GradeAssessment
     image_count: int = 0
-    method: str = "llm"  # "llm" | "yolo_vit" | "manual"
-
-
-# * ═══════════════════════════════════════════════════════════════
-# * GRADING RULES (rule-based fallback when no LLM / no images)
-# * ═══════════════════════════════════════════════════════════════
-
-COMMODITY_SHELF_LIFE = {
-    "tomato": 7, "onion": 30, "potato": 45, "beans": 5,
-    "cabbage": 14, "carrot": 21, "brinjal": 5, "chilli": 10,
-    "capsicum": 7, "cucumber": 5, "peas": 3, "cauliflower": 5,
-}
+    method: str = "manual"  # "vision" | "rule_based" | "manual"
+    digital_twin_linked: bool = False
 
 
 class QualityAssessmentAgent(BaseAgent):
@@ -100,6 +77,8 @@ class QualityAssessmentAgent(BaseAgent):
             kb_categories=["agronomy"],
         )
         super().__init__(config=config, llm=llm, **kwargs)
+        self.vision_pipeline = CropVisionPipeline()
+        self._digital_twin_store: dict[str, QualityReport] = {}
 
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
         return """You are CropFresh's Quality Assessment Agent.
@@ -108,7 +87,7 @@ determine the quality grade and any defects.
 
 Respond ONLY with a JSON object:
 {
-    "grade": "A" | "B" | "C",
+    "grade": "A+" | "A" | "B" | "C",
     "confidence": 0.0-1.0,
     "defects": ["defect_type", ...],
     "shelf_life_days": integer,
@@ -116,12 +95,10 @@ Respond ONLY with a JSON object:
 }
 
 Grade definitions:
-  A — Premium: uniform size/colour, zero visible defects, firm texture
-  B — Standard: minor cosmetic issues, 1-2 small defects, still fresh
-  C — Economy: multiple defects, softening, colour variation, short shelf life
-
-Valid defect types: bruise, worm_hole, colour_off, size_irregular,
-over_ripe, under_ripe, fungal, mechanical_damage"""
+  A+ — Export premium quality, no visible defects
+  A  — Retail quality, minor cosmetic issues only
+  B  — Wholesale quality, visible but acceptable defects
+  C  — Processing quality, multiple defects"""
 
     async def process(
         self,
@@ -151,12 +128,34 @@ over_ripe, under_ripe, fungal, mechanical_damage"""
             steps=["llm_quality_analysis"],
         )
 
+    async def execute(self, input_data: dict[str, Any]) -> dict[str, Any]:
+        image_b64 = input_data.get("image_b64")
+        report = await self.assess(
+            listing_id=input_data.get("listing_id", f"lst-{uuid4().hex[:8]}"),
+            commodity=input_data.get("commodity", "tomato"),
+            description=input_data.get("description", ""),
+            image_b64=image_b64,
+            require_upgrade_review=bool(input_data.get("require_upgrade_review", False)),
+        )
+        return {
+            "grade": report.assessment.grade,
+            "confidence": report.assessment.confidence,
+            "defects": report.assessment.defects_detected,
+            "defect_count": report.assessment.defect_count,
+            "hitl_required": report.assessment.hitl_required,
+            "shelf_life_days": report.assessment.shelf_life_days,
+            "assessment_id": report.assessment.assessment_id,
+            "digital_twin_linked": report.digital_twin_linked,
+            "message": self._format_result_message(report.assessment, report.assessment.commodity),
+        }
+
     async def assess(
         self,
         listing_id: str,
         commodity: str,
         description: str = "",
         image_b64: Optional[str] = None,
+        require_upgrade_review: bool = False,
     ) -> QualityReport:
         """
         Perform a quality assessment on a produce listing.
@@ -170,127 +169,57 @@ over_ripe, under_ripe, fungal, mechanical_damage"""
         Returns:
             QualityReport with grade, confidence, and HITL flag
         """
-        if self.llm and description:
-            return await self._assess_with_llm(
-                listing_id, commodity, description, image_b64,
-            )
-
-        return self._assess_rule_based(listing_id, commodity, description)
-
-    async def _assess_with_llm(
-        self,
-        listing_id: str,
-        commodity: str,
-        description: str,
-        image_b64: Optional[str],
-    ) -> QualityReport:
-        """Grade using LLM analysis."""
-        import json as json_mod
-
-        prompt = f"Commodity: {commodity}\nCondition: {description}"
+        image_data: Optional[bytes] = None
         if image_b64:
-            prompt += "\n(Photo provided — analyze based on description)"
+            try:
+                image_data = base64.b64decode(image_b64)
+            except Exception:
+                image_data = None
 
-        messages = [
-            {"role": "system", "content": self._get_system_prompt()},
-            {"role": "user", "content": prompt},
-        ]
-
-        try:
-            raw = await self.generate_with_llm(messages, temperature=0.1)
-
-            text = raw.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-
-            data = json_mod.loads(text)
-
-            grade = data.get("grade", "C")
-            if grade not in VALID_GRADES:
-                grade = "C"
-
-            confidence = float(data.get("confidence", 0.5))
-            defects = [d for d in data.get("defects", []) if d in DEFECT_TYPES]
-            shelf_life = int(data.get("shelf_life_days", self._default_shelf_life(commodity)))
-            reasoning = data.get("reasoning", "")
-
-            hitl = confidence < HITL_CONFIDENCE_THRESHOLD
-
-            assessment = GradeAssessment(
-                listing_id=listing_id,
-                commodity=commodity,
-                grade=grade,
-                confidence=confidence,
-                hitl_required=hitl,
-                defects_detected=defects,
-                shelf_life_days=shelf_life,
-                reasoning=reasoning,
-            )
-
-            logger.info(
-                "Quality assessed: {} grade={} conf={:.2f} hitl={}",
-                commodity, grade, confidence, hitl,
-            )
-
-            return QualityReport(
-                assessment=assessment,
-                image_count=1 if image_b64 else 0,
-                method="llm",
-            )
-
-        except Exception as exc:
-            logger.warning("LLM quality assessment failed: {}", exc)
-            return self._assess_rule_based(listing_id, commodity, description)
-
-    def _assess_rule_based(
-        self,
-        listing_id: str,
-        commodity: str,
-        description: str,
-    ) -> QualityReport:
-        """Fallback rule-based grading from keywords in description."""
-        desc_lower = description.lower()
-
-        defects: list[str] = []
-        for defect in DEFECT_TYPES:
-            keyword = defect.replace("_", " ")
-            if keyword in desc_lower:
-                defects.append(defect)
-
-        negative_kw = ["soft", "damaged", "rotten", "old", "spotted", "brown"]
-        positive_kw = ["fresh", "firm", "red", "green", "clean", "uniform", "new"]
-
-        neg_count = sum(1 for kw in negative_kw if kw in desc_lower)
-        pos_count = sum(1 for kw in positive_kw if kw in desc_lower)
-
-        if neg_count == 0 and (pos_count >= 2 or not description):
-            grade, confidence = "B", 0.55
-        elif pos_count > neg_count:
-            grade, confidence = "B", 0.50
-        elif neg_count > 0:
-            grade, confidence = "C", 0.45
+        if image_data:
+            quality_result = await self.vision_pipeline.assess_quality(image_data, commodity, description)
+            image_count = 1
         else:
-            grade, confidence = "B", 0.40
+            quality_result = await self.vision_pipeline.assess_description(commodity, description)
+            image_count = 0
 
-        if len(defects) >= 3:
-            grade, confidence = "C", 0.50
-        elif len(defects) == 0 and pos_count >= 3:
-            grade, confidence = "A", 0.50
+        hitl_required = (
+            quality_result.hitl_required
+            or require_upgrade_review
+            or quality_result.confidence < HITL_CONFIDENCE_THRESHOLD
+            or quality_result.grade == "A+"
+        )
 
+        assessment_id = f"qa-{uuid4().hex[:12]}"
         assessment = GradeAssessment(
             listing_id=listing_id,
             commodity=commodity,
-            grade=grade,
-            confidence=confidence,
-            hitl_required=True,  # rule-based always flags HITL
-            defects_detected=defects,
-            shelf_life_days=self._default_shelf_life(commodity),
-            reasoning="Rule-based assessment — HITL review recommended",
+            grade=quality_result.grade if quality_result.grade in VALID_GRADES else "C",
+            confidence=quality_result.confidence,
+            hitl_required=hitl_required,
+            defects_detected=quality_result.defects,
+            defect_count=quality_result.defect_count,
+            shelf_life_days=quality_result.shelf_life_days,
+            reasoning=self._build_reasoning(quality_result, require_upgrade_review),
+            assessment_id=assessment_id,
         )
 
-        return QualityReport(assessment=assessment, method="rule_based")
+        report = QualityReport(
+            assessment=assessment,
+            image_count=image_count,
+            method=quality_result.assessment_mode,
+            digital_twin_linked=True,
+        )
+        self._digital_twin_store[assessment_id] = report
+        logger.info(
+            "Quality assessed: {} grade={} conf={:.2f} hitl={} twin={}",
+            commodity,
+            assessment.grade,
+            assessment.confidence,
+            assessment.hitl_required,
+            assessment_id,
+        )
+        return report
 
     def _rule_based_response(self, query: str) -> str:
         """Quick text response for supervisor routing."""
@@ -301,5 +230,21 @@ over_ripe, under_ripe, fungal, mechanical_damage"""
         )
 
     @staticmethod
-    def _default_shelf_life(commodity: str) -> int:
-        return COMMODITY_SHELF_LIFE.get(commodity.lower(), 7)
+    def _build_reasoning(result: QualityResult, require_upgrade_review: bool) -> str:
+        reasons = [f"AI grade {result.grade} at confidence {result.confidence:.2f}"]
+        if result.defects:
+            reasons.append(f"Defects: {', '.join(result.defects)}")
+        if require_upgrade_review:
+            reasons.append("Farmer requested grade upgrade review")
+        if result.hitl_required:
+            reasons.append("HITL required by quality policy")
+        return ". ".join(reasons)
+
+    @staticmethod
+    def _format_result_message(assessment: GradeAssessment, commodity: str) -> str:
+        return (
+            f"{commodity.title()} graded as {assessment.grade} "
+            f"(confidence {assessment.confidence:.2f}). "
+            f"Shelf life estimate: {assessment.shelf_life_days} days. "
+            f"HITL required: {'yes' if assessment.hitl_required else 'no'}."
+        )

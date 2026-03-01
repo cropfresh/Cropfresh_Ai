@@ -3,1043 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CropFresh RAG Test Lab — Sprint 05</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary: #22c55e;
-      --primary-dark: #16a34a;
-      --primary-glow: rgba(34,197,94,0.25);
-      --accent: #0ea5e9;
-      --accent-glow: rgba(14,165,233,0.2);
-      --amber: #f59e0b;
-      --amber-glow: rgba(245,158,11,0.2);
-      --purple: #8b5cf6;
-      --purple-glow: rgba(139,92,246,0.2);
-      --red: #ef4444;
-      --bg: #060d1a;
-      --bg-card: rgba(15,25,45,0.9);
-      --bg-glass: rgba(255,255,255,0.04);
-      --border: rgba(255,255,255,0.08);
-      --border-bright: rgba(255,255,255,0.15);
-      --text: #f1f5f9;
-      --muted: #64748b;
-      --mono: 'JetBrains Mono', monospace;
-    }
-
-    * { margin:0; padding:0; box-sizing:border-box; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* ── Animated BG ─────────────────────────────────── */
-    .bg-mesh {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background:
-        radial-gradient(ellipse 60% 40% at 10% 10%, rgba(34,197,94,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 50% at 90% 80%, rgba(14,165,233,0.1) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 60% at 50% 40%, rgba(139,92,246,0.05) 0%, transparent 70%);
-      animation: meshPulse 10s ease-in-out infinite alternate;
-    }
-    @keyframes meshPulse {
-      from { opacity: 0.8; }
-      to   { opacity: 1.2; }
-    }
-
-    /* Grid overlay */
-    .bg-grid {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-      background-size: 48px 48px;
-    }
-
-    /* ── Layout ──────────────────────────────────────── */
-    .page { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
-
-    /* ── Header ─────────────────────────────────────── */
-    .header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 24px;
-      background: rgba(15,25,45,0.8);
-      backdrop-filter: blur(24px);
-      border: 1px solid var(--border-bright);
-      border-radius: 20px;
-      margin-bottom: 28px;
-    }
-    .header-left { display: flex; align-items: center; gap: 14px; }
-    .logo {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 0 20px var(--primary-glow);
-    }
-    .header-title h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; }
-    .header-title p { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
-
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    .server-pill {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 16px;
-      border-radius: 100px;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      background: var(--bg-glass);
-      transition: all 0.3s;
-    }
-    .server-pill.online { border-color: rgba(34,197,94,0.4); color: var(--primary); background: rgba(34,197,94,0.08); }
-    .server-pill.offline { border-color: rgba(239,68,68,0.4); color: var(--red); background: rgba(239,68,68,0.08); }
-    .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: currentColor;
-      animation: blink 2s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    /* ── Tab Nav ─────────────────────────────────────── */
-    .tab-nav {
-      display: flex; gap: 6px;
-      background: rgba(15,25,45,0.6);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 6px;
-      margin-bottom: 24px;
-    }
-    .tab {
-      flex: 1; padding: 10px 0;
-      background: transparent;
-      border: none; cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.8125rem; font-weight: 500;
-      color: var(--muted);
-      border-radius: 10px;
-      transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .tab:hover { color: var(--text); background: var(--bg-glass); }
-    .tab.active {
-      background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(14,165,233,0.1));
-      color: var(--primary);
-      border: 1px solid rgba(34,197,94,0.3);
-      box-shadow: 0 4px 20px var(--primary-glow);
-    }
-
-    /* ── Panel ───────────────────────────────────────── */
-    .panel { display: none; }
-    .panel.active { display: flex; flex-direction: column; gap: 20px; }
-
-    /* ── Cards ───────────────────────────────────────── */
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      overflow: hidden;
-      backdrop-filter: blur(16px);
-    }
-    .card-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .card-title {
-      font-size: 0.875rem; font-weight: 600;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .card-badge {
-      padding: 2px 10px;
-      border-radius: 100px;
-      font-size: 0.6875rem; font-weight: 600;
-      letter-spacing: 0.05em; text-transform: uppercase;
-    }
-    .card-badge.sprint05 { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
-    .card-badge.sprint06 { background: rgba(14,165,233,0.1); color: #38bdf8; border: 1px solid rgba(14,165,233,0.2); }
-    .card-badge.core { background: rgba(34,197,94,0.1); color: var(--primary); border: 1px solid rgba(34,197,94,0.25); }
-
-    .card-body { padding: 20px; }
-
-    /* ── Form Elements ────────────────────────────────── */
-    .form-group { margin-bottom: 14px; }
-    .form-group label {
-      display: block; font-size: 0.75rem; font-weight: 600;
-      color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-    input[type="text"], textarea, select {
-      width: 100%;
-      padding: 12px 16px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 0.9rem;
-      outline: none;
-      transition: all 0.2s;
-      resize: vertical;
-    }
-    input[type="text"]:focus, textarea:focus, select:focus {
-      border-color: rgba(34,197,94,0.5);
-      background: rgba(34,197,94,0.05);
-      box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
-    }
-    select option { background: #0f1929; }
-
-    .toggle-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 0;
-    }
-    .toggle-row span { font-size: 0.875rem; color: var(--muted); }
-    .toggle {
-      position: relative; width: 40px; height: 22px;
-    }
-    .toggle input { display: none; }
-    .toggle-track {
-      position: absolute; inset: 0;
-      background: rgba(255,255,255,0.1);
-      border-radius: 100px; cursor: pointer;
-      transition: all 0.3s;
-    }
-    .toggle input:checked + .toggle-track { background: var(--primary); }
-    .toggle-thumb {
-      position: absolute; top: 3px; left: 3px;
-      width: 16px; height: 16px;
-      background: white; border-radius: 50%;
-      transition: transform 0.3s;
-      pointer-events: none;
-    }
-    .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
-
-    .btn {
-      padding: 12px 24px;
-      border: none; border-radius: 12px;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.875rem; font-weight: 600;
-      cursor: pointer; transition: all 0.2s;
-      display: inline-flex; align-items: center; gap: 8px;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white;
-      box-shadow: 0 4px 20px var(--primary-glow);
-    }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px var(--primary-glow); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-secondary {
-      background: var(--bg-glass);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-    .btn-secondary:hover { border-color: var(--border-bright); }
-
-    /* ── Result Area ─────────────────────────────────── */
-    .result-box {
-      margin-top: 16px;
-      padding: 18px;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      min-height: 80px;
-      display: none;
-    }
-    .result-box.visible { display: block; }
-
-    /* ── Strategy Badge ──────────────────────────────── */
-    .strategy-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 8px 16px; border-radius: 100px;
-      font-size: 0.875rem; font-weight: 700;
-      margin-bottom: 12px;
-      border: 2px solid;
-    }
-    .route-direct_llm    { background:rgba(148,163,184,0.1); color:#94a3b8; border-color:rgba(148,163,184,0.3); }
-    .route-vector_only   { background:rgba(34,197,94,0.1); color:var(--primary); border-color:rgba(34,197,94,0.4); }
-    .route-graph_traversal { background:rgba(139,92,246,0.1); color:#a78bfa; border-color:rgba(139,92,246,0.4); }
-    .route-live_price_api { background:rgba(245,158,11,0.1); color:var(--amber); border-color:rgba(245,158,11,0.4); }
-    .route-weather_api   { background:rgba(14,165,233,0.1); color:var(--accent); border-color:rgba(14,165,233,0.4); }
-    .route-browser_scrape { background:rgba(239,68,68,0.1); color:#f87171; border-color:rgba(239,68,68,0.4); }
-    .route-multimodal    { background:rgba(236,72,153,0.1); color:#f472b6; border-color:rgba(236,72,153,0.4); }
-    .route-full_agentic  { background:rgba(251,146,60,0.1); color:#fb923c; border-color:rgba(251,146,60,0.4); }
-
-    /* ── Stats Row ───────────────────────────────────── */
-    .stats-row {
-      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
-    }
-    .stat-chip {
-      padding: 4px 12px; border-radius: 8px;
-      font-size: 0.75rem; font-family: var(--mono);
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      color: var(--muted);
-    }
-    .stat-chip strong { color: var(--text); }
-
-    /* ── Confidence Bar ──────────────────────────────── */
-    .conf-bar { background: rgba(255,255,255,0.08); border-radius: 4px; height: 6px; margin: 8px 0; overflow: hidden; }
-    .conf-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width 0.6s ease; }
-
-    /* ── Mono Block ──────────────────────────────────── */
-    .mono-block {
-      font-family: var(--mono);
-      font-size: 0.8125rem;
-      line-height: 1.7;
-      color: #86efac;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .orig-text { color: #fca5a5; }
-    .norm-text { color: #86efac; }
-
-    /* ── Terms List ──────────────────────────────────── */
-    .terms-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-    .term-chip {
-      font-size: 0.75rem; font-family: var(--mono);
-      background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2);
-      border-radius: 8px; padding: 4px 10px; color: #c4b5fd;
-    }
-
-    /* ── Quick Queries ───────────────────────────────── */
-    .quick-queries { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-    .quick-btn {
-      padding: 6px 12px; border-radius: 8px;
-      font-size: 0.75rem; font-weight: 500;
-      background: var(--bg-glass); border: 1px solid var(--border);
-      color: var(--muted); cursor: pointer; transition: all 0.2s;
-    }
-    .quick-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(34,197,94,0.06); }
-
-    /* ── Chat RAG ────────────────────────────────────── */
-    .chat-box {
-      background: rgba(0,0,0,0.25);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      height: 360px;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex; flex-direction: column; gap: 12px;
-    }
-    .chat-box::-webkit-scrollbar { width: 5px; }
-    .chat-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    .msg { display: flex; gap: 10px; max-width: 88%; animation: fadeUp 0.3s ease; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
-    .msg-avatar {
-      width: 32px; height: 32px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; flex-shrink: 0;
-    }
-    .msg.bot .msg-avatar { background: linear-gradient(135deg,var(--primary),var(--accent)); }
-    .msg.user .msg-avatar { background: linear-gradient(135deg,#8b5cf6,#ec4899); }
-    .msg-body { padding: 10px 14px; border-radius: 14px; font-size: 0.875rem; line-height: 1.5; }
-    .msg.bot .msg-body { background: rgba(15,25,45,0.9); border: 1px solid var(--border); }
-    .msg.user .msg-body { background: linear-gradient(135deg,var(--primary),var(--primary-dark)); color:white; }
-    .msg-meta { font-size: 0.6875rem; color: var(--muted); margin-top: 3px; }
-    .route-tag {
-      display: inline-block; padding: 1px 7px; border-radius: 6px;
-      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-      background: rgba(34,197,94,0.15); color: var(--primary); border: 1px solid rgba(34,197,94,0.2);
-      margin-left: 4px; vertical-align: middle;
-    }
-
-    /* ── KB Stats ────────────────────────────────────── */
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-    .stat-card {
-      padding: 20px; border-radius: 16px;
-      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-      text-align: center;
-    }
-    .stat-card .val { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
-    .stat-card .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
-
-    /* ── Ingest ─────────────────────────────────────── */
-    .doc-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-    .doc-row {
-      display: flex; gap: 8px; align-items: center;
-    }
-    .doc-row input { flex: 1; }
-    .doc-row .cat-select { width: 130px; flex-shrink: 0; }
-    .doc-remove {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
-      color: #f87171; cursor: pointer; font-size: 16px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: all 0.2s;
-    }
-    .doc-remove:hover { background: rgba(239,68,68,0.2); }
-
-    /* ── Loading spinner ─────────────────────────────── */
-    .spinner {
-      display: inline-block; width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.2);
-      border-top-color: white; border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Error / Success ──────────────────────────────── */
-    .alert {
-      padding: 10px 14px; border-radius: 10px; font-size: 0.8125rem;
-      margin-top: 10px;
-    }
-    .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
-    .alert-ok { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
-
-    /* ── Layout: two-col for router + normalize ────────── */
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media(max-width: 768px) { .two-col { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr; } }
-
-    /* ── Route Strategy Map ───────────────────────────── */
-    .route-map {
-      display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 14px;
-    }
-    @media(max-width:900px){ .route-map { grid-template-columns: repeat(2,1fr); } }
-    .route-card {
-      padding: 12px; border-radius: 12px;
-      background: var(--bg-glass); border: 1px solid var(--border);
-      cursor: pointer; transition: all 0.2s;
-    }
-    .route-card:hover { border-color: var(--primary); background: rgba(34,197,94,0.05); }
-    .route-card .rc-icon { font-size: 22px; margin-bottom: 6px; }
-    .route-card .rc-name { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .route-card .rc-cost { font-size: 0.75rem; font-family: var(--mono); color: var(--amber); margin-top: 2px; }
-    .route-card .rc-eg { font-size: 0.6875rem; color: var(--muted); margin-top: 4px; font-style: italic; }
-  </style>
+  <title>CropFresh RAG Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/theme.css">
+  <link rel="stylesheet" href="./assets/css/rag-lab.css">
 </head>
 <body>
-<div class="bg-mesh"></div>
-<div class="bg-grid"></div>
-
-<div class="page">
-
-  <!-- HEADER -->
-  <header class="header">
-    <div class="header-left">
-      <div class="logo">🧪</div>
-      <div class="header-title">
-        <h1>CropFresh RAG Test Lab</h1>
-        <p>Sprint 05 · Adaptive Router, Agri Embeddings, Agentic RAG, Browser RAG</p>
-      </div>
-    </div>
-    <div class="header-right">
-      <div class="server-pill" id="serverPill">
-        <div class="dot"></div>
-        <span id="serverStatus">Checking...</span>
-      </div>
-      <a href="/docs" target="_blank" class="btn btn-secondary" style="text-decoration:none;padding:8px 14px;font-size:0.8rem">
-        📖 Swagger
-      </a>
-    </div>
-  </header>
-
-  <!-- TAB NAV -->
-  <div class="tab-nav">
-    <button class="tab active" onclick="switchTab('router')" id="tab-router">
-      🗺️ Adaptive Router
-    </button>
-    <button class="tab" onclick="switchTab('normalize')" id="tab-normalize">
-      🌿 Agri Embeddings
-    </button>
-    <button class="tab" onclick="switchTab('query')" id="tab-query">
-      💬 RAG Query
-    </button>
-    <button class="tab" onclick="switchTab('kb')" id="tab-kb">
-      📚 Knowledge Base
-    </button>
-  </div>
-
-  <!-- ════════════════ PANEL: ADAPTIVE ROUTER ════════════════ -->
-  <div class="panel active" id="panel-router">
-    <div class="two-col">
-      <!-- Input Card -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">🗺️ Route a Query</span>
-          <span class="card-badge sprint05">Sprint 05 · ADR-008</span>
-        </div>
-        <div class="card-body">
-          <div class="quick-queries" id="routerQuickQueries">
-            <button class="quick-btn" onclick="routerFill('hi namaste!')">👋 Greeting</button>
-            <button class="quick-btn" onclick="routerFill('tomato price today in Hubli mandi')">💰 Price</button>
-            <button class="quick-btn" onclick="routerFill('barish kab hogi Karnataka mein?')">🌧️ Weather</button>
-            <button class="quick-btn" onclick="routerFill('how to grow paddy in Karnataka?')">🌾 Farming</button>
-            <button class="quick-btn" onclick="routerFill('which farmers in Kolar grow tomatoes?')">🕸️ Graph</button>
-            <button class="quick-btn" onclick="routerFill('should I sell my tomatoes now or store them?')">🤖 Agentic</button>
-            <button class="quick-btn" onclick="routerFill('latest pm-kisan scheme update 2026')">🌐 Browser</button>
-            <button class="quick-btn" onclick="routerFill('look at this crop photo', true)">📸 Multimodal</button>
-          </div>
-
-          <div class="form-group">
-            <label>Query Text</label>
-            <textarea id="routerQuery" rows="3" placeholder="Ask anything in Hindi, Kannada or English...">tomato price today in Hubli mandi</textarea>
-          </div>
-          <div class="toggle-row">
-            <span>📸 Simulate image attachment</span>
-            <label class="toggle">
-              <input type="checkbox" id="hasImage">
-              <span class="toggle-track"></span>
-              <span class="toggle-thumb"></span>
-            </label>
-          </div>
-          <br>
-          <button class="btn btn-primary" id="routerBtn" onclick="testRouter()">
-            <span id="routerBtnTxt">▶ Route Query</span>
-          </button>
-          <div id="routerAlert"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-logo">🧪</span>
+        <div>
+          <div class="brand-title">CropFresh RAG Lab</div>
+          <div class="brand-subtitle">Adaptive Router · Normalizer · Query · KB Operations</div>
         </div>
       </div>
-
-      <!-- Result Card -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">📊 Routing Decision</span>
-          <span id="routerTime" style="font-size:0.75rem;color:var(--muted)"></span>
-        </div>
-        <div class="card-body">
-          <div id="routerResult" style="color:var(--muted);font-size:0.875rem;">
-            Run a query to see the routing decision here.
-          </div>
-        </div>
+      <div class="status-pill online">
+        <span class="dot"></span>
+        <span data-status-text>RAG Lab</span>
       </div>
+    </header>
+
+    <nav class="nav-links">
+      <a href="./index.html" class="nav-link">🏠 Dashboard</a>
+      <a href="./rag_test.html" class="nav-link active">🧪 RAG Lab</a>
+      <a href="./voice_test_ui.html" class="nav-link">🎙 Voice UI</a>
+      <a href="./voice_realtime.html" class="nav-link">⚡ Voice Realtime</a>
+      <a href="/docs" target="_blank" class="nav-link">📘 Swagger</a>
+    </nav>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-router">Router</button>
+      <button class="tab-btn" data-tab="tab-normalize">Normalize</button>
+      <button class="tab-btn" data-tab="tab-query">Query</button>
+      <button class="tab-btn" data-tab="tab-kb">Knowledge Base</button>
     </div>
 
-    <!-- Strategy Map -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">⚡ 8-Strategy Cost Map</span>
-        <span style="font-size:0.75rem;color:var(--muted)">Click to prefill a sample query</span>
-      </div>
-      <div class="card-body">
-        <div class="route-map">
-          <div class="route-card" onclick="routerFill('hi, what is CropFresh?')">
-            <div class="rc-icon">💬</div>
-            <div class="rc-name">Direct LLM</div>
-            <div class="rc-cost">₹0.030/query</div>
-            <div class="rc-eg">Greetings, FAQs</div>
-          </div>
-          <div class="route-card" onclick="routerFill('organic farming for paddy in Karnataka')">
-            <div class="rc-icon">🔍</div>
-            <div class="rc-name">Vector Only</div>
-            <div class="rc-cost">₹0.120/query</div>
-            <div class="rc-eg">Agronomy, pests</div>
-          </div>
-          <div class="route-card" onclick="routerFill('which farmers in Kolar district grow tomatoes?')">
-            <div class="rc-icon">🕸️</div>
-            <div class="rc-name">Graph Traversal</div>
-            <div class="rc-cost">₹0.150/query</div>
-            <div class="rc-eg">Relationships</div>
-          </div>
-          <div class="route-card" onclick="routerFill('tomato live price today mandi')">
-            <div class="rc-icon">💰</div>
-            <div class="rc-name">Live Price API</div>
-            <div class="rc-cost">₹0.050/query</div>
-            <div class="rc-eg">Real-time rates</div>
-          </div>
-          <div class="route-card" onclick="routerFill('rainfall forecast next week Karnataka')">
-            <div class="rc-icon">🌧️</div>
-            <div class="rc-name">Weather API</div>
-            <div class="rc-cost">₹0.050/query</div>
-            <div class="rc-eg">IMD forecast</div>
-          </div>
-          <div class="route-card" onclick="routerFill('new government policy for agriculture 2026')">
-            <div class="rc-icon">🌐</div>
-            <div class="rc-name">Browser Scrape</div>
-            <div class="rc-cost">₹0.250/query</div>
-            <div class="rc-eg">Live schemes, news</div>
-          </div>
-          <div class="route-card" onclick="routerFill('look at this crop photo', true)">
-            <div class="rc-icon">📸</div>
-            <div class="rc-name">Multimodal</div>
-            <div class="rc-cost">₹0.350/query</div>
-            <div class="rc-eg">Vision + RAG</div>
-          </div>
-          <div class="route-card" onclick="routerFill('should I sell tomatoes now or wait 2 weeks?')">
-            <div class="rc-icon">🤖</div>
-            <div class="rc-name">Full Agentic</div>
-            <div class="rc-cost">₹0.550/query</div>
-            <div class="rc-eg">Multi-tool decisions</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <section id="tab-router" class="tab-panel active">
+      <article class="card">
+        <h3 class="card-title">Adaptive Router Test</h3>
+        <p class="card-desc">Tests `/api/v1/rag/route` for strategy classification.</p>
+        <label class="label" for="routerQuery">Query</label>
+        <textarea id="routerQuery" class="textarea" rows="3">tomato price today in Hubli mandi</textarea>
+        <button id="btnRoute" class="btn btn-primary" style="margin-top: 10px;">Route Query</button>
+        <div id="routerResult" class="result"></div>
+      </article>
+    </section>
 
-  <!-- ════════════════ PANEL: NORMALIZE ════════════════ -->
-  <div class="panel" id="panel-normalize">
-    <div class="two-col">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">🌿 Bilingual Term Normalizer</span>
-          <span class="card-badge sprint05">Sprint 05 · ADR-009</span>
-        </div>
-        <div class="card-body">
-          <div class="quick-queries">
-            <button class="quick-btn" onclick="normFill('tamatar ki rabi kheti mein sinchai')">🍅 Tamatar</button>
-            <button class="quick-btn" onclick="normFill('mandi mein bhaav kya hai pyaj ka')">🧅 Pyaj+mandi</button>
-            <button class="quick-btn" onclick="normFill('pm-kisan aur pmfby scheme apply')">🏛️ Schemes</button>
-            <button class="quick-btn" onclick="normFill('kharif dhan urad moong fasal')">🌾 Kharif</button>
-            <button class="quick-btn" onclick="normFill('kvk se beej aur khad milega?')">🏢 KVK+inputs</button>
-            <button class="quick-btn" onclick="normFill('barish mausam mein kali mitti irrigate')">🌧️ Mausam+mitti</button>
-          </div>
-          <div class="form-group">
-            <label>Text to Normalize</label>
-            <textarea id="normInput" rows="4" placeholder="Type Hindi/Kannada agri terms...">tamatar ki rabi kheti mein sinchai kaise kare mandi bhaav</textarea>
-          </div>
-          <button class="btn btn-primary" id="normBtn" onclick="testNormalize()">
-            <span id="normBtnTxt">🌿 Normalize</span>
-          </button>
-          <div id="normAlert"></div>
-        </div>
-      </div>
+    <section id="tab-normalize" class="tab-panel">
+      <article class="card">
+        <h3 class="card-title">Bilingual Normalizer</h3>
+        <p class="card-desc">Tests `/api/v1/rag/normalize` for Hindi/Kannada agri terms.</p>
+        <label class="label" for="normalizeInput">Text</label>
+        <textarea id="normalizeInput" class="textarea" rows="3">tamatar ki rabi kheti mein sinchai kaise kare</textarea>
+        <button id="btnNormalize" class="btn btn-primary" style="margin-top: 10px;">Normalize</button>
+        <div id="normalizeResult" class="result"></div>
+      </article>
+    </section>
 
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">✨ Normalized Output</span>
-          <span id="normTermMapSize" style="font-size:0.75rem;color:var(--muted)"></span>
-        </div>
-        <div class="card-body">
-          <div id="normResult" style="color:var(--muted);font-size:0.875rem;">
-            Run the normalizer to see the bilingual term expansion here.
+    <section id="tab-query" class="tab-panel">
+      <article class="card">
+        <h3 class="card-title">RAG Query</h3>
+        <p class="card-desc">Tests `/api/v1/rag/query` with optional context.</p>
+        <div class="stack">
+          <div>
+            <label class="label" for="ragQuestion">Question</label>
+            <textarea id="ragQuestion" class="textarea" rows="3">How to control late blight in tomato?</textarea>
+          </div>
+          <div>
+            <label class="label" for="ragContext">Context (optional)</label>
+            <input id="ragContext" class="input" placeholder="Previous conversation context...">
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+        <button id="btnQuery" class="btn btn-primary" style="margin-top: 10px;">Run Query</button>
+        <div id="queryResult" class="result"></div>
+      </article>
+    </section>
 
-  <!-- ════════════════ PANEL: RAG QUERY ════════════════ -->
-  <div class="panel" id="panel-query">
-    <div class="two-col" style="align-items: start;">
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">💬 RAG Query</span>
-            <span class="card-badge core">POST /api/v1/rag/query</span>
+    <section id="tab-kb" class="tab-panel stack">
+      <article class="card">
+        <h3 class="card-title">Semantic Search</h3>
+        <p class="card-desc">Tests `/api/v1/rag/search` with top-k parameter.</p>
+        <div class="grid grid-2">
+          <div>
+            <label class="label" for="searchQuery">Search query</label>
+            <input id="searchQuery" class="input" value="pest management for beans">
           </div>
-          <div class="card-body">
-            <div class="quick-queries">
-              <button class="quick-btn" onclick="queryFill('How to control late blight in tomato?')">🍅 Late blight</button>
-              <button class="quick-btn" onclick="queryFill('What is PM-KISAN scheme eligibility?')">🏛️ PM-KISAN</button>
-              <button class="quick-btn" onclick="queryFill('Organic farming methods for paddy')">🌾 Organic paddy</button>
-              <button class="quick-btn" onclick="queryFill('Drip irrigation setup for onion crop')">💧 Drip irrigation</button>
-            </div>
-            <div class="form-group">
-              <label>Question</label>
-              <textarea id="ragQuery" rows="3" placeholder="Ask in Hindi, Kannada, or English...">How to control late blight in tomato?</textarea>
-            </div>
-            <div class="form-group">
-              <label>Context (Optional)</label>
-              <input type="text" id="ragContext" placeholder="Previous conversation context...">
-            </div>
-            <button class="btn btn-primary" id="ragBtn" onclick="sendQuery()">
-              <span id="ragBtnTxt">💬 Ask CropFresh AI</span>
-            </button>
+          <div>
+            <label class="label" for="searchTopK">Top K</label>
+            <input id="searchTopK" class="input" type="number" value="5" min="1" max="20">
           </div>
         </div>
-      </div>
+        <button id="btnSearch" class="btn btn-primary" style="margin-top: 10px;">Search</button>
+        <div id="searchResult" class="result"></div>
+      </article>
 
-      <div class="card" style="height:fit-content;">
-        <div class="card-header">
-          <span class="card-title">📝 Conversation</span>
-          <button class="btn btn-secondary" style="padding:5px 12px;font-size:0.75rem;" onclick="clearChat()">Clear</button>
-        </div>
-        <div class="card-body" style="padding:12px;">
-          <div class="chat-box" id="chatBox">
-            <div class="msg bot">
-              <div class="msg-avatar">🌾</div>
-              <div>
-                <div class="msg-body">Namaste! I'm CropFresh AI. Ask me anything about farming, prices, schemes, or weather!</div>
-                <div class="msg-meta">CropFresh RAG · Ready</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+      <article class="card">
+        <h3 class="card-title">Knowledge Base Stats</h3>
+        <p class="card-desc">Loads `/api/v1/rag/stats` data.</p>
+        <button id="btnStats" class="btn btn-secondary">Load Stats</button>
+        <div id="statsResult" class="result"></div>
+      </article>
 
-  <!-- ════════════════ PANEL: KNOWLEDGE BASE ════════════════ -->
-  <div class="panel" id="panel-kb">
-    <!-- Stats -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">📊 Knowledge Base Stats</span>
-        <button class="btn btn-secondary" style="padding:6px 14px;font-size:0.75rem;" onclick="loadStats()">🔄 Refresh</button>
-      </div>
-      <div class="card-body">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="val" id="statVectors" style="color:var(--primary)">—</div>
-            <div class="lbl">Vectors</div>
+      <article class="card">
+        <h3 class="card-title">Ingest Document</h3>
+        <p class="card-desc">Posts one document to `/api/v1/rag/ingest`.</p>
+        <div class="grid grid-2">
+          <div>
+            <label class="label" for="ingestSource">Source</label>
+            <input id="ingestSource" class="input" value="manual-lab">
           </div>
-          <div class="stat-card">
-            <div class="val" id="statPoints" style="color:var(--accent)">—</div>
-            <div class="lbl">Points</div>
-          </div>
-          <div class="stat-card">
-            <div class="val" id="statStatus" style="color:var(--amber);font-size:1rem;">—</div>
-            <div class="lbl">Collection Status</div>
-          </div>
-        </div>
-        <div id="statsAlert" style="margin-top:12px;"></div>
-      </div>
-    </div>
-
-    <!-- Semantic Search -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">🔍 Semantic Search</span>
-        <span class="card-badge core">GET /api/v1/rag/search</span>
-      </div>
-      <div class="card-body">
-        <div style="display:flex;gap:10px;">
-          <input type="text" id="searchQuery" placeholder="Search the knowledge base..." style="flex:1;">
-          <input type="number" id="searchTopK" value="3" min="1" max="10" style="width:80px;">
-          <button class="btn btn-primary" onclick="doSearch()">🔍 Search</button>
-        </div>
-        <div id="searchResults" style="margin-top:14px;display:flex;flex-direction:column;gap:10px;"></div>
-      </div>
-    </div>
-
-    <!-- Ingest -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">📥 Ingest Documents</span>
-        <span class="card-badge core">POST /api/v1/rag/ingest</span>
-      </div>
-      <div class="card-body">
-        <div class="doc-list" id="docList">
-          <div class="doc-row">
-            <input class="doc-text" type="text" placeholder="Document text..." value="Tomato late blight (Phytophthora infestans) — apply Mancozeb 75% WP at 2.5g/L water. Spray every 7 days during humid conditions.">
-            <select class="cat-select">
-              <option>pest_disease</option><option>crop_guide</option><option>scheme</option><option>market</option><option>weather</option>
+          <div>
+            <label class="label" for="ingestCategory">Category</label>
+            <select id="ingestCategory" class="select">
+              <option value="agronomy">agronomy</option>
+              <option value="market">market</option>
+              <option value="platform">platform</option>
+              <option value="regulatory">regulatory</option>
             </select>
-            <button class="doc-remove" onclick="removeDoc(this)">×</button>
           </div>
         </div>
-        <div style="display:flex;gap:10px;margin-top:10px;">
-          <button class="btn btn-secondary" onclick="addDocRow()">+ Add Document</button>
-          <button class="btn btn-primary" onclick="doIngest()">📥 Ingest</button>
-        </div>
-        <div id="ingestAlert" style="margin-top:10px;"></div>
-      </div>
-    </div>
+        <label class="label" for="ingestText" style="margin-top: 10px;">Text</label>
+        <textarea id="ingestText" class="textarea" rows="3">Tomato late blight risk increases during high humidity. Apply fungicide as recommended by local extension officer.</textarea>
+        <button id="btnIngest" class="btn btn-primary" style="margin-top: 10px;">Ingest</button>
+        <div id="ingestResult" class="result"></div>
+      </article>
+    </section>
   </div>
-
-</div><!-- /page -->
-
-<script>
-const BASE = '';
-
-// ── Helpers ───────────────────────────────────────────────────
-async function api(path, method='GET', body=null) {
-  const opts = { method, headers: {'Content-Type':'application/json'} };
-  if(body) opts.body = JSON.stringify(body);
-  const r = await fetch(BASE + path, opts);
-  if(!r.ok) throw new Error((await r.json()).detail || r.statusText);
-  return r.json();
-}
-
-function setLoading(btnId, txtId, loading, label='') {
-  const btn = document.getElementById(btnId);
-  const txt = document.getElementById(txtId);
-  btn.disabled = loading;
-  txt.innerHTML = loading ? '<span class="spinner"></span> Loading...' : label;
-}
-
-function showAlert(containerId, msg, type='error') {
-  document.getElementById(containerId).innerHTML =
-    `<div class="alert alert-${type=='error'?'error':'ok'}">${msg}</div>`;
-  setTimeout(() => { document.getElementById(containerId).innerHTML=''; }, 5000);
-}
-
-// ── Server health ─────────────────────────────────────────────
-async function checkServer() {
-  try {
-    await api('/health');
-    document.getElementById('serverPill').className = 'server-pill online';
-    document.getElementById('serverStatus').textContent = 'Server Online';
-  } catch {
-    document.getElementById('serverPill').className = 'server-pill offline';
-    document.getElementById('serverStatus').textContent = 'Server Offline';
-  }
-}
-
-// ── Tab switching ──────────────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  document.getElementById('panel-'+name).classList.add('active');
-  if(name==='kb') loadStats();
-}
-
-// ── ROUTER TAB ────────────────────────────────────────────────
-function routerFill(q, img=false) {
-  document.getElementById('routerQuery').value = q;
-  document.getElementById('hasImage').checked = img;
-}
-
-const ROUTE_ICONS = {
-  direct_llm:'💬', vector_only:'🔍', graph_traversal:'🕸️',
-  live_price_api:'💰', weather_api:'🌧️', browser_scrape:'🌐',
-  multimodal:'📸', full_agentic:'🤖'
-};
-
-async function testRouter() {
-  const query = document.getElementById('routerQuery').value.trim();
-  if(!query) return;
-  setLoading('routerBtn','routerBtnTxt',true);
-  const t0 = performance.now();
-  try {
-    const data = await api('/api/v1/rag/route','POST',{
-      query, has_image: document.getElementById('hasImage').checked
-    });
-    const ms = Math.round(performance.now()-t0);
-    document.getElementById('routerTime').textContent = `${ms}ms`;
-
-    const icon = ROUTE_ICONS[data.strategy] || '❓';
-    const confPct = Math.round(data.confidence*100);
-    const preFilter = data.pre_filter_matched
-      ? '<span style="color:var(--primary);font-size:0.75rem;">⚡ Pre-filter (0ms)</span>'
-      : '<span style="color:var(--muted);font-size:0.75rem;">🤖 LLM classified</span>';
-
-    document.getElementById('routerResult').innerHTML = `
-      <div class="strategy-badge route-${data.strategy}">
-        ${icon} ${data.strategy.replace(/_/g,' ').toUpperCase()}
-      </div>
-      ${preFilter}
-      <div class="conf-bar" title="${confPct}% confidence" style="margin-top:10px;">
-        <div class="conf-fill" style="width:${confPct}%"></div>
-      </div>
-      <div class="stats-row" style="margin-top:10px;">
-        <div class="stat-chip">Confidence: <strong>${confPct}%</strong></div>
-        <div class="stat-chip">Cost: <strong>₹${data.estimated_cost_inr.toFixed(3)}</strong></div>
-        ${data.requires_live_data ? '<div class="stat-chip" style="color:var(--amber);">⚡ Live Data</div>' : ''}
-        ${data.requires_image ? '<div class="stat-chip" style="color:#f472b6;">📸 Image</div>' : ''}
-      </div>
-      <div style="font-size:0.8125rem;color:var(--muted);margin-top:6px;">
-        <strong style="color:var(--text);">Reason:</strong> ${data.reason}
-      </div>
-      ${Object.keys(data.entities||{}).length ? `
-        <div style="margin-top:10px;font-size:0.8125rem;">
-          <strong style="color:var(--text);">Entities:</strong>
-          <div class="mono-block" style="margin-top:4px;">${JSON.stringify(data.entities,null,2)}</div>
-        </div>` : ''}
-    `;
-  } catch(e) {
-    showAlert('routerAlert', e.message);
-  }
-  setLoading('routerBtn','routerBtnTxt',false,'▶ Route Query');
-}
-
-// ── NORMALIZE TAB ─────────────────────────────────────────────
-function normFill(t) { document.getElementById('normInput').value = t; }
-
-async function testNormalize() {
-  const text = document.getElementById('normInput').value.trim();
-  if(!text) return;
-  setLoading('normBtn','normBtnTxt',true);
-  try {
-    const data = await api('/api/v1/rag/normalize','POST',{text});
-    document.getElementById('normTermMapSize').textContent =
-      `Term map: ${data.term_map_size} entries`;
-
-    const termsHtml = data.terms_expanded.length
-      ? `<div class="terms-list">${data.terms_expanded.map(t=>`<div class="term-chip">${t}</div>`).join('')}</div>`
-      : '<p style="font-size:0.8125rem;color:var(--muted);">No known terms found.</p>';
-
-    document.getElementById('normResult').innerHTML = `
-      <div style="margin-bottom:14px;">
-        <div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Original</div>
-        <div class="mono-block orig-text">${escHtml(data.original)}</div>
-      </div>
-      <div style="margin-bottom:14px;">
-        <div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Normalized (→ sent to BGE-M3)</div>
-        <div class="mono-block norm-text">${escHtml(data.normalized)}</div>
-      </div>
-      <div>
-        <div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
-          Terms Expanded (${data.terms_expanded.length})
-        </div>
-        ${termsHtml}
-      </div>
-    `;
-  } catch(e) {
-    showAlert('normAlert', e.message);
-  }
-  setLoading('normBtn','normBtnTxt',false,'🌿 Normalize');
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── RAG QUERY TAB ─────────────────────────────────────────────
-function queryFill(q) { document.getElementById('ragQuery').value = q; }
-
-function addChatMsg(text, type, meta={}) {
-  const box = document.getElementById('chatBox');
-  const div = document.createElement('div');
-  div.className = `msg ${type}`;
-  const avatar = type==='user' ? '👤' : '🌾';
-  let metaHtml = '';
-  if(meta.query_type) metaHtml += `<span class="route-tag">${meta.query_type}</span>`;
-  if(meta.confidence) metaHtml += ` <span style="font-size:0.6rem;color:var(--muted);">${Math.round(meta.confidence*100)}% conf</span>`;
-
-  div.innerHTML = `
-    <div class="msg-avatar">${avatar}</div>
-    <div>
-      <div class="msg-body">${escHtml(text)}</div>
-      ${metaHtml ? `<div class="msg-meta">${metaHtml}</div>` : ''}
-    </div>
-  `;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
-
-async function sendQuery() {
-  const q = document.getElementById('ragQuery').value.trim();
-  if(!q) return;
-  addChatMsg(q, 'user');
-  document.getElementById('ragQuery').value = '';
-  setLoading('ragBtn','ragBtnTxt',true);
-
-  // Add thinking indicator
-  const thinkId = 'think_'+Date.now();
-  const box = document.getElementById('chatBox');
-  box.innerHTML += `
-    <div class="msg bot" id="${thinkId}">
-      <div class="msg-avatar">🌾</div>
-      <div><div class="msg-body" style="color:var(--muted);">
-        <span class="spinner" style="width:12px;height:12px;"></span> Thinking...
-      </div></div>
-    </div>`;
-  box.scrollTop = box.scrollHeight;
-
-  try {
-    const data = await api('/api/v1/rag/query','POST',{
-      question: q,
-      context: document.getElementById('ragContext').value
-    });
-    document.getElementById(thinkId)?.remove();
-    addChatMsg(data.answer, 'bot', {
-      query_type: data.query_type,
-      confidence: data.confidence
-    });
-  } catch(e) {
-    document.getElementById(thinkId)?.remove();
-    addChatMsg('Sorry, I encountered an error: '+e.message, 'bot');
-  }
-  setLoading('ragBtn','ragBtnTxt',false,'💬 Ask CropFresh AI');
-}
-
-function clearChat() {
-  document.getElementById('chatBox').innerHTML = `
-    <div class="msg bot">
-      <div class="msg-avatar">🌾</div>
-      <div><div class="msg-body">Chat cleared. Ask me anything!</div></div>
-    </div>`;
-}
-
-// ── KB TAB ────────────────────────────────────────────────────
-async function loadStats() {
-  try {
-    const data = await api('/api/v1/rag/stats');
-    document.getElementById('statVectors').textContent = data.vectors_count.toLocaleString();
-    document.getElementById('statPoints').textContent = data.points_count.toLocaleString();
-    document.getElementById('statStatus').textContent = data.status;
-    document.getElementById('statsAlert').innerHTML = `<div class="alert alert-ok">Collection: <strong>${data.collection}</strong></div>`;
-  } catch(e) {
-    document.getElementById('statVectors').textContent = '—';
-    document.getElementById('statPoints').textContent = '—';
-    document.getElementById('statStatus').textContent = 'Error';
-    document.getElementById('statsAlert').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-  }
-}
-
-async function doSearch() {
-  const q = document.getElementById('searchQuery').value.trim();
-  if(!q) return;
-  const k = document.getElementById('searchTopK').value;
-  const box = document.getElementById('searchResults');
-  box.innerHTML = '<div style="color:var(--muted);font-size:0.875rem;"><span class="spinner"></span> Searching...</div>';
-  try {
-    const data = await api(`/api/v1/rag/search?query=${encodeURIComponent(q)}&top_k=${k}`);
-    if(!data.results.length) { box.innerHTML='<div style="color:var(--muted);font-size:0.875rem;">No results found.</div>'; return; }
-    box.innerHTML = data.results.map((r,i)=>`
-      <div class="card" style="border-radius:12px;">
-        <div class="card-body" style="padding:14px;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-            <span style="font-size:0.75rem;color:var(--muted);">#${i+1} · ${r.category} · ${r.source}</span>
-            <span style="font-size:0.75rem;font-family:var(--mono);color:var(--amber);">${(r.score*100).toFixed(1)}%</span>
-          </div>
-          <div class="conf-bar"><div class="conf-fill" style="width:${r.score*100}%;background:var(--accent);"></div></div>
-          <div style="font-size:0.8125rem;margin-top:8px;line-height:1.5;">${escHtml(r.text.slice(0,300))}${r.text.length>300?'...':''}</div>
-        </div>
-      </div>`).join('');
-  } catch(e) {
-    box.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-  }
-}
-
-function addDocRow() {
-  const list = document.getElementById('docList');
-  const row = document.createElement('div');
-  row.className = 'doc-row';
-  row.innerHTML = `
-    <input class="doc-text" type="text" placeholder="Document text...">
-    <select class="cat-select">
-      <option>crop_guide</option><option>pest_disease</option><option>scheme</option><option>market</option><option>weather</option>
-    </select>
-    <button class="doc-remove" onclick="removeDoc(this)">×</button>`;
-  list.appendChild(row);
-}
-
-function removeDoc(btn) {
-  const rows = document.querySelectorAll('.doc-row');
-  if(rows.length > 1) btn.closest('.doc-row').remove();
-}
-
-async function doIngest() {
-  const rows = document.querySelectorAll('.doc-row');
-  const docs = [];
-  rows.forEach(r => {
-    const text = r.querySelector('.doc-text').value.trim();
-    const cat = r.querySelector('.cat-select').value;
-    if(text) docs.push({text, category: cat, source: 'manual_ingest'});
-  });
-  if(!docs.length) { showAlert('ingestAlert','No documents to ingest'); return; }
-  try {
-    const data = await api('/api/v1/rag/ingest','POST',{documents:docs});
-    showAlert('ingestAlert', `${data.message}`, 'ok');
-    loadStats();
-  } catch(e) {
-    showAlert('ingestAlert', e.message);
-  }
-}
-
-// ── Enter key shortcuts ────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)) {
-    const activePanel = document.querySelector('.panel.active');
-    if(activePanel?.id==='panel-router') testRouter();
-    if(activePanel?.id==='panel-normalize') testNormalize();
-    if(activePanel?.id==='panel-query') sendQuery();
-  }
-});
-
-// ── Init ──────────────────────────────────────────────────────
-checkServer();
-setInterval(checkServer, 15000);
-</script>
+  <script src="./assets/js/shared.js"></script>
+  <script src="./assets/js/rag-lab.js"></script>
 </body>
 </html>

@@ -83,9 +83,9 @@ class VoiceAgent:
 
     RESPONSE_TEMPLATES = {
         VoiceIntent.CREATE_LISTING: {
-            "hi": "आपकी {quantity} {unit} {crop} की लिस्टिंग बन गई है। खरीदार मिलने पर हम आपको बताएंगे।",
-            "kn": "ನಿಮ್ಮ {quantity} {unit} {crop} ಪಟ್ಟಿ ರಚಿಸಲಾಗಿದೆ. ಖರೀದಿದಾರರು ಸಿಕ್ಕಾಗ ನಾವು ನಿಮಗೆ ತಿಳಿಸುತ್ತೇವೆ.",
-            "en": "Your listing for {quantity} {unit} of {crop} has been created. We'll notify you when a buyer is found.",
+            "hi": "आपकी {quantity} {unit} {crop} की लिस्टिंग ₹{price}/{unit} पर बन गई है। लिस्टिंग आईडी: {listing_id}।",
+            "kn": "ನಿಮ್ಮ {quantity} {unit} {crop} ಪಟ್ಟಿ ₹{price}/{unit} ದಲ್ಲಿ ರಚಿಸಲಾಗಿದೆ. ಪಟ್ಟಿ ಐಡಿ: {listing_id}.",
+            "en": "Your listing for {quantity} {unit} of {crop} at ₹{price}/{unit} is created. Listing ID: {listing_id}.",
         },
         VoiceIntent.CHECK_PRICE: {
             "hi": "{crop} का भाव आज {location} मंडी में {price} रुपये प्रति {unit} है।",
@@ -117,6 +117,9 @@ class VoiceAgent:
             "kn": "ನನಗೆ ಅರ್ಥವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಹೇಳಿ.",
             "en": "I didn't understand. Please say that again.",
         },
+    }
+    REQUIRED_FIELDS = {
+        VoiceIntent.CREATE_LISTING: ["crop", "quantity", "asking_price"],
     }
     
     def __init__(
@@ -243,6 +246,13 @@ class VoiceAgent:
         templates = self.RESPONSE_TEMPLATES.get(intent, self.RESPONSE_TEMPLATES[VoiceIntent.UNKNOWN])
         template = templates.get(language, templates.get("en", ""))
         
+        # Continue pending multi-turn create listing flow.
+        pending_intent = session.context.get("pending_intent")
+        if pending_intent == VoiceIntent.CREATE_LISTING.value and intent in [VoiceIntent.CREATE_LISTING, VoiceIntent.UNKNOWN]:
+            create_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.CREATE_LISTING, {})
+            create_template = create_templates.get(language, create_templates.get("en", ""))
+            return await self._handle_create_listing(create_template, entities, session)
+
         # Handle specific intents
         if intent == VoiceIntent.CREATE_LISTING:
             return await self._handle_create_listing(template, entities, session)
@@ -275,32 +285,70 @@ class VoiceAgent:
         session: VoiceSession,
     ) -> str:
         """Handle create listing intent — creates listing via service if available."""
-        crop = entities.get("crop", "सब्जी" if session.language == "hi" else "vegetable")
-        quantity = entities.get("quantity", "")
-        unit = entities.get("unit", "kg")
+        pending_entities = session.context.get("pending_listing", {}).copy()
+        pending_entities.update({k: v for k, v in entities.items() if v not in [None, ""]})
+        session.context["pending_intent"] = VoiceIntent.CREATE_LISTING.value
+        session.context["pending_listing"] = pending_entities
+
+        crop = pending_entities.get("crop", "")
+        quantity = pending_entities.get("quantity", pending_entities.get("quantity_kg"))
+        unit = pending_entities.get("unit", "kg")
+        asking_price = pending_entities.get("asking_price")
+
+        if not crop:
+            if session.language == "hi":
+                return "कौन सी सब्जी की लिस्टिंग बनानी है?"
+            if session.language == "kn":
+                return "ಯಾವ ತರಕಾರಿ ಪಟ್ಟಿಯನ್ನು ರಚಿಸಬೇಕು?"
+            return "Which crop do you want to list?"
 
         if not quantity:
             if session.language == "hi":
                 return f"कितने {unit} {crop} बेचना है?"
-            elif session.language == "kn":
+            if session.language == "kn":
                 return f"ಎಷ್ಟು {unit} {crop} ಮಾರಾಟ ಮಾಡಬೇಕು?"
             return f"How many {unit} of {crop} do you want to sell?"
 
-        session.context["pending_listing"] = entities
+        if not asking_price:
+            if session.language == "hi":
+                return f"{crop} का बेचने का भाव प्रति {unit} कितना रखना है?"
+            if session.language == "kn":
+                return f"{crop} ಅನ್ನು ಪ್ರತಿ {unit}ಗೆ ಯಾವ ಬೆಲೆಗೆ ಮಾರಾಟ ಮಾಡಬೇಕು?"
+            return f"What is your asking price per {unit} for {crop}?"
 
+        listing_id = "pending"
         if self.listing_service:
             try:
                 listing = await self.listing_service.create_listing(
                     farmer_id=session.user_id,
                     commodity=crop,
                     quantity_kg=float(quantity),
+                    asking_price_per_kg=float(asking_price),
                 )
-                session.context["last_listing_id"] = listing.get("id", "")
-                logger.info("Listing created via voice: {}", listing.get("id"))
+            except TypeError:
+                listing = await self.listing_service.create_listing(
+                    farmer_id=session.user_id,
+                    commodity=crop,
+                    quantity_kg=float(quantity),
+                )
             except Exception as exc:
                 logger.warning("Voice listing creation failed: {}", exc)
+                listing = {}
+            if isinstance(listing, dict):
+                listing_id = listing.get("id") or listing.get("listing_id") or listing_id
+                session.context["last_listing_id"] = listing_id
+                logger.info("Listing created via voice: {}", listing_id)
 
-        return template.format(crop=crop, quantity=quantity, unit=unit)
+        # Clear pending flow once listing is created.
+        session.context.pop("pending_intent", None)
+        session.context.pop("pending_listing", None)
+        return template.format(
+            crop=crop,
+            quantity=quantity,
+            unit=unit,
+            price=asking_price,
+            listing_id=listing_id,
+        )
     
     async def _handle_check_price(
         self,
@@ -320,10 +368,17 @@ class VoiceAgent:
             return "Which vegetable's price do you want to know?"
 
         price_value = 0.0
+        recommendation_text = ""
         if self.pricing_agent:
             try:
                 rec = await self.pricing_agent.get_recommendation(crop, location)
                 price_value = rec.current_price
+                action = getattr(rec, "recommended_action", "")
+                reason = getattr(rec, "reason", "")
+                if action:
+                    recommendation_text = f" Recommendation: {action}."
+                if reason:
+                    recommendation_text += f" {reason}"
             except Exception as exc:
                 logger.warning("Voice price lookup failed: {}", exc)
 
@@ -333,7 +388,7 @@ class VoiceAgent:
         return template.format(
             crop=crop, location=location,
             price=f"{price_value:.0f}", unit="kg",
-        )
+        ) + recommendation_text
     
     async def _handle_track_order(
         self,
@@ -342,11 +397,18 @@ class VoiceAgent:
         session: VoiceSession,
     ) -> str:
         """Handle track order intent — queries order service if available."""
+        order_id = entities.get("order_id")
         if self.order_service:
             try:
-                orders = await self.order_service.get_active_orders(
-                    user_id=session.user_id,
-                )
+                if order_id and hasattr(self.order_service, "get_status"):
+                    status = await self.order_service.get_status(order_id=order_id, user_id=session.user_id)
+                    eta = status.get("eta", "30 minutes") if isinstance(status, dict) else "30 minutes"
+                    return template.format(eta=eta)
+                if order_id and hasattr(self.order_service, "get_order_status"):
+                    status = await self.order_service.get_order_status(order_id=order_id, user_id=session.user_id)
+                    eta = status.get("eta", "30 minutes") if isinstance(status, dict) else "30 minutes"
+                    return template.format(eta=eta)
+                orders = await self.order_service.get_active_orders(user_id=session.user_id)
                 if orders:
                     latest = orders[0]
                     eta = latest.get("eta", "30 minutes")
