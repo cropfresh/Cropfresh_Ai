@@ -1,5 +1,7 @@
 # Tech Stack — CropFresh AI
 
+> **Last Updated:** 2026-03-01
+
 ## Backend
 | Technology | Purpose | Why Chosen |
 |-----------|---------|------------|
@@ -12,16 +14,18 @@
 |-----------|---------|------------|
 | **LangGraph** | Multi-agent orchestration | Stateful agent graphs, tool use, streaming |
 | **LangChain** | LLM tooling | Tool/chain compositions, memory |
-| **Groq** | LLM inference | Fast inference, Llama/Mixtral access |
-| **Sentence Transformers** | Embeddings | Local, fast, multilingual |
+| **AWS Bedrock** | LLM inference (production) | Claude Sonnet 4 — quality, IAM auth, AWS-native |
+| **Groq** | LLM inference (dev/routing) | Fast inference (~80ms), Llama-3.1 for routing |
+| **Sentence Transformers** | Embeddings | Local, fast, multilingual (BGE-M3) |
 
 ## Databases
 | Technology | Purpose | Why Chosen |
 |-----------|---------|------------|
-| **Supabase** | Primary DB (PostgreSQL) | Auth, realtime, edge functions, free tier |
-| **Qdrant** | Vector database | RAG retrieval, semantic search |
+| **RDS PostgreSQL + pgvector** | Primary DB + vector search | Single instance for relational + embeddings, IAM auth, ~$14/month |
 | **Neo4j** | Graph database | Buyer-seller matching, relationship scoring |
 | **Redis** | Caching | Session cache, rate limiting |
+| ~~Supabase~~ | ~~Primary DB~~ | Superseded by RDS PostgreSQL ([ADR-012](../decisions/ADR-012-aurora-pgvector-consolidation.md)) |
+| ~~Qdrant~~ | ~~Vector DB~~ | Superseded by pgvector — kept as dev fallback ([ADR-012](../decisions/ADR-012-aurora-pgvector-consolidation.md)) |
 
 ## Voice & NLP
 | Technology | Purpose | Why Chosen |
@@ -34,7 +38,7 @@
 | Technology | Purpose | Why Chosen |
 |-----------|---------|------------|
 | **Docker** | Containerization | Consistent environments |
-| **GCP Cloud Run** | Deployment | Serverless, auto-scaling, pay-per-use |
+| **AWS** | Cloud platform | Bedrock, RDS, IAM — unified billing |
 | **GitHub Actions** | CI/CD | Free, integrated with repo |
 | **n8n** | Workflow automation | Visual workflows, self-hosted |
 

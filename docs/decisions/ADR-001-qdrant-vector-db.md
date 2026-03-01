@@ -1,7 +1,8 @@
 # ADR-001: Qdrant as Vector Database
 
 **Date**: 2026-02-01
-**Status**: Accepted
+**Status**: ⚠️ Superseded by [ADR-012](ADR-012-aurora-pgvector-consolidation.md) (2026-03-01)
+> Qdrant retained as dev fallback (`VECTOR_DB_PROVIDER=qdrant`). Production uses pgvector on RDS PostgreSQL.
 
 ### Context
 CropFresh needs semantic search for crop listings, knowledge retrieval, and price history analysis. We need a vector database for embedding storage and similarity search.
