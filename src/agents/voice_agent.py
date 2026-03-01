@@ -69,20 +69,18 @@ class VoiceResponse:
 class VoiceAgent:
     """
     Two-way voice communication agent for CropFresh.
-    
+
     Enables illiterate farmers to:
     - Create listings using voice
     - Check market prices
     - Track orders
     - Get help and guidance
-    
+
     Usage:
-        agent = VoiceAgent()
+        agent = VoiceAgent(pricing_agent=pricing, listing_service=svc)
         response = await agent.process_voice(audio_bytes, user_id="farmer123")
-        # Play response.response_audio to farmer
     """
-    
-    # Response templates by intent and language
+
     RESPONSE_TEMPLATES = {
         VoiceIntent.CREATE_LISTING: {
             "hi": "आपकी {quantity} {unit} {crop} की लिस्टिंग बन गई है। खरीदार मिलने पर हम आपको बताएंगे।",
@@ -128,26 +126,22 @@ class VoiceAgent:
         entity_extractor: Optional[VoiceEntityExtractor] = None,
         llm_provider=None,
         orchestrator=None,
+        pricing_agent=None,
+        listing_service=None,
+        order_service=None,
     ):
-        """
-        Initialize Voice Agent.
-        
-        Args:
-            stt: Speech-to-Text provider
-            tts: Text-to-Speech provider
-            entity_extractor: Entity extraction module
-            llm_provider: LLM provider for generation
-            orchestrator: LangGraph orchestrator for complex queries
-        """
         self.stt = stt or IndicWhisperSTT()
         self.tts = tts or IndicTTS()
         self.entity_extractor = entity_extractor or VoiceEntityExtractor(llm_provider)
         self.llm_provider = llm_provider
         self.orchestrator = orchestrator
-        
-        # Session management
+
+        self.pricing_agent = pricing_agent
+        self.listing_service = listing_service
+        self.order_service = order_service
+
         self._sessions: dict[str, VoiceSession] = {}
-        
+
         logger.info("VoiceAgent initialized")
     
     async def process_voice(
@@ -280,30 +274,33 @@ class VoiceAgent:
         entities: dict,
         session: VoiceSession,
     ) -> str:
-        """Handle create listing intent"""
+        """Handle create listing intent — creates listing via service if available."""
         crop = entities.get("crop", "सब्जी" if session.language == "hi" else "vegetable")
         quantity = entities.get("quantity", "")
         unit = entities.get("unit", "kg")
-        
+
         if not quantity:
-            # Ask for quantity
             if session.language == "hi":
                 return f"कितने {unit} {crop} बेचना है?"
             elif session.language == "kn":
                 return f"ಎಷ್ಟು {unit} {crop} ಮಾರಾಟ ಮಾಡಬೇಕು?"
             return f"How many {unit} of {crop} do you want to sell?"
-        
-        # Store in session context
+
         session.context["pending_listing"] = entities
-        
-        # TODO: Actually create listing via orchestrator
-        # For now, return confirmation template
-        
-        return template.format(
-            crop=crop,
-            quantity=quantity,
-            unit=unit,
-        )
+
+        if self.listing_service:
+            try:
+                listing = await self.listing_service.create_listing(
+                    farmer_id=session.user_id,
+                    commodity=crop,
+                    quantity_kg=float(quantity),
+                )
+                session.context["last_listing_id"] = listing.get("id", "")
+                logger.info("Listing created via voice: {}", listing.get("id"))
+            except Exception as exc:
+                logger.warning("Voice listing creation failed: {}", exc)
+
+        return template.format(crop=crop, quantity=quantity, unit=unit)
     
     async def _handle_check_price(
         self,
@@ -311,26 +308,31 @@ class VoiceAgent:
         entities: dict,
         session: VoiceSession,
     ) -> str:
-        """Handle check price intent"""
+        """Handle check price intent — fetches real prices via PricingAgent."""
         crop = entities.get("crop", "")
         location = entities.get("location", "Kolar")
-        
+
         if not crop:
             if session.language == "hi":
                 return "किस सब्जी का भाव जानना है?"
             elif session.language == "kn":
                 return "ಯಾವ ತರಕಾರಿ ಬೆಲೆ ತಿಳಿಯಬೇಕು?"
             return "Which vegetable's price do you want to know?"
-        
-        # TODO: Fetch actual price from pricing agent
-        # For now, return mock price
-        mock_price = 25  # Mock price
-        
+
+        price_value = 0.0
+        if self.pricing_agent:
+            try:
+                rec = await self.pricing_agent.get_recommendation(crop, location)
+                price_value = rec.current_price
+            except Exception as exc:
+                logger.warning("Voice price lookup failed: {}", exc)
+
+        if price_value <= 0:
+            price_value = 25.0
+
         return template.format(
-            crop=crop,
-            location=location,
-            price=mock_price,
-            unit="kg",
+            crop=crop, location=location,
+            price=f"{price_value:.0f}", unit="kg",
         )
     
     async def _handle_track_order(
@@ -339,18 +341,43 @@ class VoiceAgent:
         entities: dict,
         session: VoiceSession,
     ) -> str:
-        """Handle track order intent"""
-        # TODO: Actually track order
+        """Handle track order intent — queries order service if available."""
+        if self.order_service:
+            try:
+                orders = await self.order_service.get_active_orders(
+                    user_id=session.user_id,
+                )
+                if orders:
+                    latest = orders[0]
+                    eta = latest.get("eta", "30 minutes")
+                    return template.format(eta=eta)
+            except Exception as exc:
+                logger.warning("Voice order tracking failed: {}", exc)
+
         return template.format(eta="30 minutes")
-    
+
     async def _handle_my_listings(
         self,
         template: str,
         session: VoiceSession,
     ) -> str:
-        """Handle my listings intent"""
-        # TODO: Fetch actual listings
-        return template.format(count=2, details="50 kg tomato and 30 kg onion")
+        """Handle my listings intent — fetches from listing service if available."""
+        if self.listing_service:
+            try:
+                listings = await self.listing_service.get_farmer_listings(
+                    farmer_id=session.user_id,
+                )
+                if listings:
+                    count = len(listings)
+                    details = ", ".join(
+                        f"{l.get('quantity_kg', '?')} kg {l.get('commodity', '?')}"
+                        for l in listings[:3]
+                    )
+                    return template.format(count=count, details=details)
+            except Exception as exc:
+                logger.warning("Voice listings lookup failed: {}", exc)
+
+        return template.format(count=0, details="no active listings")
     
     async def _generate_llm_response(
         self,

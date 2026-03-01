@@ -281,7 +281,7 @@ async def test_full_multi_agent_pipeline():
 
 
 async def test_with_llm():
-    """Test with actual LLM (requires GROQ_API_KEY)."""
+    """Test with actual LLM (requires configured LLM provider)."""
     print("\n" + "=" * 60)
     print("TEST 7: Full Pipeline with LLM")
     print("=" * 60)
@@ -300,15 +300,18 @@ async def test_with_llm():
         
         settings = get_settings()
         
-        if not settings.groq_api_key:
-            print("⚠️  No GROQ_API_KEY configured - skipping LLM test")
+        if not settings.has_llm_configured:
+            print("⚠️  No LLM provider configured - skipping LLM test")
             return True
         
         # Create LLM
         llm = create_llm_provider(
             provider=settings.llm_provider,
-            api_key=settings.groq_api_key,
+            api_key=settings.groq_api_key or settings.together_api_key,
+            base_url=getattr(settings, "vllm_base_url", ""),
             model=settings.llm_model,
+            region=getattr(settings, "aws_region", "ap-south-1"),
+            aws_profile=getattr(settings, "aws_profile", ""),
         )
         print(f"   LLM: {settings.llm_provider} / {settings.llm_model}")
         

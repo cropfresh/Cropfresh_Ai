@@ -13,13 +13,11 @@ Changes from dev baseline:
   - Graceful shutdown with connection cleanup
 """
 
-from __future__ import annotations
-
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
@@ -83,22 +81,37 @@ async def lifespan(app: FastAPI):
     else:
         app.state.redis = None
 
-    # ── 4. KnowledgeAgent ────────────────────────────
+    # ── 4. LLM Provider (shared across agents) ─────────
+    app.state.llm = None
+    try:
+        from src.orchestrator.llm_provider import create_llm_provider
+
+        if settings.has_llm_configured:
+            app.state.llm = create_llm_provider(
+                provider=settings.llm_provider,
+                api_key=settings.groq_api_key or settings.together_api_key,
+                base_url=settings.vllm_base_url,
+                model=settings.llm_model,
+                region=settings.aws_region,
+                aws_profile=settings.aws_profile,
+            )
+            logger.info(
+                "✅ LLM provider ready — provider={} model={}",
+                settings.llm_provider,
+                settings.llm_model,
+            )
+        else:
+            logger.warning("⚠️  No LLM provider configured — agents will use rule-based fallbacks")
+    except Exception as exc:
+        logger.warning("LLM provider initialization failed: {} — using fallbacks", exc)
+
+    # ── 5. KnowledgeAgent ────────────────────────────
     app.state.knowledge_agent = None
     try:
         from src.agents.knowledge_agent import KnowledgeAgent
-        from src.orchestrator.llm_provider import create_llm_provider
-
-        llm = None
-        if settings.groq_api_key:
-            llm = create_llm_provider(
-                provider=settings.llm_provider,
-                api_key=settings.groq_api_key,
-                model=settings.llm_model,
-            )
 
         agent = KnowledgeAgent(
-            llm=llm,
+            llm=app.state.llm,
             qdrant_host=settings.qdrant_host,
             qdrant_port=settings.qdrant_port,
             qdrant_api_key=settings.qdrant_api_key,
@@ -112,21 +125,12 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("KnowledgeAgent initialization failed: {} — RAG unavailable", exc)
 
-    # ── 5. SupervisorAgent ───────────────────────────
+    # ── 6. SupervisorAgent ───────────────────────────
     app.state.supervisor = None
     try:
         from src.agents.supervisor_agent import SupervisorAgent
-        from src.orchestrator.llm_provider import create_llm_provider
 
-        llm = None
-        if settings.groq_api_key:
-            llm = create_llm_provider(
-                provider=settings.llm_provider,
-                api_key=settings.groq_api_key,
-                model=settings.llm_model,
-            )
-
-        supervisor = SupervisorAgent(llm=llm)
+        supervisor = SupervisorAgent(llm=app.state.llm)
         await supervisor.initialize()
         app.state.supervisor = supervisor
         logger.info("✅ SupervisorAgent initialized")
@@ -185,13 +189,15 @@ app.add_middleware(APIKeyMiddleware, api_key=_settings.api_key or None)
 
 @app.get("/", tags=["meta"], include_in_schema=False)
 async def root():
-    """Root — service info."""
-    return {
-        "service": "cropfresh-ai",
-        "version": "0.2.0",
-        "environment": _settings.environment,
-        "docs": "/docs",
-    }
+    """Root — redirect to test dashboard in dev, return JSON in production."""
+    if _settings.is_production:
+        return {
+            "service": "cropfresh-ai",
+            "version": "0.2.0",
+            "environment": _settings.environment,
+        }
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/static/index.html")
 
 
 @app.get("/health", tags=["health"])
@@ -201,15 +207,16 @@ async def health():
 
 
 @app.get("/health/ready", tags=["health"])
-async def readiness(request):
+async def readiness(request: Request):
     """
     Readiness probe — checks all critical dependencies.
 
     Returns 200 only when the service is truly ready to handle traffic.
     """
-    from fastapi import Request
     checks: dict[str, bool | str] = {
-        "llm_configured": bool(_settings.groq_api_key),
+        "llm_provider": _settings.llm_provider,
+        "llm_configured": _settings.has_llm_configured,
+        "llm_initialized": getattr(request.app.state, "llm", None) is not None,
         "qdrant_configured": bool(_settings.qdrant_host),
         "knowledge_agent": getattr(request.app.state, "knowledge_agent", None) is not None,
         "supervisor": getattr(request.app.state, "supervisor", None) is not None,

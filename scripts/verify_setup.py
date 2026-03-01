@@ -50,6 +50,26 @@ def check_groq_connection() -> tuple[bool, str]:
         return False, str(e)[:50]
 
 
+def check_bedrock_connection() -> tuple[bool, str]:
+    """Test Amazon Bedrock / AWS credentials."""
+    try:
+        import os
+        import boto3
+
+        session = boto3.Session(
+            region_name=os.getenv("AWS_REGION", "ap-south-1"),
+            profile_name=os.getenv("AWS_PROFILE") or None,
+        )
+        sts = session.client("sts")
+        identity = sts.get_caller_identity()
+        account = identity["Account"]
+        return True, f"AWS authenticated (account {account})"
+    except ImportError:
+        return False, "boto3 not installed"
+    except Exception as e:
+        return False, f"AWS auth failed: {str(e)[:40]}"
+
+
 def check_qdrant_connection() -> tuple[bool, str]:
     """Test Qdrant connection."""
     try:
@@ -110,6 +130,7 @@ def main():
         ("langgraph", "LangGraph"),
         ("langchain", "LangChain"),
         ("groq", "Groq SDK"),
+        ("boto3", "AWS SDK (Boto3)"),
         ("qdrant_client", "Qdrant Client"),
         ("fastapi", "FastAPI"),
         ("pydantic", "Pydantic"),
@@ -185,10 +206,19 @@ def main():
     except ImportError:
         pass
     
-    # Groq API
-    success, info = check_groq_connection()
-    status = f"{GREEN}{CHECK}{RESET}" if success else f"{YELLOW}{WARN}{RESET}"
-    print(f"  {status} Groq API: {info}")
+    # LLM Provider (detect active provider)
+    import os
+    active_provider = os.getenv("LLM_PROVIDER", "bedrock")
+    print(f"\n   Active LLM provider: {active_provider}")
+
+    if active_provider == "bedrock":
+        success, info = check_bedrock_connection()
+        status = f"{GREEN}{CHECK}{RESET}" if success else f"{YELLOW}{WARN}{RESET}"
+        print(f"  {status} Amazon Bedrock: {info}")
+    else:
+        success, info = check_groq_connection()
+        status = f"{GREEN}{CHECK}{RESET}" if success else f"{YELLOW}{WARN}{RESET}"
+        print(f"  {status} Groq API: {info}")
     
     # Qdrant
     success, info = check_qdrant_connection()

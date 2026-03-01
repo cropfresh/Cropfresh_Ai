@@ -95,13 +95,16 @@ async def get_knowledge_agent():
         
         settings = get_settings()
         
-        # Create LLM if API key configured
+        # Create LLM if provider is configured
         llm = None
-        if settings.groq_api_key:
+        if settings.has_llm_configured:
             llm = create_llm_provider(
                 provider=settings.llm_provider,
-                api_key=settings.groq_api_key,
+                api_key=settings.groq_api_key or settings.together_api_key,
+                base_url=getattr(settings, "vllm_base_url", ""),
                 model=settings.llm_model,
+                region=getattr(settings, "aws_region", "ap-south-1"),
+                aws_profile=getattr(settings, "aws_profile", ""),
             )
         
         _knowledge_agent = KnowledgeAgent(

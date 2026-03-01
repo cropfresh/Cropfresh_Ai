@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CropFresh AI — Test Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0f1c;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #2a3555;
+    --accent: #22c55e;
+    --accent2: #3b82f6;
+    --accent3: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --radius: 10px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* NAV */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+  .topbar h1 { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .topbar h1 span { color: var(--text); font-weight: 400; }
+  .nav-tabs { display: flex; gap: 4px; overflow-x: auto; flex: 1; }
+  .nav-tab { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all .2s; white-space: nowrap; border: 1px solid transparent; }
+  .nav-tab:hover { background: var(--surface2); color: var(--text); }
+  .nav-tab.active { background: var(--accent); color: #000; font-weight: 600; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #555; margin-left: auto; flex-shrink: 0; }
+  .status-dot.ok { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .status-dot.err { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  /* PANELS */
+  .panel { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .panel.active { display: block; }
+  .panel h2 { font-size: 20px; margin-bottom: 16px; color: var(--accent); }
+  .panel p.desc { color: var(--text2); font-size: 14px; margin-bottom: 20px; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card h3 { font-size: 14px; color: var(--accent2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* FORM */
+  label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
+  input, select, textarea { width: 100%; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font); font-size: 14px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; font-family: var(--mono); font-size: 13px; }
+
+  /* BUTTONS */
+  .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #16a34a; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-secondary { background: var(--accent2); color: #fff; }
+  .btn-secondary:hover { background: #2563eb; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .quick-btn { padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; color: var(--text2); font-size: 12px; cursor: pointer; }
+  .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* RESULT */
+  .result-box { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-top: 12px; max-height: 500px; overflow-y: auto; font-family: var(--mono); font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .result-box:empty { display: none; }
+  .result-box.error { border-color: var(--danger); color: #fca5a5; }
+  .meta-bar { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+  .meta-tag { font-size: 11px; color: var(--text2); background: var(--surface2); padding: 3px 8px; border-radius: 4px; }
+  .meta-tag b { color: var(--accent); }
+
+  /* HEALTH GRID */
+  .health-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .health-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .health-card .label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .health-card .value { font-size: 18px; font-weight: 700; }
+  .health-card .value.ok { color: var(--accent); }
+  .health-card .value.warn { color: var(--accent3); }
+  .health-card .value.err { color: var(--danger); }
+
+  /* SPINNER */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* CHAT */
+  .chat-box { max-height: 400px; overflow-y: auto; padding: 12px; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; }
+  .chat-msg { margin-bottom: 12px; }
+  .chat-msg .role { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+  .chat-msg .role.user { color: var(--accent2); }
+  .chat-msg .role.assistant { color: var(--accent); }
+  .chat-msg .body { font-size: 14px; line-height: 1.5; }
+
+  /* STREAM */
+  .stream-cursor { display: inline-block; width: 2px; height: 14px; background: var(--accent); animation: blink 1s step-end infinite; vertical-align: middle; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topbar">
+  <h1>🌾 CropFresh <span>AI Dashboard</span></h1>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-panel="health">Health</div>
+    <div class="nav-tab" data-panel="chat">Chat</div>
+    <div class="nav-tab" data-panel="rag">RAG</div>
+    <div class="nav-tab" data-panel="pricing">Pricing</div>
+    <div class="nav-tab" data-panel="data">Market Data</div>
+    <div class="nav-tab" data-panel="voice">Voice</div>
+  </div>
+  <div class="status-dot" id="statusDot" title="API Status"></div>
+</div>
+
+<!-- ═══════════════════════ HEALTH PANEL ═══════════════════════ -->
+<div class="panel active" id="panel-health">
+  <h2>System Health</h2>
+  <p class="desc">Live status of all CropFresh AI services and dependencies.</p>
+  <div class="btn-group" style="margin-bottom:16px">
+    <button class="btn btn-primary" onclick="checkHealth()">Refresh Health</button>
+  </div>
+  <div class="health-grid" id="healthGrid">
+    <div class="health-card"><div class="label">Status</div><div class="value" id="h-status">—</div></div>
+    <div class="health-card"><div class="label">LLM Provider</div><div class="value" id="h-provider">—</div></div>
+    <div class="health-card"><div class="label">LLM Configured</div><div class="value" id="h-llm">—</div></div>
+    <div class="health-card"><div class="label">LLM Initialized</div><div class="value" id="h-llm-init">—</div></div>
+    <div class="health-card"><div class="label">Qdrant</div><div class="value" id="h-qdrant">—</div></div>
+    <div class="health-card"><div class="label">Knowledge Agent</div><div class="value" id="h-knowledge">—</div></div>
+    <div class="health-card"><div class="label">Supervisor</div><div class="value" id="h-supervisor">—</div></div>
+    <div class="health-card"><div class="label">Redis</div><div class="value" id="h-redis">—</div></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Available Agents</h3>
+    <div id="agentsList" class="result-box" style="display:block;min-height:60px">Loading...</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ CHAT PANEL ═══════════════════════ -->
+<div class="panel" id="panel-chat">
+  <h2>Multi-Agent Chat</h2>
+  <p class="desc">Talk to the CropFresh AI supervisor — it routes to the right agent automatically.</p>
+  <div class="card">
+    <h3>Conversation</h3>
+    <div class="chat-box" id="chatBox"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="chatInput" placeholder="Ask anything about farming, prices, listings..." style="flex:1" />
+      <button class="btn btn-primary" id="chatSendBtn" onclick="sendChat()">Send</button>
+      <button class="btn btn-secondary" id="chatStreamBtn" onclick="sendChatStream()">Stream</button>
+    </div>
+    <div class="btn-group">
+      <span class="quick-btn" onclick="setChat('What is the best time to plant tomatoes in Karnataka?')">🌱 Tomato planting</span>
+      <span class="quick-btn" onclick="setChat('What is the current price of onion in Kolar mandi?')">💰 Onion price</span>
+      <span class="quick-btn" onclick="setChat('How do I register as a farmer on CropFresh?')">📱 Register</span>
+      <span class="quick-btn" onclick="setChat('Research the best potato varieties for Karnataka climate')">🔬 Research</span>
+      <span class="quick-btn" onclick="setChat('Get today\\'s weather advisory for Kolar district')">🌤️ Weather</span>
+    </div>
+    <div class="meta-bar" id="chatMeta"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ RAG PANEL ═══════════════════════ -->
+<div class="panel" id="panel-rag">
+  <h2>RAG Pipeline</h2>
+  <p class="desc">Test the Retrieval-Augmented Generation pipeline — query routing, search, and ingestion.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>RAG Query</h3>
+      <label>Question</label>
+      <textarea id="ragQuestion" rows="3" placeholder="Ask an agricultural question...">What organic fertilizers work best for tomatoes?</textarea>
+      <label style="margin-top:8px">Context (optional)</label>
+      <input type="text" id="ragContext" placeholder="Additional context..." />
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="ragQuery()">Query RAG</button>
+        <button class="btn btn-secondary" onclick="ragRoute()">Test Router</button>
+      </div>
+      <div class="result-box" id="ragResult"></div>
+      <div class="meta-bar" id="ragMeta"></div>
+    </div>
+    <div class="card">
+      <h3>Semantic Search</h3>
+      <label>Search Query</label>
+      <input type="text" id="ragSearch" placeholder="Search knowledge base..." value="pest management for beans" />
+      <div class="grid-2" style="margin-top:8px">
+        <div><label>Top K</label><input type="number" id="ragTopK" value="5" min="1" max="20" /></div>
+        <div><label>Category</label><select id="ragCat"><option value="">All</option><option value="agronomy">Agronomy</option><option value="market">Market</option><option value="platform">Platform</option><option value="regulatory">Regulatory</option></select></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="ragSearchFn()">Search</button>
+        <button class="btn btn-secondary" onclick="ragStats()">KB Stats</button>
+      </div>
+      <div class="result-box" id="ragSearchResult"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Ingest Document</h3>
+    <div class="grid-3">
+      <div><label>Text</label><textarea id="ingestText" rows="3" placeholder="Document content..."></textarea></div>
+      <div><label>Source</label><input type="text" id="ingestSource" placeholder="e.g., ICAR Handbook" /></div>
+      <div><label>Category</label><select id="ingestCat"><option value="agronomy">Agronomy</option><option value="market">Market</option><option value="platform">Platform</option><option value="regulatory">Regulatory</option></select></div>
+    </div>
+    <div class="btn-group"><button class="btn btn-secondary" onclick="ragIngest()">Ingest</button></div>
+    <div class="result-box" id="ingestResult"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PRICING PANEL ═══════════════════════ -->
+<div class="panel" id="panel-pricing">
+  <h2>Pricing &amp; AISP Calculator</h2>
+  <p class="desc">Test the DPLE Pricing Agent — market prices, sell/hold recommendations, and AISP breakdown.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Price Check (via Chat Agent)</h3>
+      <label>Commodity</label>
+      <input type="text" id="prCommodity" value="Tomato" />
+      <label style="margin-top:8px">Location</label>
+      <input type="text" id="prLocation" value="Kolar" />
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="checkPrice()">Get Price</button>
+      </div>
+      <div class="result-box" id="priceResult"></div>
+    </div>
+    <div class="card">
+      <h3>AISP Calculator (Client-side)</h3>
+      <div class="grid-2">
+        <div><label>Farmer Price (₹/kg)</label><input type="number" id="aispPrice" value="20" step="0.5" /></div>
+        <div><label>Quantity (kg)</label><input type="number" id="aispQty" value="200" /></div>
+        <div><label>Distance (km)</label><input type="number" id="aispDist" value="30" /></div>
+        <div><label>Mandi Modal (₹/kg, cap)</label><input type="number" id="aispMandi" value="28" step="0.5" /></div>
+      </div>
+      <div class="btn-group"><button class="btn btn-primary" onclick="calcAISP()">Calculate AISP</button></div>
+      <div class="result-box" id="aispResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ DATA PANEL ═══════════════════════ -->
+<div class="panel" id="panel-data">
+  <h2>Market Data &amp; Scrapers</h2>
+  <p class="desc">Fetch live data from Agmarknet, eNAM, IMD Weather, and AI Kosha.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Mandi Prices</h3>
+      <div class="grid-2">
+        <div><label>Commodity</label><input type="text" id="dataCommodity" value="Tomato" /></div>
+        <div><label>State</label><input type="text" id="dataState" value="Karnataka" /></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="fetchPrices()">Fetch Prices</button>
+        <button class="btn btn-secondary" onclick="fetchSources()">Data Sources</button>
+      </div>
+      <div class="result-box" id="dataResult"></div>
+    </div>
+    <div class="card">
+      <h3>Weather Advisory</h3>
+      <div class="grid-2">
+        <div><label>State</label><input type="text" id="wxState" value="Karnataka" /></div>
+        <div><label>District</label><input type="text" id="wxDistrict" value="Kolar" /></div>
+      </div>
+      <div class="btn-group"><button class="btn btn-primary" onclick="fetchWeather()">Get Weather</button></div>
+      <div class="result-box" id="wxResult"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Trigger Scraper</h3>
+    <div class="grid-3">
+      <div><label>Source</label><select id="scrapeSource"><option value="agmarknet">Agmarknet</option><option value="enam">eNAM</option><option value="imd">IMD Weather</option></select></div>
+      <div><label>Commodity</label><input type="text" id="scrapeCommodity" value="Tomato" /></div>
+      <div><label>State</label><input type="text" id="scrapeState" value="Karnataka" /></div>
+    </div>
+    <div class="btn-group"><button class="btn btn-danger" onclick="triggerScrape()">Run Scraper</button></div>
+    <div class="result-box" id="scrapeResult"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ VOICE PANEL ═══════════════════════ -->
+<div class="panel" id="panel-voice">
+  <h2>Voice Agent</h2>
+  <p class="desc">Test STT, TTS, and the complete voice flow. Requires microphone access.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Voice Input (Record &amp; Process)</h3>
+      <label>Language</label>
+      <select id="voiceLang">
+        <option value="auto">Auto-detect</option>
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="en">English</option>
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+      </select>
+      <div class="btn-group">
+        <button class="btn btn-danger" id="recordBtn" onclick="toggleRecord()">🎤 Start Recording</button>
+        <button class="btn btn-secondary" onclick="checkVoiceHealth()">Voice Health</button>
+      </div>
+      <div id="recordingStatus" style="margin-top:8px;font-size:13px;color:var(--text2)"></div>
+      <div class="result-box" id="voiceResult"></div>
+    </div>
+    <div class="card">
+      <h3>Text-to-Speech</h3>
+      <label>Text</label>
+      <textarea id="ttsText" rows="3" placeholder="Enter text to synthesize...">ನಮಸ್ಕಾರ! ಕ್ರಾಪ್‌ಫ್ರೆಶ್‌ಗೆ ಸ್ವಾಗತ.</textarea>
+      <label style="margin-top:8px">Language</label>
+      <select id="ttsLang">
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        <option value="hi">हिन्दी (Hindi)</option>
+        <option value="en">English</option>
+      </select>
+      <div class="btn-group"><button class="btn btn-primary" onclick="synthesize()">🔊 Synthesize</button></div>
+      <audio id="ttsAudio" controls style="width:100%;margin-top:12px;display:none"></audio>
+      <div class="result-box" id="ttsResult"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = location.origin;
+let chatSessionId = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+// ═══════════════════════ NAV ═══════════════════════
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+// ═══════════════════════ UTILS ═══════════════════════
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const t0 = performance.now();
+  const res = await fetch(API + path, opts);
+  const ms = Math.round(performance.now() - t0);
+  const data = await res.json();
+  return { data, ms, ok: res.ok, status: res.status };
+}
+
+function show(id, data, isError) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.className = 'result-box' + (isError ? ' error' : '');
+  el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
+
+function setHealthVal(id, val, ok) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className = 'value ' + (ok === true ? 'ok' : ok === false ? 'err' : 'warn');
+}
+
+// ═══════════════════════ HEALTH ═══════════════════════
+async function checkHealth() {
+  try {
+    const [alive, ready] = await Promise.all([
+      api('GET', '/health'),
+      api('GET', '/health/ready'),
+    ]);
+
+    const dot = document.getElementById('statusDot');
+    dot.className = 'status-dot ' + (ready.ok ? 'ok' : 'err');
+
+    setHealthVal('h-status', alive.ok ? '✓ Alive' : '✗ Down', alive.ok);
+    const c = ready.data.checks || {};
+    setHealthVal('h-provider', c.llm_provider || '—', c.llm_configured);
+    setHealthVal('h-llm', c.llm_configured ? '✓ Yes' : '✗ No', c.llm_configured);
+    setHealthVal('h-llm-init', c.llm_initialized ? '✓ Yes' : '✗ No', c.llm_initialized);
+    setHealthVal('h-qdrant', c.qdrant_configured ? '✓ Yes' : '✗ No', c.qdrant_configured);
+    setHealthVal('h-knowledge', c.knowledge_agent ? '✓ Ready' : '✗ Down', c.knowledge_agent);
+    setHealthVal('h-supervisor', c.supervisor ? '✓ Ready' : '✗ Down', c.supervisor);
+    setHealthVal('h-redis', c.redis ? '✓ Connected' : '○ Off', c.redis ? true : null);
+
+    // Load agents
+    try {
+      const ag = await api('GET', '/api/v1/chat/agents');
+      document.getElementById('agentsList').textContent = JSON.stringify(ag.data, null, 2);
+    } catch(e) {
+      document.getElementById('agentsList').textContent = 'Could not load agents: ' + e.message;
+    }
+  } catch(e) {
+    document.getElementById('statusDot').className = 'status-dot err';
+    setHealthVal('h-status', '✗ Unreachable', false);
+  }
+}
+
+// ═══════════════════════ CHAT ═══════════════════════
+function setChat(text) { document.getElementById('chatInput').value = text; }
+
+function appendChat(role, text) {
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = `<div class="role ${role}">${role}</div><div class="body">${text}</div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  appendChat('user', msg);
+
+  const body = { message: msg };
+  if (chatSessionId) body.session_id = chatSessionId;
+
+  try {
+    const r = await api('POST', '/api/v1/chat', body);
+    chatSessionId = r.data.session_id;
+    appendChat('assistant', r.data.message || r.data.content || JSON.stringify(r.data));
+
+    const meta = document.getElementById('chatMeta');
+    meta.innerHTML = `
+      <span class="meta-tag">Agent: <b>${r.data.agent_used || '—'}</b></span>
+      <span class="meta-tag">Confidence: <b>${(r.data.confidence || 0).toFixed(2)}</b></span>
+      <span class="meta-tag">Latency: <b>${r.ms}ms</b></span>
+      <span class="meta-tag">Session: <b>${chatSessionId || '—'}</b></span>
+    `;
+  } catch(e) { appendChat('assistant', 'Error: ' + e.message); }
+}
+
+async function sendChatStream() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  appendChat('user', msg);
+
+  const msgDiv = appendChat('assistant', '');
+  const body = { message: msg };
+  if (chatSessionId) body.session_id = chatSessionId;
+
+  try {
+    const res = await fetch(API + '/api/v1/chat/stream', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let text = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const evt = JSON.parse(line.slice(6));
+          if (evt.type === 'session') chatSessionId = evt.session_id;
+          else if (evt.type === 'token') { text += evt.content; msgDiv.querySelector('.body').textContent = text; }
+          else if (evt.type === 'done') { msgDiv.querySelector('.body').textContent = text || evt.content; }
+          else if (evt.type === 'agent') {
+            document.getElementById('chatMeta').innerHTML = `<span class="meta-tag">Agent: <b>${evt.agent}</b></span>`;
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) { msgDiv.querySelector('.body').textContent = 'Stream error: ' + e.message; }
+}
+
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+// ═══════════════════════ RAG ═══════════════════════
+async function ragQuery() {
+  const body = { question: document.getElementById('ragQuestion').value };
+  const ctx = document.getElementById('ragContext').value;
+  if (ctx) body.context = ctx;
+  try {
+    const r = await api('POST', '/api/v1/rag/query', body);
+    show('ragResult', r.data, !r.ok);
+    document.getElementById('ragMeta').innerHTML = `
+      <span class="meta-tag">Latency: <b>${r.ms}ms</b></span>
+      <span class="meta-tag">Cached: <b>${r.data.cached || false}</b></span>
+      <span class="meta-tag">Type: <b>${r.data.query_type || '—'}</b></span>
+    `;
+  } catch(e) { show('ragResult', 'Error: ' + e.message, true); }
+}
+
+async function ragRoute() {
+  try {
+    const r = await api('POST', '/api/v1/rag/route', { query: document.getElementById('ragQuestion').value });
+    show('ragResult', r.data, !r.ok);
+  } catch(e) { show('ragResult', 'Error: ' + e.message, true); }
+}
+
+async function ragSearchFn() {
+  const q = document.getElementById('ragSearch').value;
+  const k = document.getElementById('ragTopK').value;
+  const cat = document.getElementById('ragCat').value;
+  let url = `/api/v1/rag/search?query=${encodeURIComponent(q)}&top_k=${k}`;
+  if (cat) url += `&category=${cat}`;
+  try {
+    const r = await api('GET', url);
+    show('ragSearchResult', r.data, !r.ok);
+  } catch(e) { show('ragSearchResult', 'Error: ' + e.message, true); }
+}
+
+async function ragStats() {
+  try { const r = await api('GET', '/api/v1/rag/stats'); show('ragSearchResult', r.data, !r.ok); }
+  catch(e) { show('ragSearchResult', 'Error: ' + e.message, true); }
+}
+
+async function ragIngest() {
+  const docs = [{ text: document.getElementById('ingestText').value, source: document.getElementById('ingestSource').value, category: document.getElementById('ingestCat').value }];
+  try { const r = await api('POST', '/api/v1/rag/ingest', { documents: docs }); show('ingestResult', r.data, !r.ok); }
+  catch(e) { show('ingestResult', 'Error: ' + e.message, true); }
+}
+
+// ═══════════════════════ PRICING ═══════════════════════
+async function checkPrice() {
+  const commodity = document.getElementById('prCommodity').value;
+  const location = document.getElementById('prLocation').value;
+  const msg = `What is the current price of ${commodity} in ${location}? Should I sell now or wait?`;
+  try {
+    const r = await api('POST', '/api/v1/chat', { message: msg });
+    show('priceResult', r.data, !r.ok);
+  } catch(e) { show('priceResult', 'Error: ' + e.message, true); }
+}
+
+function calcAISP() {
+  const fp = parseFloat(document.getElementById('aispPrice').value);
+  const qty = parseFloat(document.getElementById('aispQty').value);
+  const dist = parseFloat(document.getElementById('aispDist').value);
+  const mandi = parseFloat(document.getElementById('aispMandi').value);
+
+  const logRates = [[0,25,2],[25,50,2.5],[50,100,3],[100,Infinity,4]];
+  const feeTiers = [[0,100,.08],[100,500,.06],[500,Infinity,.04]];
+  const riskPct = 0.02, dhThresh = 15, dhRate = 0.5;
+
+  let logRate = logRates[logRates.length-1][2];
+  for (const [mn,mx,r] of logRates) { if (dist >= mn && dist < mx) { logRate = r; break; } }
+  let feePct = feeTiers[feeTiers.length-1][2];
+  for (const [mn,mx,f] of feeTiers) { if (qty >= mn && qty < mx) { feePct = f; break; } }
+
+  const farmerPayout = fp * qty;
+  const logistics = logRate * qty;
+  const deadhead = dist > dhThresh ? dhRate * qty : 0;
+  const handling = 0.5 * qty;
+  const subtotal = farmerPayout + logistics + deadhead + handling;
+  const platformFee = subtotal * feePct;
+  const riskBuffer = subtotal * riskPct;
+  let total = subtotal + platformFee + riskBuffer;
+  let perKg = total / qty;
+  let capped = false;
+  if (mandi > 0 && perKg > mandi) { perKg = mandi; total = perKg * qty; capped = true; }
+
+  show('aispResult', {
+    farmer_price_per_kg: fp, quantity_kg: qty,
+    farmer_payout: farmerPayout.toFixed(2),
+    logistics_cost: logistics.toFixed(2),
+    deadhead_surcharge: deadhead.toFixed(2),
+    handling_cost: handling.toFixed(2),
+    platform_fee: `${platformFee.toFixed(2)} (${(feePct*100)}%)`,
+    risk_buffer: `${riskBuffer.toFixed(2)} (${(riskPct*100)}%)`,
+    total_aisp: `₹${total.toFixed(2)}`,
+    aisp_per_kg: `₹${perKg.toFixed(2)}`,
+    mandi_cap_applied: capped,
+  });
+}
+
+// ═══════════════════════ DATA ═══════════════════════
+async function fetchPrices() {
+  const c = document.getElementById('dataCommodity').value;
+  const s = document.getElementById('dataState').value;
+  try { const r = await api('GET', `/api/v1/data/prices?commodity=${encodeURIComponent(c)}&state=${encodeURIComponent(s)}`); show('dataResult', r.data, !r.ok); }
+  catch(e) { show('dataResult', 'Error: ' + e.message, true); }
+}
+
+async function fetchSources() {
+  try { const r = await api('GET', '/api/v1/data/sources'); show('dataResult', r.data, !r.ok); }
+  catch(e) { show('dataResult', 'Error: ' + e.message, true); }
+}
+
+async function fetchWeather() {
+  const s = document.getElementById('wxState').value;
+  const d = document.getElementById('wxDistrict').value;
+  try { const r = await api('GET', `/api/v1/data/weather?state=${encodeURIComponent(s)}&district=${encodeURIComponent(d)}`); show('wxResult', r.data, !r.ok); }
+  catch(e) { show('wxResult', 'Error: ' + e.message, true); }
+}
+
+async function triggerScrape() {
+  const body = { source: document.getElementById('scrapeSource').value, commodity: document.getElementById('scrapeCommodity').value, state: document.getElementById('scrapeState').value };
+  try { const r = await api('POST', '/api/v1/data/scrape', body); show('scrapeResult', r.data, !r.ok); }
+  catch(e) { show('scrapeResult', 'Error: ' + e.message, true); }
+}
+
+// ═══════════════════════ VOICE ═══════════════════════
+async function checkVoiceHealth() {
+  try { const r = await api('GET', '/api/v1/voice/health'); show('voiceResult', r.data, !r.ok); }
+  catch(e) { show('voiceResult', 'Error: ' + e.message, true); }
+}
+
+async function toggleRecord() {
+  if (isRecording) { stopRecording(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); processRecording(); };
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('recordBtn').textContent = '⏹ Stop Recording';
+    document.getElementById('recordBtn').style.background = '#dc2626';
+    document.getElementById('recordingStatus').textContent = '🔴 Recording...';
+  } catch(e) {
+    show('voiceResult', 'Microphone error: ' + e.message, true);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  document.getElementById('recordBtn').textContent = '🎤 Start Recording';
+  document.getElementById('recordBtn').style.background = '';
+  document.getElementById('recordingStatus').textContent = 'Processing...';
+}
+
+async function processRecording() {
+  const blob = new Blob(audioChunks, { type: 'audio/webm' });
+  const form = new FormData();
+  form.append('audio', blob, 'recording.webm');
+  form.append('user_id', 'test-user-dashboard');
+  form.append('language', document.getElementById('voiceLang').value);
+
+  try {
+    const t0 = performance.now();
+    const res = await fetch(API + '/api/v1/voice/process', { method: 'POST', body: form });
+    const ms = Math.round(performance.now() - t0);
+    const data = await res.json();
+    document.getElementById('recordingStatus').textContent = `Done in ${ms}ms`;
+
+    show('voiceResult', data, !res.ok);
+
+    if (data.response_audio_base64) {
+      const audioData = atob(data.response_audio_base64);
+      const arr = new Uint8Array(audioData.length);
+      for (let i = 0; i < audioData.length; i++) arr[i] = audioData.charCodeAt(i);
+      const audioBlob = new Blob([arr], { type: 'audio/mp3' });
+      const url = URL.createObjectURL(audioBlob);
+      const audio = new Audio(url);
+      audio.play();
+    }
+  } catch(e) {
+    document.getElementById('recordingStatus').textContent = '';
+    show('voiceResult', 'Error: ' + e.message, true);
+  }
+}
+
+async function synthesize() {
+  const body = { text: document.getElementById('ttsText').value, language: document.getElementById('ttsLang').value };
+  try {
+    const r = await api('POST', '/api/v1/voice/synthesize', body);
+    if (r.data.audio_base64) {
+      const audioData = atob(r.data.audio_base64);
+      const arr = new Uint8Array(audioData.length);
+      for (let i = 0; i < audioData.length; i++) arr[i] = audioData.charCodeAt(i);
+      const blob = new Blob([arr], { type: 'audio/mp3' });
+      const url = URL.createObjectURL(blob);
+      const audioEl = document.getElementById('ttsAudio');
+      audioEl.src = url;
+      audioEl.style.display = 'block';
+      audioEl.play();
+      show('ttsResult', { duration: r.data.duration_seconds, latency_ms: r.ms }, false);
+    } else {
+      show('ttsResult', r.data, !r.ok);
+    }
+  } catch(e) { show('ttsResult', 'Error: ' + e.message, true); }
+}
+
+// ═══════════════════════ INIT ═══════════════════════
+checkHealth();
+</script>
+</body>
+</html>

@@ -48,18 +48,22 @@ class PriceRecommendation(BaseModel):
 
 class AISPCalculation(BaseModel):
     """All-Inclusive Sourcing Price breakdown."""
-    
+
     farmer_price_per_kg: float
     quantity_kg: float
     farmer_payout: float
-    
+
     logistics_cost: float
+    deadhead_surcharge: float
     handling_cost: float
     platform_fee: float
     platform_fee_pct: float
-    
+    risk_buffer: float
+    risk_buffer_pct: float
+
     total_aisp: float
     aisp_per_kg: float
+    mandi_cap_applied: bool
 
 
 class PricingAgent:
@@ -77,20 +81,22 @@ class PricingAgent:
         rec = await agent.get_recommendation("Tomato", "Kolar", quantity_kg=200)
     """
     
-    # Platform fee tiers
     PLATFORM_FEE_TIERS = [
-        (0, 100, 0.08),      # 0-100 kg: 8%
-        (100, 500, 0.06),    # 100-500 kg: 6%  
-        (500, float("inf"), 0.04),  # 500+ kg: 4%
+        (0, 100, 0.08),
+        (100, 500, 0.06),
+        (500, float("inf"), 0.04),
     ]
-    
-    # Logistics rates (₹/kg based on distance)
+
     LOGISTICS_RATES = [
-        (0, 25, 2.0),    # 0-25 km: ₹2/kg
-        (25, 50, 2.5),   # 25-50 km: ₹2.5/kg
-        (50, 100, 3.0),  # 50-100 km: ₹3/kg
-        (100, float("inf"), 4.0),  # 100+ km: ₹4/kg
+        (0, 25, 2.0),
+        (25, 50, 2.5),
+        (50, 100, 3.0),
+        (100, float("inf"), 4.0),
     ]
+
+    RISK_BUFFER_PCT = 0.02
+    DEADHEAD_THRESHOLD_KM = 15.0
+    DEADHEAD_SURCHARGE_PER_KG = 0.50
     
     def __init__(
         self,
@@ -169,11 +175,11 @@ class PricingAgent:
             price, quantity_kg, asking_price
         )
         
-        # 3. Calculate AISP if buyer needs it
         aisp = self.calculate_aisp(
             farmer_price_per_kg=price_per_kg,
             quantity_kg=quantity_kg,
-            distance_km=30,  # Default estimate
+            distance_km=30,
+            mandi_modal_per_kg=price.modal_price_per_kg,
         )
         
         return PriceRecommendation(
@@ -248,49 +254,60 @@ class PricingAgent:
         quantity_kg: float,
         distance_km: float = 30,
         handling_per_kg: float = 0.5,
+        mandi_modal_per_kg: Optional[float] = None,
     ) -> AISPCalculation:
         """
-        Calculate All-Inclusive Sourcing Price.
-        
-        AISP = Farmer_Payout + Logistics + Handling + Platform_Fee
-        
-        Args:
-            farmer_price_per_kg: Price paid to farmer (₹/kg)
-            quantity_kg: Quantity in kg
-            distance_km: Distance from farm to buyer
-            handling_per_kg: Handling cost per kg
-            
-        Returns:
-            AISPCalculation with full breakdown
+        Calculate All-Inclusive Sourcing Price (business-aligned).
+
+        AISP = Farmer_Payout + Logistics + Deadhead + Handling
+               + Platform_Fee + Risk_Buffer
+
+        The final AISP is capped so it never exceeds the mandi modal
+        price (when available), ensuring the buyer always saves vs. mandi.
         """
-        # Farmer payout
         farmer_payout = farmer_price_per_kg * quantity_kg
-        
-        # Logistics cost
+
         logistics_rate = self._get_logistics_rate(distance_km)
         logistics_cost = logistics_rate * quantity_kg
-        
-        # Handling cost
+
+        deadhead_surcharge = 0.0
+        if distance_km > self.DEADHEAD_THRESHOLD_KM:
+            deadhead_surcharge = self.DEADHEAD_SURCHARGE_PER_KG * quantity_kg
+
         handling_cost = handling_per_kg * quantity_kg
-        
-        # Platform fee (on farmer_payout + logistics + handling)
-        subtotal = farmer_payout + logistics_cost + handling_cost
+
+        subtotal = farmer_payout + logistics_cost + deadhead_surcharge + handling_cost
         platform_fee_pct = self._get_platform_fee(quantity_kg)
         platform_fee = subtotal * platform_fee_pct
-        
-        # Total AISP
-        total_aisp = subtotal + platform_fee
-        
+
+        risk_buffer = subtotal * self.RISK_BUFFER_PCT
+
+        total_aisp = subtotal + platform_fee + risk_buffer
+        aisp_per_kg = total_aisp / quantity_kg
+
+        mandi_cap_applied = False
+        if mandi_modal_per_kg and aisp_per_kg > mandi_modal_per_kg:
+            aisp_per_kg = mandi_modal_per_kg
+            total_aisp = aisp_per_kg * quantity_kg
+            scale = total_aisp / (subtotal + platform_fee + risk_buffer)
+            platform_fee *= scale
+            risk_buffer *= scale
+            mandi_cap_applied = True
+
         return AISPCalculation(
             farmer_price_per_kg=farmer_price_per_kg,
             quantity_kg=quantity_kg,
             farmer_payout=farmer_payout,
             logistics_cost=logistics_cost,
+            deadhead_surcharge=deadhead_surcharge,
             handling_cost=handling_cost,
             platform_fee=platform_fee,
             platform_fee_pct=platform_fee_pct,
+            risk_buffer=risk_buffer,
+            risk_buffer_pct=self.RISK_BUFFER_PCT,
             total_aisp=total_aisp,
-            aisp_per_kg=total_aisp / quantity_kg,
+            aisp_per_kg=aisp_per_kg,
+            mandi_cap_applied=mandi_cap_applied,
         )
     
     def _get_logistics_rate(self, distance_km: float) -> float:

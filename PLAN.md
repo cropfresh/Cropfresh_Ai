@@ -66,15 +66,27 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 
 ## 🧠 AI Agents in the System
 
-| Agent | Domain | Key Capabilities |
-|-------|--------|-----------------|
-| Supervisor | Routing | Query classification, agent delegation |
-| Agronomy | Farming | Crop guides, pest/disease, irrigation advice |
-| Commerce | Market | AISP pricing, mandi prices, sell/hold decisions |
-| Voice | Interface | STT (Kannada/Hindi/English), TTS, stream |
-| Vision | Computer Vision | Crop disease detection (YOLOv12 + DINOv2) |
-| Platform | App Support | Registration, FAQ, order tracking |
-| General | Fallback | Greetings, unclear queries |
+### 5 Core Agents (Business-Aligned, from PDF Business Model)
+
+| Agent | Domain | Key Capabilities | Status |
+|-------|--------|-----------------|--------|
+| **DPLE Pricing** | Pricing Engine | AISP = Farmer Ask + Logistics + Margin(4-8%) + Risk Buffer(2%) | Partial |
+| **DPLE Logistics** | Route Optimizer | Multi-pickup clustering, vehicle auto-select, deadhead calc | TODO |
+| **Matchmaking Engine** | Supply-Demand | GPS clustering, buyer preference matrix, margin optimization | TODO |
+| **CV-QG Vision** | Quality Grading | YOLOv8 grading, HITL trigger, Digital Twin, Dispute Diff Engine | TODO |
+| **Voice Accessibility** | Farmer Interface | 10+ Indian languages, all farmer flows voice-driven | Partial |
+| **RAG Advisory + ADCL** | Crop Intelligence | ADCL weekly demand list, agronomy, pest alerts, forecasts | Partial |
+
+### Supporting Agents
+
+| Agent | Domain | Key Capabilities | Status |
+|-------|--------|-----------------|--------|
+| Supervisor | Routing | Query classification, 0.9 confidence threshold | Stable |
+| Agronomy | Farming | Crop guides, pest/disease, irrigation advice | Stable |
+| Commerce | Market | AISP, mandi prices, sell/hold decisions | Stable |
+| Platform | App Support | Registration, FAQ, order tracking | Stable |
+| General | Fallback | Greetings, unclear queries | Stable |
+| ADCL | Crop Demand | Weekly assured demand crop list generator | TODO |
 
 ---
 

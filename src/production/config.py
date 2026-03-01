@@ -28,12 +28,15 @@ class Environment(str, Enum):
 
 class LLMConfig(BaseModel):
     """LLM provider configuration."""
-    provider: str = "groq"
-    model: str = "llama-3.3-70b-versatile"
+    provider: str = "bedrock"
+    model: str = "claude-sonnet-4"
     api_key: Optional[SecretStr] = None
     max_tokens: int = 4000
     temperature: float = 0.7
     timeout_sec: int = 30
+    # Amazon Bedrock
+    aws_region: str = "ap-south-1"
+    aws_profile: str = ""
 
 
 class DatabaseConfig(BaseModel):
