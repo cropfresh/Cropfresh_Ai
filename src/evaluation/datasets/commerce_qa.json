@@ -1,0 +1,167 @@
+[
+  {
+    "question": "Should I sell my onions now or wait for better prices?",
+    "ground_truth": "Based on current Agmarknet data, onion prices in Bangalore are ₹18–22/kg. Historically, prices peak in April–May before the new Kharif crop arrives. If you can store onions for 4–6 weeks in a cool, dry, well-ventilated store, waiting may yield ₹25–30/kg. Factor in storage loss (5–8%) and holding cost before deciding.",
+    "contexts": [
+      "Onion wholesale prices in Bangalore APMC: current week average ₹20/kg. Monthly trend shows 12% rise over past 4 weeks.",
+      "Historical onion price patterns show consistent peaks in March–April for held kharif stock across Karnataka mandis."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the current price of tomato in Bangalore APMC?",
+    "ground_truth": "According to today's Agmarknet data, tomato wholesale price at Bangalore APMC is ₹25–30/kg. The modal price is ₹28/kg. Prices are elevated due to supply disruption from Kolar districts following unseasonal rains.",
+    "contexts": [
+      "Tomato prices at Bangalore APMC today: Min ₹25, Max ₹32, Modal ₹28 per kg.",
+      "Kolar district, Karnataka's primary tomato belt, received unseasonal rains last week leading to post-harvest losses and reduced arrivals at mandis."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Which mandi is offering the best price for potato in Karnataka today?",
+    "ground_truth": "Based on today's Agmarknet data, Hassan APMC is offering the best potato prices at ₹14–16/kg modal price, compared to Bangalore (₹12/kg) and Hubli (₹11/kg). Transport cost from your location should be factored in before choosing the mandi.",
+    "contexts": [
+      "Potato prices across Karnataka mandis today: Hassan ₹15/kg, Bangalore ₹12/kg, Hubli ₹11/kg, Mysore ₹13/kg.",
+      "Hassan district is a major potato production zone; local mandis often have better prices due to lower trader margins."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I get the best price for my areca nut harvest?",
+    "ground_truth": "For best areca nut prices: (1) Grade your produce — bol (whole) fetches ₹450–500/kg vs. chali (husk removed) at ₹380/kg; (2) Sell directly at Shimoga or Sirsi APMC rather than local traders to reduce intermediary margins; (3) Wait for Diwali-season demand peak (October–November) when prices rise 10–15%.",
+    "contexts": [
+      "Areca nut (supari) has two major grades in Karnataka: bol (chali husk-on, higher value) and chali (husk removed). Sirsi APMC is the largest areca nut market.",
+      "Areca nut demand peaks during festival seasons. Shimoga and Sirsi APMCs report higher prices compared to local collection points during festive months."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the minimum support price for paddy this year?",
+    "ground_truth": "For Kharif 2024–25, the Government of India announced an MSP of ₹2,300/quintal for common paddy and ₹2,320/quintal for Grade A paddy. Karnataka government procurement operates through the Food Corporation of India and KFCI at these rates.",
+    "contexts": [
+      "Cabinet Committee on Economic Affairs (CCEA) approved paddy MSP for Kharif 2024–25: Common variety ₹2,300/quintal, Grade A ₹2,320/quintal.",
+      "MSP procurement in Karnataka is managed through designated procurement centres run by KFCI and FCI. Farmers must register on the AP Mandi portal to access MSP procurement."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Is there demand for organic turmeric from buyers on CropFresh?",
+    "ground_truth": "Yes, CropFresh currently has 5 active buyers seeking organic turmeric, with demand for 20–50 MT/month. They are willing to pay a 15–20% premium over market rates (current market ₹120/kg; organic buyers offering ₹140–145/kg). Certification via APEDA or Participatory Guarantee System (PGS) is required.",
+    "contexts": [
+      "CropFresh buyer database: 5 verified buyers have active RFQs for organic turmeric. Total demand: 22 MT this month.",
+      "Organic turmeric premium over conventional: 15–20%. Buyers require PGS or NPOP organic certification. Bulb and finger turmeric both in demand."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I calculate my profit margin for selling maize at ₹1,900/quintal?",
+    "ground_truth": "Profit margin calculation for maize at ₹1,900/quintal: Typical production cost in Karnataka is ₹1,400–1,600/quintal (seed, fertiliser, labour, irrigation). At ₹1,900/quintal selling price: Gross margin = ₹300–500/quintal. Deduct transport (₹40–80/quintal) and mandi charges (1% = ₹19/quintal). Net profit: ₹200–440/quintal.",
+    "contexts": [
+      "Maize production cost in Karnataka (Kharif 2024): Input cost approx ₹1,450/quintal including seed, fertiliser, pesticide, and labour per CoA estimates.",
+      "APMC mandi commission is 1% of sale price plus loading/unloading at ₹15–25/quintal. Transport from farm gate to mandi averages ₹40–80/quintal."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the current market price trend for red chilli in Guntur?",
+    "ground_truth": "Guntur red chilli (Teja variety) prices have risen 8% over the past two weeks, reaching ₹16,000–18,000/quintal due to reduced acreage in Andhra Pradesh this season. Export demand from spice processors is strong. Short-term outlook is bullish; prices may test ₹20,000/quintal before new season arrivals in January.",
+    "contexts": [
+      "Guntur APMC red chilli (Teja): current modal price ₹17,500/quintal. Two-week change: +8.2%.",
+      "Andhra Pradesh chilli acreage 2024–25 is 15% below previous year due to delayed monsoon. Spice exporters from Europe and Middle East are actively buying."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How can I access government crop insurance for my rabi crop?",
+    "ground_truth": "Enrol in Pradhan Mantri Fasal Bima Yojana (PMFBY): visit the CSC centre or the pmfby.gov.in portal before the rabi cut-off date (November 30 for Karnataka). Required documents: 7/12 extract, Aadhaar, bank account details. Premium is 1.5% of sum insured for rabi cereals, subsidised by the government.",
+    "contexts": [
+      "PMFBY enrolment deadline for rabi 2024–25 in Karnataka: November 30, 2024. Loanee farmers are automatically enrolled through KCC accounts.",
+      "PMFBY premium for rabi cereal crops is capped at 1.5% for farmers; the remainder is subsidised 50:50 by Central and State governments."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "What export opportunities exist for Karnataka mangoes?",
+    "ground_truth": "Karnataka Alphonso and Totapuri mangoes have strong export demand in the UAE, UK, and Germany markets. APEDA-registered exporters pay ₹55–65/kg FOB. Farmers must obtain a pre-shipment pest inspection certificate from the Plant Quarantine authority. Organic-certified mangoes attract a 25% premium in EU markets.",
+    "contexts": [
+      "Karnataka mango exports (Alphonso, Badami, Totapuri) reached 12,000 MT in 2023–24. Major export destinations: UAE, UK, Germany, Saudi Arabia.",
+      "APEDA mandates pre-shipment inspection for mango exports. Fungicide residue levels must comply with EU MRL standards. Organic certified mangoes command ₹70–75/kg FOB in EU."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How do I find wholesale buyers for my banana crop on CropFresh?",
+    "ground_truth": "On CropFresh: create a produce listing with quantity, grade, and harvest date. The platform's ADCL agent will match your listing with registered wholesale buyers and commission agents within 24 hours. Ensure you specify banana variety (Robusta, Nendran, Rasthali) and ripeness stage for better matching.",
+    "contexts": [
+      "CropFresh's ADCL (Aggregated Demand Consolidation Layer) matches farmer produce listings with verified wholesale buyers based on quantity, location, grade, and variety.",
+      "Banana wholesale buyers on CropFresh require: variety, weight (Robusta avg 25 kg/bunch), harvest date ± 2 days, pack type (loose/carton), and pickup location."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Is now a good time to sell bengal gram (chana) given current futures prices?",
+    "ground_truth": "NCDEX chana near-month futures are trading at ₹5,800–6,000/quintal, approximately 5% above the current spot price of ₹5,550/quintal. MSP for chana is ₹5,440/quintal. Given the basis and moderate carry (storage + insurance), selling 50% now and holding 50% for 30–45 days may optimise returns.",
+    "contexts": [
+      "NCDEX chana (Bengal gram) April futures: ₹5,920/quintal. Current spot in APMC Gulbarga: ₹5,550/quintal.",
+      "Chana MSP for 2024–25: ₹5,440/quintal. Karnataka government is procuring through NAFED at MSP for registered farmers."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "What are the logistics costs to transport 10 tonnes of watermelon from Bidar to Pune?",
+    "ground_truth": "Transport for 10 MT watermelon from Bidar to Pune (approx 400 km): a 10-MT mini-truck costs ₹12,000–15,000 one-way. Per-kg transport cost: ₹1.20–1.50. Factor in toll (₹400–500), loading/unloading labour (₹500), and potential rejection/damage risk of 3–5% for watermelons.",
+    "contexts": [
+      "CropFresh DPLE logistics optimizer: Bidar–Pune route, distance 398 km, estimated freight for 10 MT: ₹12,500–14,000 via road transport.",
+      "Watermelon is a high-water-content, fragile produce. Standard transit damage allowance is 3–5%. Recommend padded loading and completion within 12 hours of loading."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How does CropFresh handle payment security when I sell produce to buyers I don't know?",
+    "ground_truth": "CropFresh uses an escrow-based payment system: buyers deposit payment into a secure escrow account before goods are dispatched. Funds are released to the farmer only after the buyer confirms receipt and quality acceptance. In case of disputes, CropFresh's resolution team arbitrates based on quality inspection reports.",
+    "contexts": [
+      "CropFresh payment model: escrow hold at order confirmation, release within 24 hours of buyer acknowledgement. Platform charges 1.5% transaction fee.",
+      "Dispute resolution on CropFresh: third-party quality inspector (empanelled by CropFresh) assesses produce quality on delivery. Inspector report is binding for payment decisions."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the price forecast for sugarcane in Karnataka for next season?",
+    "ground_truth": "For Karnataka sugarcane 2025–26, the State Advised Price (SAP) is expected to be announced by KSCB around May 2025, likely in the range of ₹3,200–3,400/MT based on current Fair and Remunerative Price (FRP) of ₹3,150/MT set by CACP. Sugar recovery rates of 10.5%+ qualify for premium SAP.",
+    "contexts": [
+      "CACP has set FRP for sugarcane at ₹3,150/MT for 2024–25 assuming 10.25% recovery. State governments may announce SAP above FRP.",
+      "Karnataka sugarcane belts: Belagavi, Bagalkote, Vijayapura. Sugar seasons typically run Oct–April. Price announcements come 2–3 months before crushing begins."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  }
+]

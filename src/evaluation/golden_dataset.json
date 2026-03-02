@@ -1,0 +1,552 @@
+[
+  {
+    "question": "How do I prevent tomato blight in Karnataka?",
+    "ground_truth": "To prevent tomato blight in Karnataka, apply copper-based fungicides (e.g., Bordeaux mixture 1%) every 10–14 days during humid weather, avoid overhead irrigation, remove infected plant debris promptly, and plant certified disease-resistant varieties like Arka Rakshak.",
+    "contexts": [
+      "Tomato blight is caused by Phytophthora infestans. Humid and rainy conditions in Karnataka's Western Ghats belt create ideal conditions for disease spread.",
+      "Copper-based fungicides are recommended for blight management in vegetable crops. Bordeaux mixture at 1% concentration is widely used in Karnataka."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the best time to sow rabi crops in north Karnataka?",
+    "ground_truth": "In north Karnataka, the optimal rabi sowing window is October to November, after the monsoon rains recede and soil moisture is adequate. Wheat, jowar, chickpea, and sunflower are common rabi crops sown during this period.",
+    "contexts": [
+      "Rabi season in Karnataka typically begins in October–November after the northeast monsoon. North Karnataka districts like Dharwad, Gadag, and Bidar are major rabi zones.",
+      "Wheat, chickpea, and sunflower perform well as rabi crops in north Karnataka's black cotton soil."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How should I manage aphid infestation on cotton crops?",
+    "ground_truth": "For aphid management on cotton: spray imidacloprid 17.8 SL at 0.5 ml/L or dimethoate 30 EC at 2 ml/L. Encourage natural predators like ladybird beetles. Avoid excessive nitrogen fertilisation as it promotes soft tissue susceptible to aphids.",
+    "contexts": [
+      "Aphids (Aphis gossypii) are a major pest of cotton in Karnataka. They suck sap from young shoots and leaves, causing curling and stunted growth.",
+      "Imidacloprid and dimethoate are approved systemic insecticides for aphid control in cotton. Neem-based formulations can also be effective for early-stage infestations."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What are the water requirements for drip-irrigated onions?",
+    "ground_truth": "Drip-irrigated onions require approximately 350–450 mm of water over the crop period (90–120 days). Apply 4–6 mm/day during bulb development. Deficit irrigation during early vegetative stage is acceptable, but adequate moisture is critical from bulb initiation to harvest.",
+    "contexts": [
+      "Onion is a shallow-rooted crop requiring frequent, light irrigations. Drip irrigation saves 40–50% water compared to furrow irrigation.",
+      "Water stress during bulb formation phase directly reduces onion yield and bulb size. Critical irrigation stages are pre-bulb and bulb development."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "Which fertiliser schedule is recommended for Bt cotton in Karnataka?",
+    "ground_truth": "For Bt cotton in Karnataka use: basal dose of 25 kg N + 25 kg P₂O₅ + 25 kg K₂O per acre at sowing; top-dress 25 kg N per acre at 30 DAS and another 25 kg N at 60 DAS. Include 10 kg ZnSO₄/acre as basal if zinc deficiency is reported.",
+    "contexts": [
+      "Bt cotton in Karnataka requires balanced NPK nutrition. Excessive nitrogen delays maturity and increases bollworm susceptibility.",
+      "Karnataka's ICAR recommendations specify split nitrogen application to improve nutrient use efficiency in cotton."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "What causes yellow mosaic disease in mung bean?",
+    "ground_truth": "Yellow mosaic disease (YMD) in mung bean is caused by Mungbean Yellow Mosaic India Virus (MYMIV), transmitted by the whitefly Bemisia tabaci. Symptoms include bright yellow patches on leaves. Management: use YMD-resistant varieties (Pant Moong 5, IPM 2–3), spray imidacloprid to control whitefly vector.",
+    "contexts": [
+      "Yellow mosaic disease is a major constraint to mung bean production in India, causing up to 85% yield loss under severe infection.",
+      "Whitefly population management through yellow sticky traps and systemic insecticides reduces YMD incidence significantly."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How do I improve soil organic carbon in degraded farmland?",
+    "ground_truth": "To improve soil organic carbon (SOC) in degraded farmland: incorporate green manure crops (Sesbania, Daincha) before decomposition; apply farmyard manure at 5–10 t/ha; practise minimum tillage; use crop residue mulching; grow cover crops in fallow periods. Long-term SOC improvement takes 3–5 years.",
+    "contexts": [
+      "Soil organic carbon is a key indicator of soil health and fertility. Degraded soils in Deccan plateau have SOC below 0.5%.",
+      "Green manuring with Sesbania rostrata adds approximately 60–90 kg N/ha and significant organic matter when incorporated at 45 DAS."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What integrated pest management (IPM) approach is best for tomato leaf curl virus?",
+    "ground_truth": "For tomato leaf curl virus (ToLCV) IPM: use whitefly-resistant varieties, install 40-mesh insect-proof netting in nurseries, spray neem seed kernel extract 5% at 7-day intervals, apply reflective mulches to deter whiteflies, and remove infected plants early to reduce inoculum spread.",
+    "contexts": [
+      "ToLCV is a begomoviridae virus transmitted exclusively by Bemisia tabaci whitefly. It causes severe leaf curling, yellowing, and stunted growth.",
+      "Cultural control such as insect-proof nurseries significantly reduces primary ToLCV infection. Once infection occurs, there is no curative treatment."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How do I test soil pH and correct it for vegetable cultivation?",
+    "ground_truth": "Test soil pH using a soil test kit or send a sample to the nearest Krishi Vigyan Kendra. Most vegetables prefer pH 6.0–7.0. For acidic soils (pH < 6): apply agricultural lime (calcium carbonate) at 250–500 kg/acre 2–3 weeks before sowing. For alkaline soils (pH > 7.5): apply gypsum at 200–300 kg/acre.",
+    "contexts": [
+      "Soil pH affects nutrient availability. Iron and manganese become toxic below pH 5.5, while phosphorus deficiency occurs above pH 7.5 in most Indian soils.",
+      "Karnataka's red laterite soils are often acidic (pH 5.5–6.5), requiring lime application for vegetable production."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "What are the signs of potassium deficiency in potato crops?",
+    "ground_truth": "Potassium deficiency in potatoes shows as browning and necrosis of older leaf margins (scorched-tip symptom), weak stems, poor tuber quality, and hollow heart. Correct with muriate of potash (MOP) at 50 kg K₂O/acre as basal plus one top-dress at tuber initiation.",
+    "contexts": [
+      "Potassium is critical for tuber quality, disease resistance, and drought tolerance in potatoes. Deficiency is common in sandy soils.",
+      "The scorched-tip symptom starting at older leaves is a classic visual indicator of potassium deficiency, distinguishable from drought stress."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "When should I apply post-emergence herbicides in maize?",
+    "ground_truth": "Apply post-emergence herbicides in maize at the 3–5 leaf stage of the crop (15–20 DAS). Atrazine 0.5 kg a.i./ha or tembotrione 120 g a.i./ha are effective. Apply in the morning or evening with flat-fan nozzles; avoid application during rain or high temperatures.",
+    "contexts": [
+      "Weed competition in maize is most critical in the first 30–40 days. Post-emergence herbicide application at the 3–5 leaf stage provides effective season-long control.",
+      "Atrazine is a broad-spectrum post-emergence herbicide for maize, effective against both grassy and broadleaf weeds."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I identify and manage powdery mildew on grapes?",
+    "ground_truth": "Powdery mildew (Erysiphe necator) on grapes appears as white powdery coating on leaves, shoots, and berries. Manage with wettable sulphur 80 WP at 3 g/L, or hexaconazole 5 EC at 1 ml/L. Apply at 10-day intervals from bud break to veraison. Avoid dense canopies by proper training.",
+    "contexts": [
+      "Powdery mildew is a major fungal disease of grapes in Karnataka's dry zones, especially Vijayapura and Bagalkote.",
+      "Sulphur-based fungicides are the first choice for powdery mildew control; resistance has been reported in triazoles in some regions."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What crop rotation reduces nematode infestation in tomato fields?",
+    "ground_truth": "To reduce root-knot nematode (Meloidogyne spp.) levels in tomato fields: rotate with non-host crops such as maize, sorghum, or onion for 1–2 seasons. Incorporate Tagetes (marigold) as a bio-fumigant crop. Apply neem cake at 200 kg/acre before planting and use grafted tomato rootstocks (Solanum torvum).",
+    "contexts": [
+      "Root-knot nematodes are a major constraint for solanaceous crops in sandy loam soils. Populations decline significantly when non-host crops are grown for two consecutive seasons.",
+      "Marigold (Tagetes erecta) releases thiophene compounds that suppress nematode populations when ploughed in as green manure."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How can I identify Fusarium wilt in banana plantations?",
+    "ground_truth": "Fusarium wilt (Panama disease) in banana shows as yellowing and wilting of lower leaves progressing upward, with brown-red discolouration in the pseudostem cross-section. Caused by Fusarium oxysporum f.sp. cubense. Use Cavendish or resistant varieties (Grand Naine, Robusta); no chemical cure exists once infected.",
+    "contexts": [
+      "Fusarium wilt (TR4 strain) is a devastating soil-borne pathogen affecting banana. The cross-section of an infected pseudostem shows distinctive internal discolouration.",
+      "There is currently no effective chemical treatment for Fusarium wilt. Prevention through resistant varieties and clean planting material is the only reliable strategy."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "What micronutrient spray is recommended for iron chlorosis in groundnut?",
+    "ground_truth": "For iron chlorosis (young leaf yellowing with green veins) in groundnut: spray ferrous sulphate (0.5%) + citric acid (0.1%) at 20, 30, and 40 DAS. Alternatively, foliar application of sequestrene iron (Fe-EDTA) at 0.2% is highly effective. Correct soil alkalinity if pH exceeds 7.5.",
+    "contexts": [
+      "Iron chlorosis is common in groundnut grown on calcareous soils. The condition is worsened by waterlogging and high bicarbonate levels.",
+      "Foliar ferrous sulphate spray is a cost-effective remedy for iron chlorosis in groundnut, provided the soil pH is also addressed."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "Should I sell my onions now or wait for better prices?",
+    "ground_truth": "Based on current Agmarknet data, onion prices in Bangalore are ₹18–22/kg. Historically, prices peak in April–May before the new Kharif crop arrives. If you can store onions for 4–6 weeks in a cool, dry, well-ventilated store, waiting may yield ₹25–30/kg. Factor in storage loss (5–8%) and holding cost before deciding.",
+    "contexts": [
+      "Onion wholesale prices in Bangalore APMC: current week average ₹20/kg. Monthly trend shows 12% rise over past 4 weeks.",
+      "Historical onion price patterns show consistent peaks in March–April for held kharif stock across Karnataka mandis."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the current price of tomato in Bangalore APMC?",
+    "ground_truth": "According to today's Agmarknet data, tomato wholesale price at Bangalore APMC is ₹25–30/kg. The modal price is ₹28/kg. Prices are elevated due to supply disruption from Kolar districts following unseasonal rains.",
+    "contexts": [
+      "Tomato prices at Bangalore APMC today: Min ₹25, Max ₹32, Modal ₹28 per kg.",
+      "Kolar district, Karnataka's primary tomato belt, received unseasonal rains last week leading to post-harvest losses and reduced arrivals at mandis."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Which mandi is offering the best price for potato in Karnataka today?",
+    "ground_truth": "Based on today's Agmarknet data, Hassan APMC is offering the best potato prices at ₹14–16/kg modal price, compared to Bangalore (₹12/kg) and Hubli (₹11/kg). Transport cost from your location should be factored in before choosing the mandi.",
+    "contexts": [
+      "Potato prices across Karnataka mandis today: Hassan ₹15/kg, Bangalore ₹12/kg, Hubli ₹11/kg, Mysore ₹13/kg.",
+      "Hassan district is a major potato production zone; local mandis often have better prices due to lower trader margins."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I get the best price for my areca nut harvest?",
+    "ground_truth": "For best areca nut prices: (1) Grade your produce — bol (whole) fetches ₹450–500/kg vs. chali (husk removed) at ₹380/kg; (2) Sell directly at Shimoga or Sirsi APMC rather than local traders to reduce intermediary margins; (3) Wait for Diwali-season demand peak (October–November) when prices rise 10–15%.",
+    "contexts": [
+      "Areca nut (supari) has two major grades in Karnataka: bol (chali husk-on, higher value) and chali (husk removed). Sirsi APMC is the largest areca nut market.",
+      "Areca nut demand peaks during festival seasons. Shimoga and Sirsi APMCs report higher prices compared to local collection points during festive months."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the minimum support price for paddy this year?",
+    "ground_truth": "For Kharif 2024–25, the Government of India announced an MSP of ₹2,300/quintal for common paddy and ₹2,320/quintal for Grade A paddy. Karnataka government procurement operates through the Food Corporation of India and KFCI at these rates.",
+    "contexts": [
+      "Cabinet Committee on Economic Affairs (CCEA) approved paddy MSP for Kharif 2024–25: Common variety ₹2,300/quintal, Grade A ₹2,320/quintal.",
+      "MSP procurement in Karnataka is managed through designated procurement centres run by KFCI and FCI. Farmers must register on the AP Mandi portal to access MSP procurement."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Is there demand for organic turmeric from buyers on CropFresh?",
+    "ground_truth": "Yes, CropFresh currently has 5 active buyers seeking organic turmeric, with demand for 20–50 MT/month. They are willing to pay a 15–20% premium over market rates (current market ₹120/kg; organic buyers offering ₹140–145/kg). Certification via APEDA or Participatory Guarantee System (PGS) is required.",
+    "contexts": [
+      "CropFresh buyer database: 5 verified buyers have active RFQs for organic turmeric. Total demand: 22 MT this month.",
+      "Organic turmeric premium over conventional: 15–20%. Buyers require PGS or NPOP organic certification. Bulb and finger turmeric both in demand."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I calculate my profit margin for selling maize at ₹1,900/quintal?",
+    "ground_truth": "Profit margin calculation for maize at ₹1,900/quintal: Typical production cost in Karnataka is ₹1,400–1,600/quintal (seed, fertiliser, labour, irrigation). At ₹1,900/quintal selling price: Gross margin = ₹300–500/quintal. Deduct transport (₹40–80/quintal) and mandi charges (1% = ₹19/quintal). Net profit: ₹200–440/quintal.",
+    "contexts": [
+      "Maize production cost in Karnataka (Kharif 2024): Input cost approx ₹1,450/quintal including seed, fertiliser, pesticide, and labour per CoA estimates.",
+      "APMC mandi commission is 1% of sale price plus loading/unloading at ₹15–25/quintal. Transport from farm gate to mandi averages ₹40–80/quintal."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the current market price trend for red chilli in Guntur?",
+    "ground_truth": "Guntur red chilli (Teja variety) prices have risen 8% over the past two weeks, reaching ₹16,000–18,000/quintal due to reduced acreage in Andhra Pradesh this season. Export demand from spice processors is strong. Short-term outlook is bullish; prices may test ₹20,000/quintal before new season arrivals in January.",
+    "contexts": [
+      "Guntur APMC red chilli (Teja): current modal price ₹17,500/quintal. Two-week change: +8.2%.",
+      "Andhra Pradesh chilli acreage 2024–25 is 15% below previous year due to delayed monsoon. Spice exporters from Europe and Middle East are actively buying."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How can I access government crop insurance for my rabi crop?",
+    "ground_truth": "Enrol in Pradhan Mantri Fasal Bima Yojana (PMFBY): visit the CSC centre or the pmfby.gov.in portal before the rabi cut-off date (November 30 for Karnataka). Required documents: 7/12 extract, Aadhaar, bank account details. Premium is 1.5% of sum insured for rabi cereals, subsidised by the government.",
+    "contexts": [
+      "PMFBY enrolment deadline for rabi 2024–25 in Karnataka: November 30, 2024. Loanee farmers are automatically enrolled through KCC accounts.",
+      "PMFBY premium for rabi cereal crops is capped at 1.5% for farmers; the remainder is subsidised 50:50 by Central and State governments."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "What export opportunities exist for Karnataka mangoes?",
+    "ground_truth": "Karnataka Alphonso and Totapuri mangoes have strong export demand in the UAE, UK, and Germany markets. APEDA-registered exporters pay ₹55–65/kg FOB. Farmers must obtain a pre-shipment pest inspection certificate from the Plant Quarantine authority. Organic-certified mangoes attract a 25% premium in EU markets.",
+    "contexts": [
+      "Karnataka mango exports (Alphonso, Badami, Totapuri) reached 12,000 MT in 2023–24. Major export destinations: UAE, UK, Germany, Saudi Arabia.",
+      "APEDA mandates pre-shipment inspection for mango exports. Fungicide residue levels must comply with EU MRL standards. Organic certified mangoes command ₹70–75/kg FOB in EU."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How do I find wholesale buyers for my banana crop on CropFresh?",
+    "ground_truth": "On CropFresh: create a produce listing with quantity, grade, and harvest date. The platform's ADCL agent will match your listing with registered wholesale buyers and commission agents within 24 hours. Ensure you specify banana variety (Robusta, Nendran, Rasthali) and ripeness stage for better matching.",
+    "contexts": [
+      "CropFresh's ADCL (Aggregated Demand Consolidation Layer) matches farmer produce listings with verified wholesale buyers based on quantity, location, grade, and variety.",
+      "Banana wholesale buyers on CropFresh require: variety, weight (Robusta avg 25 kg/bunch), harvest date ± 2 days, pack type (loose/carton), and pickup location."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Is now a good time to sell bengal gram (chana) given current futures prices?",
+    "ground_truth": "NCDEX chana near-month futures are trading at ₹5,800–6,000/quintal, approximately 5% above the current spot price of ₹5,550/quintal. MSP for chana is ₹5,440/quintal. Given the basis and moderate carry (storage + insurance), selling 50% now and holding 50% for 30–45 days may optimise returns.",
+    "contexts": [
+      "NCDEX chana (Bengal gram) April futures: ₹5,920/quintal. Current spot in APMC Gulbarga: ₹5,550/quintal.",
+      "Chana MSP for 2024–25: ₹5,440/quintal. Karnataka government is procuring through NAFED at MSP for registered farmers."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "What are the logistics costs to transport 10 tonnes of watermelon from Bidar to Pune?",
+    "ground_truth": "Transport for 10 MT watermelon from Bidar to Pune (approx 400 km): a 10-MT mini-truck costs ₹12,000–15,000 one-way. Per-kg transport cost: ₹1.20–1.50. Factor in toll (₹400–500), loading/unloading labour (₹500), and potential rejection/damage risk of 3–5% for watermelons.",
+    "contexts": [
+      "CropFresh DPLE logistics optimizer: Bidar–Pune route, distance 398 km, estimated freight for 10 MT: ₹12,500–14,000 via road transport.",
+      "Watermelon is a high-water-content, fragile produce. Standard transit damage allowance is 3–5%. Recommend padded loading and completion within 12 hours of loading."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How does CropFresh handle payment security when I sell produce to buyers I don't know?",
+    "ground_truth": "CropFresh uses an escrow-based payment system: buyers deposit payment into a secure escrow account before goods are dispatched. Funds are released to the farmer only after the buyer confirms receipt and quality acceptance. In case of disputes, CropFresh's resolution team arbitrates based on quality inspection reports.",
+    "contexts": [
+      "CropFresh payment model: escrow hold at order confirmation, release within 24 hours of buyer acknowledgement. Platform charges 1.5% transaction fee.",
+      "Dispute resolution on CropFresh: third-party quality inspector (empanelled by CropFresh) assesses produce quality on delivery. Inspector report is binding for payment decisions."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the price forecast for sugarcane in Karnataka for next season?",
+    "ground_truth": "For Karnataka sugarcane 2025–26, the State Advised Price (SAP) is expected to be announced by KSCB around May 2025, likely in the range of ₹3,200–3,400/MT based on current Fair and Remunerative Price (FRP) of ₹3,150/MT set by CACP. Sugar recovery rates of 10.5%+ qualify for premium SAP.",
+    "contexts": [
+      "CACP has set FRP for sugarcane at ₹3,150/MT for 2024–25 assuming 10.25% recovery. State governments may announce SAP above FRP.",
+      "Karnataka sugarcane belts: Belagavi, Bagalkote, Vijayapura. Sugar seasons typically run Oct–April. Price announcements come 2–3 months before crushing begins."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How do I register as a farmer on CropFresh?",
+    "ground_truth": "To register on CropFresh: (1) Download the CropFresh app or visit cropfresh.in; (2) Click 'Register as Farmer'; (3) Enter your Aadhaar number and mobile number for OTP verification; (4) Fill in your farm details (location, land area, primary crops); (5) Account is activated instantly. KYC documents (7/12 extract) can be uploaded later.",
+    "contexts": [
+      "CropFresh farmer onboarding requires Aadhaar-based mobile OTP verification. The process takes under 5 minutes. Land documents are optional at registration but required for listing produce.",
+      "CropFresh supports farmer registration in 10 languages including Kannada, Hindi, Telugu, Tamil, and Marathi."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How can I list my tomato harvest for sale on CropFresh?",
+    "ground_truth": "To list tomatoes on CropFresh: (1) Log in and tap 'Sell Produce'; (2) Select crop type (Tomato); (3) Enter quantity (kg/MT), grade (A/B/C), expected harvest date, and asking price; (4) Add photos of your produce; (5) Set pickup location. Listings are visible to verified buyers within 1 hour of approval.",
+    "contexts": [
+      "CropFresh produce listing process: select crop → enter quantity and grade → set price → add photos → choose pickup mode (farm gate or APMC). Listings are moderated for quality in < 1 hour.",
+      "Buyer matching algorithm on CropFresh uses crop type, quantity, grade, location, and price to surface the top 3 buyers within 24 hours."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How does CropFresh's AI assistant help me decide what to grow next season?",
+    "ground_truth": "CropFresh's AI agronomist analyses your soil test report, past yield history, local weather forecast, and current market price trends to recommend the 3 most profitable crops for your next season. It also shows expected ROI, input costs, and risk score for each recommendation.",
+    "contexts": [
+      "CropFresh crop planning module integrates soil data, weather API, and price prediction models to generate personalised crop recommendations for each registered farmer.",
+      "ADCL agent on CropFresh uses demand aggregation signals from buyers and commodity futures data to rank crop recommendations by expected price and buyer demand."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What happens if a buyer rejects my produce due to quality issues on CropFresh?",
+    "ground_truth": "If a buyer rejects produce: a CropFresh quality inspector visits within 4 hours to assess the produce independently. If rejection is valid, the farmer receives a partial payment based on the agreed quality band. If rejection is unjustified (inspector confirms quality), the buyer is penalised and full payment released to the farmer.",
+    "contexts": [
+      "CropFresh dispute resolution SLA: inspector dispatch within 4 hours of rejection report. Inspector's assessment is binding per platform T&Cs.",
+      "CropFresh quality grading bands: Grade A (premium, <5% defects), Grade B (standard, 5–15% defects), Grade C (processing grade, >15% defects). Price differentials are pre-agreed at listing."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I check the status of my produce shipment on CropFresh?",
+    "ground_truth": "Track your shipment in real time via the CropFresh app: go to 'My Orders' → select the order → view live GPS tracking of the truck. You will also receive SMS/WhatsApp notifications at each milestone: pickup confirmed, in transit, at destination APMC, and delivery confirmed.",
+    "contexts": [
+      "CropFresh logistics tracking: GPS-enabled truck tracking visible on the app. Notifications at key milestones via SMS and WhatsApp.",
+      "CropFresh DPLE logistics module integrates with truck GPS providers to provide real-time tracking for all platform-arranged shipments."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Can I get a loan against my produce listed on CropFresh?",
+    "ground_truth": "Yes, CropFresh has partnered with 3 NBFCs to offer produce-backed pre-harvest credit. Once your listing is confirmed with a buyer order, you can apply for up to 70% advance payment as a short-term loan (7–21 days) at 12–14% annualised interest. Approval takes 2–4 hours.",
+    "contexts": [
+      "CropFresh fintech integration: farmers with confirmed buyer orders are eligible for produce-backed credit. Partner NBFCs: RBL Agri Finance, Samunnati, Jai Kisan.",
+      "Pre-harvest credit on CropFresh: up to 70% of order value, turnaround 2–4 hours, tenure 7–21 days, interest 12–14% annualised."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What languages is the CropFresh platform available in?",
+    "ground_truth": "CropFresh is available in 10 languages: English, Kannada, Hindi, Telugu, Tamil, Marathi, Malayalam, Gujarati, Punjabi, and Bengali. Language can be changed from the Settings menu in the app at any time. Voice interactions with the AI assistant are supported in all 10 languages.",
+    "contexts": [
+      "CropFresh multilingual support: app and voice assistant available in English, Kannada, Hindi, Telugu, Tamil, Marathi, Malayalam, Gujarati, Punjabi, and Bengali.",
+      "Voice agent on CropFresh uses IndicTTS and Whisper-based ASR to support all 10 languages with natural conversation capability."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How do I contact CropFresh customer support?",
+    "ground_truth": "CropFresh customer support: (1) In-app chat (24×7 AI assistant, human escalation in business hours); (2) Toll-free: 1800-XXX-XXXX (8 AM–8 PM, Mon–Sat); (3) WhatsApp: +91-XXXXX-XXXXX; (4) Email: support@cropfresh.in. Average response time is under 30 minutes during business hours.",
+    "contexts": [
+      "CropFresh support channels: in-app AI chat (24×7), toll-free helpline (8AM–8PM Mon–Sat), WhatsApp, and email.",
+      "CropFresh AI assistant handles 80% of queries automatically. Complex issues are escalated to human agents during business hours."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How does CropFresh verify buyer credentials to protect farmers?",
+    "ground_truth": "CropFresh verifies buyers through a 3-step process: (1) GST registration and business documents verification; (2) Bank account verification and credit history check; (3) First-order escrow hold of 100% to validate payment capability. Buyers receive a Trust Score (1–5 stars) visible to farmers on their profile.",
+    "contexts": [
+      "CropFresh buyer KYC: GST certificate, bank statement (6 months), FSSAI licence for food businesses, and Udyam registration for MSMEs.",
+      "CropFresh Trust Score system rates buyers on payment history, rejection rate, and order fulfilment. Low-trust-score buyers are restricted from large-value orders."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How can I use CropFresh to understand government schemes available to me?",
+    "ground_truth": "In the CropFresh app, go to 'Government Schemes' section. Enter your state and crop type to see personalised scheme recommendations. The AI assistant can explain eligibility criteria, application process, and required documents for schemes like PM-KISAN, PMFBY, Soil Health Card, and KCC in your preferred language.",
+    "contexts": [
+      "CropFresh's government scheme navigator covers 150+ central and state schemes. Personalisation filters by state, crop, farm size, and farmer category (SC/ST/OBC/Gen).",
+      "Voice interaction for scheme queries: farmer says 'Mujhe PM Kisan ke baare mein batao', the AI responds in Hindi with eligibility, installment schedule, and application link."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "ಟೊಮೆಟೊ ಬೆಲೆ ಎಷ್ಟು?",
+    "ground_truth": "ಇಂದು ಬೆಂಗಳೂರು APMC ಯಲ್ಲಿ ಟೊಮೆಟೊ ಬೆಲೆ ₹25–30/kg ಇದೆ. ಕೋಲಾರ ಜಿಲ್ಲೆಯಲ್ಲಿ ಅಸಾಮಾನ್ಯ ಮಳೆಯಿಂದಾಗಿ ಪೂರೈಕೆ ಕಡಿಮೆಯಾಗಿ ಬೆಲೆ ಏರಿಕೆಯಾಗಿದೆ.",
+    "contexts": [
+      "ಬೆಂಗಳೂರು APMC ಟೊಮೆಟೊ ಚಿಲ್ಲರೆ ಬೆಲೆ: ₹28/kg ಮಾಡಲ್ ಬೆಲೆ. ಕೋಲಾರ ಜಿಲ್ಲೆಯಲ್ಲಿ ಅಸಾಮಾನ್ಯ ಮಳೆ ನಂತರ ಪೂರೈಕೆ ಕಡಿಮೆಯಾಗಿದೆ.",
+      "Karnataka tomato belt: Kolar, Chikkaballapur districts. Recent unseasonal rains disrupted harvest logistics."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "kn"
+  },
+  {
+    "question": "मेरी फसल का सही दाम कैसे मिलेगा?",
+    "ground_truth": "अपनी फसल का सही दाम पाने के लिए: (1) CropFresh ऐप पर अपनी उपज की लिस्टिंग डालें जिससे कई खरीदार आपसे जुड़ेंगे; (2) APMC मंडी का बाज़ार भाव देखें; (3) MSP से कम में न बेचें। टमाटर का आज MSP ₹600/क्विंटल है। सीधे खरीदारों से मिलने पर बिचौलियों का कमीशन बचेगा।",
+    "contexts": [
+      "CropFresh पर सीधे खरीदारों से जुड़ने पर किसानों को 15–20% अधिक मूल्य मिलता है। बिचौलियों का कमीशन 8–12% होता है।",
+      "APMC mandis publish daily arrival and price data on Agmarknet portal. Farmers can compare prices across mandis before choosing where to sell."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "hi"
+  },
+  {
+    "question": "నా పొలంలో వేరుశనగ పంటకు ఏ ఎరువు వేయాలి?",
+    "ground_truth": "వేరుశనగ పంటకు: విత్తే సమయంలో ఎకరానికి 8 కిలో నత్రజని + 16 కిలో భాస్వరం + 8 కిలో పొటాషియం (8:16:8 NPK) వేయండి. 30 రోజుల తర్వాత ఎకరానికి 8 కిలో నత్రజని అదనంగా వేయండి. జంఖాణ (gypsum) ఎకరానికి 100 కిలో పెట్టి చేమ కట్ట దశలో వేయండి.",
+    "contexts": [
+      "వేరుశనగ పంటకు సిఫార్సు చేసిన ఎరువుల్లో పొటాషియం మరియు కాల్షియం చాలా ముఖ్యమైనవి. జిప్సమ్ (గంధకం కాల్షియం) పెడ్ ఏర్పాటులో సహాయపడుతుంది.",
+      "ICAR recommendation for groundnut in Andhra/Telangana: basal NPK 8:16:8 kg/acre, gypsum 100 kg/acre at peg formation stage."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "te"
+  },
+  {
+    "question": "என் நெல் விளைச்சலை எப்படி விற்க வேண்டும்?",
+    "ground_truth": "உங்கள் நெல் விளைச்சலை விற்க: (1) CropFresh பயன்பாட்டில் பட்டியலிடவும்; (2) அரசு MSP ₹2,300/குவிண்டல் மூலம் FCI கிடங்கில் விற்கலாம்; (3) அல்லது உள்ளூர் APMC மண்டியில் விற்கலாம், இன்றைய விலை ₹2,100–2,250/குவிண்டல். MSP வழியில் விற்க விவசாயி பதிவு அவசியம்.",
+    "contexts": [
+      "Tamil Nadu paddy procurement: FCI and TNCSC operate MSP procurement centres across major rice districts. Paddy MSP 2024–25: ₹2,300/quintal.",
+      "CropFresh supports paddy listing in Tamil Nadu. Buyers include rice millers from Thanjavur and Tiruvarur districts."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "ta"
+  },
+  {
+    "question": "माझ्या शेतात कापसाला काय रोग आहे ते कसे ओळखावे?",
+    "ground_truth": "कापसावरील प्रमुख रोग: (1) बुरशीजन्य विल्ट (Fusarium/Verticillium) — पाने पिवळी पडून वाळतात, खोडाचा आतील भाग तपकिरी; (2) जीवाणूजन्य करपा (Bacterial Blight) — पानांवर कोनाकृती तपकिरी डाग; (3) रूट रॉट — मुळे कुजतात. ओल्या शेतात बुरशीनाशक (Carbendazim 0.1%) फवारणी करा.",
+    "contexts": [
+      "कापसावरील बुरशीजन्य रोग महाराष्ट्रात Vidarbha क्षेत्रात सामान्य आहेत. ओलाव्यापासून संरक्षण व बीज प्रक्रिया महत्त्वाची.",
+      "Bacterial blight in cotton is caused by Xanthomonas citri pv. malvacearum. Angular leaf spots are diagnostic. Copper-based bactericides are recommended."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "mr"
+  },
+  {
+    "question": "ഞാൻ CropFresh-ൽ എന്റെ കർഷകൻ അക്കൗണ്ട് നഷ്ടപ്പെടുത്തിയാൽ എന്ത് ചെയ്യണം?",
+    "ground_truth": "CropFresh അക്കൗണ്ട് പ്രശ്നങ്ങൾക്ക്: (1) 'Forgot Password' ക്ലിക്ക് ചെയ്ത് OTP വഴി ആധർ-ലിങ്ക്ഡ് മൊബൈലിൽ പുനഃസ്ഥാപിക്കുക; (2) ഫോൺ നമ്പർ മാറിയിട്ടുണ്ടെങ്കിൽ 1800-XXX-XXXX കൾ ചെയ്ത് KYC വഴി identity verify ചെയ്യിക്കുക; (3) app ഇൻസ്റ്റാൾ ചെയ്ത് ആധർ OTP ഉപയോഗിച്ച് re-login ചെയ്യുക.",
+    "contexts": [
+      "CropFresh account recovery: Aadhaar-linked mobile OTP is the primary recovery mechanism. Support helpline handles number-change cases with eKYC verification.",
+      "CropFresh customer support: toll-free 1800-XXX-XXXX, WhatsApp helpline available in Malayalam."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "ml"
+  },
+  {
+    "question": "ਮੇਰੀ ਕਣਕ ਦੀ ਫ਼ਸਲ ਪੀਲੀ ਕਿਉਂ ਹੋ ਰਹੀ ਹੈ?",
+    "ground_truth": "ਕਣਕ ਵਿੱਚ ਪੀਲੇਪਣ ਦੇ ਮੁੱਖ ਕਾਰਨ: (1) ਨਾਈਟ੍ਰੋਜਨ ਦੀ ਘਾਟ — ਪੁਰਾਣੇ ਪੱਤੇ ਪਹਿਲਾਂ ਪੀਲੇ ਹੁੰਦੇ ਹਨ, ਯੂਰੀਆ 25 ਕਿਲੋ/ਏਕੜ ਪਾਓ; (2) ਪੀਲੀ ਕੁੰਗੀ (Yellow Rust) — ਪੱਤਿਆਂ 'ਤੇ ਪੀਲੀਆਂ ਧਾਰੀਆਂ, Propiconazole ਦਾ ਛਿੜਕਾਅ ਕਰੋ; (3) ਜਲ-ਭਰਾਅ — ਖੇਤ ਦੀ ਨਿਕਾਸੀ ਕਰੋ।",
+    "contexts": [
+      "Yellow rust (Puccinia striiformis) in wheat is a major fungal disease in Punjab and Haryana. Cool, moist spring conditions favour its spread.",
+      "Nitrogen deficiency in wheat shows as yellowing starting from older leaves. Topdress urea at tillering stage to correct deficiency."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "pa"
+  },
+  {
+    "question": "আমার ধান ক্ষেতে পোকা লেগেছে, কী করব?",
+    "ground_truth": "ধানের প্রধান পোকামাকড়: (1) বাদামী গাছ ফড়িং (BPH) — গাছের গোড়ায় থাকে, Buprofezin 25 SC 1 ml/L স্প্রে করুন; (2) স্টেম বোরার — কুড়ার মধ্যে ডিম পাড়ে, Chlorantraniliprole 0.4% দানা ছিটান; (3) পাতা মোড়ানো পোকা — পাতা পেঁচিয়ে খায়, Lambda-cyhalothrin স্প্রে কার্যকর।",
+    "contexts": [
+      "Brown planthopper (BPH) is a hopper-burn causing pest in paddy. Systemic insecticides applied at the base of the plant are most effective.",
+      "Stem borer in rice causes 'dead heart' in vegetative stage and 'white ear' in reproductive stage. Granular insecticides applied in whorl are recommended."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "bn"
+  },
+  {
+    "question": "CropFresh ਤੋਂ ਕਿਸਾਨ ਕਰਜ਼ਾ ਕਿਵੇਂ ਲੈਣਾ ਹੈ?",
+    "ground_truth": "CropFresh ਰਾਹੀਂ ਕਰਜ਼ਾ ਲੈਣ ਲਈ: (1) ਖਰੀਦਦਾਰ ਨਾਲ ਇੱਕ ਕਨਫਰਮਡ ਆਰਡਰ ਹੋਣਾ ਜ਼ਰੂਰੀ ਹੈ; (2) 'Finance' section ਵਿੱਚ 'Apply for Advance' ਦਬਾਓ; (3) ਆਰਡਰ ਮੁੱਲ ਦਾ 70% ਤੱਕ 2-4 ਘੰਟਿਆਂ ਵਿੱਚ ਮਿਲਦਾ ਹੈ; ਵਿਆਜ 12–14% ਸਾਲਾਨਾ।",
+    "contexts": [
+      "CropFresh produce-backed credit: farmers with confirmed buyer orders can apply for up to 70% advance. Partner NBFCs process loans in 2–4 hours.",
+      "CropFresh ਦੇ ਵਿੱਤੀ ਭਾਈਵਾਲ: RBL Agri Finance, Samunnati, Jai Kisan. ਕਰਜ਼ੇ ਦੀ ਮਿਆਦ 7–21 ਦਿਨ।"
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "pa"
+  },
+  {
+    "question": "ಕ್ರಾಪ್‌ಫ್ರೆಶ್‌ ಮಾರ್ಕೆಟ್‌ ಪ್ಲೇಸ್‌ನಲ್ಲಿ ತರಕಾರಿ ಮಾರಾಟ ಮಾಡಲು ಶುಲ್ಕ ಎಷ್ಟು?",
+    "ground_truth": "CropFresh ಮಾರ್ಕೆಟ್‌ಪ್ಲೇಸ್‌ನಲ್ಲಿ ತರಕಾರಿ ಮಾರಾಟ ಮಾಡಲು: ನೋಂದಣಿ ಶುಲ್ಕ ₹0 (ಉಚಿತ). ಪ್ರತಿ ಮಾರಾಟ ವ್ಯವಹಾರದ ಮೇಲೆ 1.5% ವ್ಯವಹಾರ ಶುಲ್ಕ ಕಡಿತ ಮಾಡಲಾಗುತ್ತದೆ. ಲಾಜಿಸ್ಟಿಕ್ಸ್ ಸೇವೆ ಬಳಸಿದರೆ ಹೆಚ್ಚುವರಿ ಸಾರಿಗೆ ವೆಚ್ಚ ಬರಲಿದೆ.",
+    "contexts": [
+      "CropFresh marketplace fee structure: zero registration fee for farmers; 1.5% transaction fee deducted from sale proceeds. Logistics service is charged separately at actual cost.",
+      "APMC commission for organised mandis is typically 2–4%. CropFresh offers a lower 1.5% platform fee as a direct marketplace."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "kn"
+  }
+]

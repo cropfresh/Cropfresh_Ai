@@ -1,0 +1,112 @@
+[
+  {
+    "question": "How do I register as a farmer on CropFresh?",
+    "ground_truth": "To register on CropFresh: (1) Download the CropFresh app or visit cropfresh.in; (2) Click 'Register as Farmer'; (3) Enter your Aadhaar number and mobile number for OTP verification; (4) Fill in your farm details (location, land area, primary crops); (5) Account is activated instantly. KYC documents (7/12 extract) can be uploaded later.",
+    "contexts": [
+      "CropFresh farmer onboarding requires Aadhaar-based mobile OTP verification. The process takes under 5 minutes. Land documents are optional at registration but required for listing produce.",
+      "CropFresh supports farmer registration in 10 languages including Kannada, Hindi, Telugu, Tamil, and Marathi."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How can I list my tomato harvest for sale on CropFresh?",
+    "ground_truth": "To list tomatoes on CropFresh: (1) Log in and tap 'Sell Produce'; (2) Select crop type (Tomato); (3) Enter quantity (kg/MT), grade (A/B/C), expected harvest date, and asking price; (4) Add photos of your produce; (5) Set pickup location. Listings are visible to verified buyers within 1 hour of approval.",
+    "contexts": [
+      "CropFresh produce listing process: select crop → enter quantity and grade → set price → add photos → choose pickup mode (farm gate or APMC). Listings are moderated for quality in < 1 hour.",
+      "Buyer matching algorithm on CropFresh uses crop type, quantity, grade, location, and price to surface the top 3 buyers within 24 hours."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How does CropFresh's AI assistant help me decide what to grow next season?",
+    "ground_truth": "CropFresh's AI agronomist analyses your soil test report, past yield history, local weather forecast, and current market price trends to recommend the 3 most profitable crops for your next season. It also shows expected ROI, input costs, and risk score for each recommendation.",
+    "contexts": [
+      "CropFresh crop planning module integrates soil data, weather API, and price prediction models to generate personalised crop recommendations for each registered farmer.",
+      "ADCL agent on CropFresh uses demand aggregation signals from buyers and commodity futures data to rank crop recommendations by expected price and buyer demand."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What happens if a buyer rejects my produce due to quality issues on CropFresh?",
+    "ground_truth": "If a buyer rejects produce: a CropFresh quality inspector visits within 4 hours to assess the produce independently. If rejection is valid, the farmer receives a partial payment based on the agreed quality band. If rejection is unjustified (inspector confirms quality), the buyer is penalised and full payment released to the farmer.",
+    "contexts": [
+      "CropFresh dispute resolution SLA: inspector dispatch within 4 hours of rejection report. Inspector's assessment is binding per platform T&Cs.",
+      "CropFresh quality grading bands: Grade A (premium, <5% defects), Grade B (standard, 5–15% defects), Grade C (processing grade, >15% defects). Price differentials are pre-agreed at listing."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I check the status of my produce shipment on CropFresh?",
+    "ground_truth": "Track your shipment in real time via the CropFresh app: go to 'My Orders' → select the order → view live GPS tracking of the truck. You will also receive SMS/WhatsApp notifications at each milestone: pickup confirmed, in transit, at destination APMC, and delivery confirmed.",
+    "contexts": [
+      "CropFresh logistics tracking: GPS-enabled truck tracking visible on the app. Notifications at key milestones via SMS and WhatsApp.",
+      "CropFresh DPLE logistics module integrates with truck GPS providers to provide real-time tracking for all platform-arranged shipments."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "Can I get a loan against my produce listed on CropFresh?",
+    "ground_truth": "Yes, CropFresh has partnered with 3 NBFCs to offer produce-backed pre-harvest credit. Once your listing is confirmed with a buyer order, you can apply for up to 70% advance payment as a short-term loan (7–21 days) at 12–14% annualised interest. Approval takes 2–4 hours.",
+    "contexts": [
+      "CropFresh fintech integration: farmers with confirmed buyer orders are eligible for produce-backed credit. Partner NBFCs: RBL Agri Finance, Samunnati, Jai Kisan.",
+      "Pre-harvest credit on CropFresh: up to 70% of order value, turnaround 2–4 hours, tenure 7–21 days, interest 12–14% annualised."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What languages is the CropFresh platform available in?",
+    "ground_truth": "CropFresh is available in 10 languages: English, Kannada, Hindi, Telugu, Tamil, Marathi, Malayalam, Gujarati, Punjabi, and Bengali. Language can be changed from the Settings menu in the app at any time. Voice interactions with the AI assistant are supported in all 10 languages.",
+    "contexts": [
+      "CropFresh multilingual support: app and voice assistant available in English, Kannada, Hindi, Telugu, Tamil, Marathi, Malayalam, Gujarati, Punjabi, and Bengali.",
+      "Voice agent on CropFresh uses IndicTTS and Whisper-based ASR to support all 10 languages with natural conversation capability."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How do I contact CropFresh customer support?",
+    "ground_truth": "CropFresh customer support: (1) In-app chat (24×7 AI assistant, human escalation in business hours); (2) Toll-free: 1800-XXX-XXXX (8 AM–8 PM, Mon–Sat); (3) WhatsApp: +91-XXXXX-XXXXX; (4) Email: support@cropfresh.in. Average response time is under 30 minutes during business hours.",
+    "contexts": [
+      "CropFresh support channels: in-app AI chat (24×7), toll-free helpline (8AM–8PM Mon–Sat), WhatsApp, and email.",
+      "CropFresh AI assistant handles 80% of queries automatically. Complex issues are escalated to human agents during business hours."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How does CropFresh verify buyer credentials to protect farmers?",
+    "ground_truth": "CropFresh verifies buyers through a 3-step process: (1) GST registration and business documents verification; (2) Bank account verification and credit history check; (3) First-order escrow hold of 100% to validate payment capability. Buyers receive a Trust Score (1–5 stars) visible to farmers on their profile.",
+    "contexts": [
+      "CropFresh buyer KYC: GST certificate, bank statement (6 months), FSSAI licence for food businesses, and Udyam registration for MSMEs.",
+      "CropFresh Trust Score system rates buyers on payment history, rejection rate, and order fulfilment. Low-trust-score buyers are restricted from large-value orders."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How can I use CropFresh to understand government schemes available to me?",
+    "ground_truth": "In the CropFresh app, go to 'Government Schemes' section. Enter your state and crop type to see personalised scheme recommendations. The AI assistant can explain eligibility criteria, application process, and required documents for schemes like PM-KISAN, PMFBY, Soil Health Card, and KCC in your preferred language.",
+    "contexts": [
+      "CropFresh's government scheme navigator covers 150+ central and state schemes. Personalisation filters by state, crop, farm size, and farmer category (SC/ST/OBC/Gen).",
+      "Voice interaction for scheme queries: farmer says 'Mujhe PM Kisan ke baare mein batao', the AI responds in Hindi with eligibility, installment schedule, and application link."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "en"
+  }
+]

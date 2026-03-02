@@ -1,0 +1,112 @@
+[
+  {
+    "question": "ಟೊಮೆಟೊ ಬೆಲೆ ಎಷ್ಟು?",
+    "ground_truth": "ಇಂದು ಬೆಂಗಳೂರು APMC ಯಲ್ಲಿ ಟೊಮೆಟೊ ಬೆಲೆ ₹25–30/kg ಇದೆ. ಕೋಲಾರ ಜಿಲ್ಲೆಯಲ್ಲಿ ಅಸಾಮಾನ್ಯ ಮಳೆಯಿಂದಾಗಿ ಪೂರೈಕೆ ಕಡಿಮೆಯಾಗಿ ಬೆಲೆ ಏರಿಕೆಯಾಗಿದೆ.",
+    "contexts": [
+      "ಬೆಂಗಳೂರು APMC ಟೊಮೆಟೊ ಚಿಲ್ಲರೆ ಬೆಲೆ: ₹28/kg ಮಾಡಲ್ ಬೆಲೆ. ಕೋಲಾರ ಜಿಲ್ಲೆಯಲ್ಲಿ ಅಸಾಮಾನ್ಯ ಮಳೆ ನಂತರ ಪೂರೈಕೆ ಕಡಿಮೆಯಾಗಿದೆ.",
+      "Karnataka tomato belt: Kolar, Chikkaballapur districts. Recent unseasonal rains disrupted harvest logistics."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "kn"
+  },
+  {
+    "question": "मेरी फसल का सही दाम कैसे मिलेगा?",
+    "ground_truth": "अपनी फसल का सही दाम पाने के लिए: (1) CropFresh ऐप पर अपनी उपज की लिस्टिंग डालें जिससे कई खरीदार आपसे जुड़ेंगे; (2) APMC मंडी का बाज़ार भाव देखें; (3) MSP से कम में न बेचें। टमाटर का आज MSP ₹600/क्विंटल है। सीधे खरीदारों से मिलने पर बिचौलियों का कमीशन बचेगा।",
+    "contexts": [
+      "CropFresh पर सीधे खरीदारों से जुड़ने पर किसानों को 15–20% अधिक मूल्य मिलता है। बिचौलियों का कमीशन 8–12% होता है।",
+      "APMC mandis publish daily arrival and price data on Agmarknet portal. Farmers can compare prices across mandis before choosing where to sell."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "medium",
+    "language": "hi"
+  },
+  {
+    "question": "నా పొలంలో వేరుశనగ పంటకు ఏ ఎరువు వేయాలి?",
+    "ground_truth": "వేరుశనగ పంటకు: విత్తే సమయంలో ఎకరానికి 8 కిలో నత్రజని + 16 కిలో భాస్వరం + 8 కిలో పొటాషియం (8:16:8 NPK) వేయండి. 30 రోజుల తర్వాత ఎకరానికి 8 కిలో నత్రజని అదనంగా వేయండి. జంఖాణ (gypsum) ఎకరానికి 100 కిలో పెట్టి చేమ కట్ట దశలో వేయండి.",
+    "contexts": [
+      "వేరుశనగ పంటకు సిఫార్సు చేసిన ఎరువుల్లో పొటాషియం మరియు కాల్షియం చాలా ముఖ్యమైనవి. జిప్సమ్ (గంధకం కాల్షియం) పెడ్ ఏర్పాటులో సహాయపడుతుంది.",
+      "ICAR recommendation for groundnut in Andhra/Telangana: basal NPK 8:16:8 kg/acre, gypsum 100 kg/acre at peg formation stage."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "te"
+  },
+  {
+    "question": "என் நெல் விளைச்சலை எப்படி விற்க வேண்டும்?",
+    "ground_truth": "உங்கள் நெல் விளைச்சலை விற்க: (1) CropFresh பயன்பாட்டில் பட்டியலிடவும்; (2) அரசு MSP ₹2,300/குவிண்டல் மூலம் FCI கிடங்கில் விற்கலாம்; (3) அல்லது உள்ளூர் APMC மண்டியில் விற்கலாம், இன்றைய விலை ₹2,100–2,250/குவிண்டல். MSP வழியில் விற்க விவசாயி பதிவு அவசியம்.",
+    "contexts": [
+      "Tamil Nadu paddy procurement: FCI and TNCSC operate MSP procurement centres across major rice districts. Paddy MSP 2024–25: ₹2,300/quintal.",
+      "CropFresh supports paddy listing in Tamil Nadu. Buyers include rice millers from Thanjavur and Tiruvarur districts."
+    ],
+    "agent_domain": "commerce",
+    "difficulty": "easy",
+    "language": "ta"
+  },
+  {
+    "question": "माझ्या शेतात कापसाला काय रोग आहे ते कसे ओळखावे?",
+    "ground_truth": "कापसावरील प्रमुख रोग: (1) बुरशीजन्य विल्ट (Fusarium/Verticillium) — पाने पिवळी पडून वाळतात, खोडाचा आतील भाग तपकिरी; (2) जीवाणूजन्य करपा (Bacterial Blight) — पानांवर कोनाकृती तपकिरी डाग; (3) रूट रॉट — मुळे कुजतात. ओल्या शेतात बुरशीनाशक (Carbendazim 0.1%) फवारणी करा.",
+    "contexts": [
+      "कापसावरील बुरशीजन्य रोग महाराष्ट्रात Vidarbha क्षेत्रात सामान्य आहेत. ओलाव्यापासून संरक्षण व बीज प्रक्रिया महत्त्वाची.",
+      "Bacterial blight in cotton is caused by Xanthomonas citri pv. malvacearum. Angular leaf spots are diagnostic. Copper-based bactericides are recommended."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "mr"
+  },
+  {
+    "question": "ഞാൻ CropFresh-ൽ എന്റെ കർഷകൻ അക്കൗണ്ട് നഷ്ടപ്പെടുത്തിയാൽ എന്ത് ചെയ്യണം?",
+    "ground_truth": "CropFresh അക്കൗണ്ട് പ്രശ്നങ്ങൾക്ക്: (1) 'Forgot Password' ക്ലിക്ക് ചെയ്ത് OTP വഴി ആധർ-ലിങ്ക്ഡ് മൊബൈലിൽ പുനഃസ്ഥാപിക്കുക; (2) ഫോൺ നമ്പർ മാറിയിട്ടുണ്ടെങ്കിൽ 1800-XXX-XXXX കൾ ചെയ്ത് KYC വഴി identity verify ചെയ്യിക്കുക; (3) app ഇൻസ്റ്റാൾ ചെയ്ത് ആധർ OTP ഉപയോഗിച്ച് re-login ചെയ്യുക.",
+    "contexts": [
+      "CropFresh account recovery: Aadhaar-linked mobile OTP is the primary recovery mechanism. Support helpline handles number-change cases with eKYC verification.",
+      "CropFresh customer support: toll-free 1800-XXX-XXXX, WhatsApp helpline available in Malayalam."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "ml"
+  },
+  {
+    "question": "ਮੇਰੀ ਕਣਕ ਦੀ ਫ਼ਸਲ ਪੀਲੀ ਕਿਉਂ ਹੋ ਰਹੀ ਹੈ?",
+    "ground_truth": "ਕਣਕ ਵਿੱਚ ਪੀਲੇਪਣ ਦੇ ਮੁੱਖ ਕਾਰਨ: (1) ਨਾਈਟ੍ਰੋਜਨ ਦੀ ਘਾਟ — ਪੁਰਾਣੇ ਪੱਤੇ ਪਹਿਲਾਂ ਪੀਲੇ ਹੁੰਦੇ ਹਨ, ਯੂਰੀਆ 25 ਕਿਲੋ/ਏਕੜ ਪਾਓ; (2) ਪੀਲੀ ਕੁੰਗੀ (Yellow Rust) — ਪੱਤਿਆਂ 'ਤੇ ਪੀਲੀਆਂ ਧਾਰੀਆਂ, Propiconazole ਦਾ ਛਿੜਕਾਅ ਕਰੋ; (3) ਜਲ-ਭਰਾਅ — ਖੇਤ ਦੀ ਨਿਕਾਸੀ ਕਰੋ।",
+    "contexts": [
+      "Yellow rust (Puccinia striiformis) in wheat is a major fungal disease in Punjab and Haryana. Cool, moist spring conditions favour its spread.",
+      "Nitrogen deficiency in wheat shows as yellowing starting from older leaves. Topdress urea at tillering stage to correct deficiency."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "pa"
+  },
+  {
+    "question": "আমার ধান ক্ষেতে পোকা লেগেছে, কী করব?",
+    "ground_truth": "ধানের প্রধান পোকামাকড়: (1) বাদামী গাছ ফড়িং (BPH) — গাছের গোড়ায় থাকে, Buprofezin 25 SC 1 ml/L স্প্রে করুন; (2) স্টেম বোরার — কুড়ার মধ্যে ডিম পাড়ে, Chlorantraniliprole 0.4% দানা ছিটান; (3) পাতা মোড়ানো পোকা — পাতা পেঁচিয়ে খায়, Lambda-cyhalothrin স্প্রে কার্যকর।",
+    "contexts": [
+      "Brown planthopper (BPH) is a hopper-burn causing pest in paddy. Systemic insecticides applied at the base of the plant are most effective.",
+      "Stem borer in rice causes 'dead heart' in vegetative stage and 'white ear' in reproductive stage. Granular insecticides applied in whorl are recommended."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "bn"
+  },
+  {
+    "question": "CropFresh ਤੋਂ ਕਿਸਾਨ ਕਰਜ਼ਾ ਕਿਵੇਂ ਲੈਣਾ ਹੈ?",
+    "ground_truth": "CropFresh ਰਾਹੀਂ ਕਰਜ਼ਾ ਲੈਣ ਲਈ: (1) ਖਰੀਦਦਾਰ ਨਾਲ ਇੱਕ ਕਨਫਰਮਡ ਆਰਡਰ ਹੋਣਾ ਜ਼ਰੂਰੀ ਹੈ; (2) 'Finance' section ਵਿੱਚ 'Apply for Advance' ਦਬਾਓ; (3) ਆਰਡਰ ਮੁੱਲ ਦਾ 70% ਤੱਕ 2-4 ਘੰਟਿਆਂ ਵਿੱਚ ਮਿਲਦਾ ਹੈ; ਵਿਆਜ 12–14% ਸਾਲਾਨਾ।",
+    "contexts": [
+      "CropFresh produce-backed credit: farmers with confirmed buyer orders can apply for up to 70% advance. Partner NBFCs process loans in 2–4 hours.",
+      "CropFresh ਦੇ ਵਿੱਤੀ ਭਾਈਵਾਲ: RBL Agri Finance, Samunnati, Jai Kisan. ਕਰਜ਼ੇ ਦੀ ਮਿਆਦ 7–21 ਦਿਨ।"
+    ],
+    "agent_domain": "platform",
+    "difficulty": "medium",
+    "language": "pa"
+  },
+  {
+    "question": "ಕ್ರಾಪ್‌ಫ್ರೆಶ್‌ ಮಾರ್ಕೆಟ್‌ ಪ್ಲೇಸ್‌ನಲ್ಲಿ ತರಕಾರಿ ಮಾರಾಟ ಮಾಡಲು ಶುಲ್ಕ ಎಷ್ಟು?",
+    "ground_truth": "CropFresh ಮಾರ್ಕೆಟ್‌ಪ್ಲೇಸ್‌ನಲ್ಲಿ ತರಕಾರಿ ಮಾರಾಟ ಮಾಡಲು: ನೋಂದಣಿ ಶುಲ್ಕ ₹0 (ಉಚಿತ). ಪ್ರತಿ ಮಾರಾಟ ವ್ಯವಹಾರದ ಮೇಲೆ 1.5% ವ್ಯವಹಾರ ಶುಲ್ಕ ಕಡಿತ ಮಾಡಲಾಗುತ್ತದೆ. ಲಾಜಿಸ್ಟಿಕ್ಸ್ ಸೇವೆ ಬಳಸಿದರೆ ಹೆಚ್ಚುವರಿ ಸಾರಿಗೆ ವೆಚ್ಚ ಬರಲಿದೆ.",
+    "contexts": [
+      "CropFresh marketplace fee structure: zero registration fee for farmers; 1.5% transaction fee deducted from sale proceeds. Logistics service is charged separately at actual cost.",
+      "APMC commission for organised mandis is typically 2–4%. CropFresh offers a lower 1.5% platform fee as a direct marketplace."
+    ],
+    "agent_domain": "platform",
+    "difficulty": "easy",
+    "language": "kn"
+  }
+]

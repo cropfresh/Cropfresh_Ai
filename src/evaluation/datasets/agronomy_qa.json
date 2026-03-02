@@ -1,0 +1,167 @@
+[
+  {
+    "question": "How do I prevent tomato blight in Karnataka?",
+    "ground_truth": "To prevent tomato blight in Karnataka, apply copper-based fungicides (e.g., Bordeaux mixture 1%) every 10–14 days during humid weather, avoid overhead irrigation, remove infected plant debris promptly, and plant certified disease-resistant varieties like Arka Rakshak.",
+    "contexts": [
+      "Tomato blight is caused by Phytophthora infestans. Humid and rainy conditions in Karnataka's Western Ghats belt create ideal conditions for disease spread.",
+      "Copper-based fungicides are recommended for blight management in vegetable crops. Bordeaux mixture at 1% concentration is widely used in Karnataka."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What is the best time to sow rabi crops in north Karnataka?",
+    "ground_truth": "In north Karnataka, the optimal rabi sowing window is October to November, after the monsoon rains recede and soil moisture is adequate. Wheat, jowar, chickpea, and sunflower are common rabi crops sown during this period.",
+    "contexts": [
+      "Rabi season in Karnataka typically begins in October–November after the northeast monsoon. North Karnataka districts like Dharwad, Gadag, and Bidar are major rabi zones.",
+      "Wheat, chickpea, and sunflower perform well as rabi crops in north Karnataka's black cotton soil."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "How should I manage aphid infestation on cotton crops?",
+    "ground_truth": "For aphid management on cotton: spray imidacloprid 17.8 SL at 0.5 ml/L or dimethoate 30 EC at 2 ml/L. Encourage natural predators like ladybird beetles. Avoid excessive nitrogen fertilisation as it promotes soft tissue susceptible to aphids.",
+    "contexts": [
+      "Aphids (Aphis gossypii) are a major pest of cotton in Karnataka. They suck sap from young shoots and leaves, causing curling and stunted growth.",
+      "Imidacloprid and dimethoate are approved systemic insecticides for aphid control in cotton. Neem-based formulations can also be effective for early-stage infestations."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What are the water requirements for drip-irrigated onions?",
+    "ground_truth": "Drip-irrigated onions require approximately 350–450 mm of water over the crop period (90–120 days). Apply 4–6 mm/day during bulb development. Deficit irrigation during early vegetative stage is acceptable, but adequate moisture is critical from bulb initiation to harvest.",
+    "contexts": [
+      "Onion is a shallow-rooted crop requiring frequent, light irrigations. Drip irrigation saves 40–50% water compared to furrow irrigation.",
+      "Water stress during bulb formation phase directly reduces onion yield and bulb size. Critical irrigation stages are pre-bulb and bulb development."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "Which fertiliser schedule is recommended for Bt cotton in Karnataka?",
+    "ground_truth": "For Bt cotton in Karnataka use: basal dose of 25 kg N + 25 kg P₂O₅ + 25 kg K₂O per acre at sowing; top-dress 25 kg N per acre at 30 DAS and another 25 kg N at 60 DAS. Include 10 kg ZnSO₄/acre as basal if zinc deficiency is reported.",
+    "contexts": [
+      "Bt cotton in Karnataka requires balanced NPK nutrition. Excessive nitrogen delays maturity and increases bollworm susceptibility.",
+      "Karnataka's ICAR recommendations specify split nitrogen application to improve nutrient use efficiency in cotton."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "What causes yellow mosaic disease in mung bean?",
+    "ground_truth": "Yellow mosaic disease (YMD) in mung bean is caused by Mungbean Yellow Mosaic India Virus (MYMIV), transmitted by the whitefly Bemisia tabaci. Symptoms include bright yellow patches on leaves. Management: use YMD-resistant varieties (Pant Moong 5, IPM 2–3), spray imidacloprid to control whitefly vector.",
+    "contexts": [
+      "Yellow mosaic disease is a major constraint to mung bean production in India, causing up to 85% yield loss under severe infection.",
+      "Whitefly population management through yellow sticky traps and systemic insecticides reduces YMD incidence significantly."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How do I improve soil organic carbon in degraded farmland?",
+    "ground_truth": "To improve soil organic carbon (SOC) in degraded farmland: incorporate green manure crops (Sesbania, Daincha) before decomposition; apply farmyard manure at 5–10 t/ha; practise minimum tillage; use crop residue mulching; grow cover crops in fallow periods. Long-term SOC improvement takes 3–5 years.",
+    "contexts": [
+      "Soil organic carbon is a key indicator of soil health and fertility. Degraded soils in Deccan plateau have SOC below 0.5%.",
+      "Green manuring with Sesbania rostrata adds approximately 60–90 kg N/ha and significant organic matter when incorporated at 45 DAS."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What integrated pest management (IPM) approach is best for tomato leaf curl virus?",
+    "ground_truth": "For tomato leaf curl virus (ToLCV) IPM: use whitefly-resistant varieties, install 40-mesh insect-proof netting in nurseries, spray neem seed kernel extract 5% at 7-day intervals, apply reflective mulches to deter whiteflies, and remove infected plants early to reduce inoculum spread.",
+    "contexts": [
+      "ToLCV is a begomoviridae virus transmitted exclusively by Bemisia tabaci whitefly. It causes severe leaf curling, yellowing, and stunted growth.",
+      "Cultural control such as insect-proof nurseries significantly reduces primary ToLCV infection. Once infection occurs, there is no curative treatment."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How do I test soil pH and correct it for vegetable cultivation?",
+    "ground_truth": "Test soil pH using a soil test kit or send a sample to the nearest Krishi Vigyan Kendra. Most vegetables prefer pH 6.0–7.0. For acidic soils (pH < 6): apply agricultural lime (calcium carbonate) at 250–500 kg/acre 2–3 weeks before sowing. For alkaline soils (pH > 7.5): apply gypsum at 200–300 kg/acre.",
+    "contexts": [
+      "Soil pH affects nutrient availability. Iron and manganese become toxic below pH 5.5, while phosphorus deficiency occurs above pH 7.5 in most Indian soils.",
+      "Karnataka's red laterite soils are often acidic (pH 5.5–6.5), requiring lime application for vegetable production."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "easy",
+    "language": "en"
+  },
+  {
+    "question": "What are the signs of potassium deficiency in potato crops?",
+    "ground_truth": "Potassium deficiency in potatoes shows as browning and necrosis of older leaf margins (scorched-tip symptom), weak stems, poor tuber quality, and hollow heart. Correct with muriate of potash (MOP) at 50 kg K₂O/acre as basal plus one top-dress at tuber initiation.",
+    "contexts": [
+      "Potassium is critical for tuber quality, disease resistance, and drought tolerance in potatoes. Deficiency is common in sandy soils.",
+      "The scorched-tip symptom starting at older leaves is a classic visual indicator of potassium deficiency, distinguishable from drought stress."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "When should I apply post-emergence herbicides in maize?",
+    "ground_truth": "Apply post-emergence herbicides in maize at the 3–5 leaf stage of the crop (15–20 DAS). Atrazine 0.5 kg a.i./ha or tembotrione 120 g a.i./ha are effective. Apply in the morning or evening with flat-fan nozzles; avoid application during rain or high temperatures.",
+    "contexts": [
+      "Weed competition in maize is most critical in the first 30–40 days. Post-emergence herbicide application at the 3–5 leaf stage provides effective season-long control.",
+      "Atrazine is a broad-spectrum post-emergence herbicide for maize, effective against both grassy and broadleaf weeds."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "How do I identify and manage powdery mildew on grapes?",
+    "ground_truth": "Powdery mildew (Erysiphe necator) on grapes appears as white powdery coating on leaves, shoots, and berries. Manage with wettable sulphur 80 WP at 3 g/L, or hexaconazole 5 EC at 1 ml/L. Apply at 10-day intervals from bud break to veraison. Avoid dense canopies by proper training.",
+    "contexts": [
+      "Powdery mildew is a major fungal disease of grapes in Karnataka's dry zones, especially Vijayapura and Bagalkote.",
+      "Sulphur-based fungicides are the first choice for powdery mildew control; resistance has been reported in triazoles in some regions."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  },
+  {
+    "question": "What crop rotation reduces nematode infestation in tomato fields?",
+    "ground_truth": "To reduce root-knot nematode (Meloidogyne spp.) levels in tomato fields: rotate with non-host crops such as maize, sorghum, or onion for 1–2 seasons. Incorporate Tagetes (marigold) as a bio-fumigant crop. Apply neem cake at 200 kg/acre before planting and use grafted tomato rootstocks (Solanum torvum).",
+    "contexts": [
+      "Root-knot nematodes are a major constraint for solanaceous crops in sandy loam soils. Populations decline significantly when non-host crops are grown for two consecutive seasons.",
+      "Marigold (Tagetes erecta) releases thiophene compounds that suppress nematode populations when ploughed in as green manure."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "How can I identify Fusarium wilt in banana plantations?",
+    "ground_truth": "Fusarium wilt (Panama disease) in banana shows as yellowing and wilting of lower leaves progressing upward, with brown-red discolouration in the pseudostem cross-section. Caused by Fusarium oxysporum f.sp. cubense. Use Cavendish or resistant varieties (Grand Naine, Robusta); no chemical cure exists once infected.",
+    "contexts": [
+      "Fusarium wilt (TR4 strain) is a devastating soil-borne pathogen affecting banana. The cross-section of an infected pseudostem shows distinctive internal discolouration.",
+      "There is currently no effective chemical treatment for Fusarium wilt. Prevention through resistant varieties and clean planting material is the only reliable strategy."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "hard",
+    "language": "en"
+  },
+  {
+    "question": "What micronutrient spray is recommended for iron chlorosis in groundnut?",
+    "ground_truth": "For iron chlorosis (young leaf yellowing with green veins) in groundnut: spray ferrous sulphate (0.5%) + citric acid (0.1%) at 20, 30, and 40 DAS. Alternatively, foliar application of sequestrene iron (Fe-EDTA) at 0.2% is highly effective. Correct soil alkalinity if pH exceeds 7.5.",
+    "contexts": [
+      "Iron chlorosis is common in groundnut grown on calcareous soils. The condition is worsened by waterlogging and high bicarbonate levels.",
+      "Foliar ferrous sulphate spray is a cost-effective remedy for iron chlorosis in groundnut, provided the soil pH is also addressed."
+    ],
+    "agent_domain": "agronomy",
+    "difficulty": "medium",
+    "language": "en"
+  }
+]

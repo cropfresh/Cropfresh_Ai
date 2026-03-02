@@ -152,9 +152,15 @@ dev = [
     "jupyter>=1.1.0",
 ]
 
+# RAGAS Evaluation Framework (Task 18)
+evaluation = [
+    "ragas>=0.2.0",
+    "datasets>=3.0.0",   # HuggingFace Datasets used by ragas.evaluate()
+]
+
 # All dependencies
 all = [
-    "cropfresh-service-ai[ml,vision,voice,web,observability,dev]"
+    "cropfresh-service-ai[ml,vision,voice,web,observability,dev,evaluation]"
 ]
 
 [build-system]
