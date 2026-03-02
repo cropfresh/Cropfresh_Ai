@@ -839,6 +839,63 @@ Generate a helpful response:"""
         
         return new_session
     
+    async def handle_text_input(
+        self,
+        text: str,
+        user_id: str,
+        session_id: Optional[str] = None,
+        language: str = "auto",
+    ) -> "VoiceResponse":
+        """
+        Process already-transcribed text, bypassing STT.
+
+        Used by the Pipecat pipeline where LocalBhashiniSTTService has
+        already converted audio → text upstream.  This method reuses the
+        full intent routing and session management of ``process_voice``
+        without calling ``self.stt.transcribe``.
+
+        Args:
+            text:        Transcribed utterance text.
+            user_id:     Farmer / user identifier.
+            session_id:  Existing session ID for multi-turn context.
+            language:    ISO language code or 'auto' (defaults to 'hi').
+
+        Returns:
+            VoiceResponse with response_text and synthesised audio.
+        """
+        session = self._get_or_create_session(user_id, session_id, language)
+
+        logger.info(
+            f"handle_text_input: user={user_id!r} session={session.session_id!r} "
+            f"lang={session.language!r} text={text!r}"
+        )
+
+        # Step 1: Entity extraction (intent + entities from text)
+        extraction = await self.entity_extractor.extract(text, session.language)
+        logger.info(
+            f"handle_text_input: intent={extraction.intent} entities={extraction.entities}"
+        )
+
+        # Step 2: Generate response text via intent router
+        response_text = await self._generate_response(extraction, session)
+
+        # Step 3: Synthesise audio
+        response_audio = await self._synthesize(response_text, session.language)
+
+        # Step 4: Update session history
+        session.add_turn(text, response_text)
+
+        return VoiceResponse(
+            transcription=text,
+            detected_language=session.language,
+            intent=extraction.intent.value,
+            entities=extraction.entities,
+            response_text=response_text,
+            response_audio=response_audio,
+            session_id=session.session_id,
+            confidence=extraction.confidence,
+        )
+
     def get_session(self, session_id: str) -> Optional[VoiceSession]:
         """Get session by ID"""
         return self._sessions.get(session_id)

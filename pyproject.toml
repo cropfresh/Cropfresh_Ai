@@ -56,7 +56,8 @@ dependencies = [
     "pandas>=2.2.0",
     "scikit-learn>=1.5.0",       # HDBSCAN clustering for multi-pickup
     "ortools>=9.10.0",           # CVRP/TSP route optimization
-    "pillow>=10.4.0,<11.0.0",
+    "pillow>=10.4.0",
+
     # ═══════════════════════════════════════════════════════════════
     # Caching & Storage
     # ═══════════════════════════════════════════════════════════════
@@ -116,8 +117,10 @@ voice-advanced = [
     "aiortc>=1.9.0",            # WebRTC for Python
     "av>=12.0.0",               # Audio/Video processing (for aiortc)
     "aioice>=0.9.0",            # ICE for WebRTC
+    "pipecat-ai[silero,websocket]>=0.0.57",  # Pipecat voice pipeline (Silero VAD + WS transport)
 ]
 # Note: transformers, torch are in [ml] extras - used for Whisper + IndicTTS
+
 
 # Web Scraping & Browsing (Production-grade with Scrapling)
 web = [
