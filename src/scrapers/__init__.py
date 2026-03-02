@@ -8,15 +8,25 @@ from src.scrapers.base_scraper import (
 )
 from src.scrapers.agri_scrapers import (
     AgriculturalDataAPI,
-    AgmarknetScraper,
+    AgmarknetScraper as AgmarknetWebScraper,  # Scrapling-based (agri_scrapers.py)
     DataSource,
     ENAMScraper,
     GovScheme,
     IMDWeatherScraper,
-    MandiPrice,
+    MandiPrice as AgriMandiPrice,
     NewsArticle,
     RSSNewsScraper,
     WeatherData,
+)
+from src.scrapers.agmarknet import (
+    AgmarknetScraper,         # Task 13 enhanced scraper (ScraplingBaseScraper)
+    AgmarknetTool,
+    MandiPrice,
+    get_agmarknet_scraper,
+)
+from src.scrapers.scraper_scheduler import (
+    ScraperScheduler,
+    get_scraper_scheduler,
 )
 from src.scrapers.aikosha_client import (
     AIKoshaCategory,
@@ -30,18 +40,26 @@ __all__ = [
     "FetcherType",
     "ScrapeResult",
     "ScraperHealth",
-    # Scrapers
-    "AgmarknetScraper",
+    # Scrapers (agri_scrapers.py — Scrapling-based)
+    "AgmarknetWebScraper",
     "ENAMScraper",
     "IMDWeatherScraper",
     "RSSNewsScraper",
     "AgriculturalDataAPI",
+    # Agmarknet (Task 13 — enhanced scraper + API tool)
+    "AgmarknetScraper",
+    "AgmarknetTool",
+    "MandiPrice",
+    "get_agmarknet_scraper",
+    # Scheduler (Task 13)
+    "ScraperScheduler",
+    "get_scraper_scheduler",
     # AI Kosha
     "AIKoshaClient",
     "AIKoshaDataset",
     "AIKoshaCategory",
     # Models
-    "MandiPrice",
+    "AgriMandiPrice",
     "WeatherData",
     "GovScheme",
     "NewsArticle",

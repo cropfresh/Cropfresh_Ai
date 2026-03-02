@@ -1,9 +1,9 @@
 # PROJECT_STATUS.md � CropFresh AI Current State
 
-> **Last Updated:** 2026-03-02 (Task 11 complete)
-> **Version/Tag:** `v0.9-logistics-routing`
+> **Last Updated:** 2026-03-02 (Task 12 complete)
+> **Version/Tag:** `v0.9.1-adcl-agent`
 > **Current Sprint:** Sprint 05 — Core Agent Completion (Phase 1 + Phase 2 + Phase 3 start)
-> **Sprint Status:** 🟢 Active — Tasks 1–11 complete
+> **Sprint Status:** 🟢 Active — Tasks 1–12 complete
 
 ---
 
@@ -37,7 +37,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 | **CV-QG Vision Agent**         | ? Task 3 Complete       | Quality pipeline + fallback + HITL + digital twin linkage + supervisor wiring                                                                                             |
 | **Digital Twin Engine**        | ✅ Task 10 Complete     | Departure twin, arrival diff, SSIM/pHash/rule-based similarity, 6-rule liability matrix, 42 tests                                                                         |
 | **DPLE Logistics Routing**     | ✅ **Task 11 Complete** | `src/agents/logistics_router/` — HDBSCAN clustering, OR-Tools TSP, 4-vehicle model, deadhead cost, ₹&lt;2.5/kg proven in tests, 17 tests pass                             |
-| **ADCL Agent**                 | ? Not Started           | Weekly demand list generator                                                                                                                                              |
+| **ADCL Agent**                 | ✅ **Task 12 Complete** | `src/agents/adcl/` — 6-module package; demand aggregation (30/60/90d trend); seasonal calendar (20+ crops); green-label scoring; en/hi/kn summaries; 23 tests             |
 | APMC Live Scraper              | ? Not Started           | eNAM registration still pending                                                                                                                                           |
 | **RDS PostgreSQL Schema**      | ? Task 6 Complete       | 10 business tables (PostGIS GEOGRAPHY, JSONB, UUID PKs, check constraints), 4-file migration runner with SHA-256 checksum tracking, 17 CRUD methods, 32 tests pass        |
 | **Crop Listing Service**       | ? Task 7 Complete       | ListingService (auto-price, shelf-life expiry, QR code, ADCL tag, quality trigger), 7 REST endpoints, CropListingAgent NL interface, 50 tests pass                        |
@@ -105,6 +105,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 | Date             | Milestone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Mar 02, 2026** | **Task 12 complete — ADCL Agent**: `src/agents/adcl/` package — `ADCLAgent.generate_weekly_report()`; `aggregate_demand()` with 30/60/90d trend; `SeasonalCalendar` (20+ Karnataka crops); green-label rule (demand>0.6 + rising/stable price + in-season); `SummaryGenerator` (en/hi/kn, template + async LLM path); mock order data; DB/LLM/price-agent all optional injection; 23 unit tests pass                                                                                                                                                     |
 | **Mar 02, 2026** | **Task 11 complete — DPLE Logistics Routing Engine**: `src/agents/logistics_router/` package — `LogisticsRouter.plan_route()`; HDBSCAN density clustering (haversine); OR-Tools TSP with greedy fallback; 4-vehicle model (2W EV/3W Auto/Tempo/Cold Chain); deadhead return factor; `cost_per_kg < ₹2.5` proven for 5-farm 30km delivery; 17 unit tests; full suite **416 passed**                                                                                                                                                                       |
 | **Mar 01, 2026** | **Task 10 complete — Digital Twin Engine**: `DigitalTwinEngine` in `src/agents/digital_twin/` — `create_departure_twin()`, `compare_arrival()`, `generate_diff_report()`; SSIM → perceptual hash → rule-based similarity chain; 6-rule liability matrix (farmer/hauler/buyer/shared/none); `QualityAssessmentAgent.compare_twin()` + `create_departure_twin()`; `OrderService._trigger_twin_diff()` dual-path (engine + QA fallback); `get_digital_twin()` + `update_dispute_diff_report()` in postgres_client; 42 unit tests; full suite **382 passed** |
 | **Mar 01, 2026** | **Task 8 complete — Order Management Service**: `OrderService` with 11-status state machine (`VALID_TRANSITIONS`), escrow flow (held?released/refunded), AISP ratio breakdown (80/10/6/4%), Digital Twin dispute diff trigger, 4 new DB CRUD methods, 8 REST endpoints, 73 tests pass; full suite **276 passed**                                                                                                                                                                                                                                         |
@@ -166,7 +167,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 | API cost per query avg | <?0.25                 | <?0.30             | ~?0.44                                                |
 | RAGAS faithfulness     | >0.80                  | baseline run       | (no baseline)                                         |
 | KB documents indexed   | >1,000                 | >100               | 32                                                    |
-| Test coverage          | >80% (Phase 6)         | >45%               | **~58%** (399 tests / 16 files)                       |
+| Test coverage          | >80% (Phase 6)         | >45%               | **~59%** (422 tests / 17 files)                       |
 | REST endpoints live    |                        |                    | **15** (7 listings + 8 orders)                        |
 | eNAM mandis integrated | 1,000+ (Y2)            | 5+                 | 0                                                     |
 
