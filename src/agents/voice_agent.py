@@ -86,71 +86,169 @@ class VoiceAgent:
             "hi": "आपकी {quantity} {unit} {crop} की लिस्टिंग ₹{price}/{unit} पर बन गई है। लिस्टिंग आईडी: {listing_id}।",
             "kn": "ನಿಮ್ಮ {quantity} {unit} {crop} ಪಟ್ಟಿ ₹{price}/{unit} ದಲ್ಲಿ ರಚಿಸಲಾಗಿದೆ. ಪಟ್ಟಿ ಐಡಿ: {listing_id}.",
             "en": "Your listing for {quantity} {unit} of {crop} at ₹{price}/{unit} is created. Listing ID: {listing_id}.",
+            "ta": "உங்கள் {quantity} {unit} {crop} பட்டியல் ₹{price}/{unit} இல் உருவாக்கப்பட்டது. பட்டியல் ஐடி: {listing_id}.",
+            "te": "మీ {quantity} {unit} {crop} జాబితా ₹{price}/{unit} వద్ద సృష్టించబడింది. జాబితా ID: {listing_id}.",
+            "mr": "तुमची {quantity} {unit} {crop} ची सूची ₹{price}/{unit} वर बनवली आहे. सूची आयडी: {listing_id}.",
+            "bn": "আপনার {quantity} {unit} {crop} তালিকা ₹{price}/{unit} এ তৈরি হয়েছে। তালিকা আইডি: {listing_id}।",
+            "gu": "તમારું {quantity} {unit} {crop} લિસ્ટિંગ ₹{price}/{unit} પર બન્યું. ID: {listing_id}.",
+            "pa": "ਤੁਹਾਡੀ {quantity} {unit} {crop} ਸੂਚੀ ₹{price}/{unit} ਤੇ ਬਣ ਗਈ। ਆਈਡੀ: {listing_id}.",
+            "ml": "നിങ്ങളുടെ {quantity} {unit} {crop} ലിസ്റ്റിംഗ് ₹{price}/{unit} ൽ സൃഷ്ടിച്ചു. ഐഡി: {listing_id}.",
         },
         VoiceIntent.CHECK_PRICE: {
             "hi": "{crop} का भाव आज {location} मंडी में {price} रुपये प्रति {unit} है।",
             "kn": "{location} ಮಂಡಿಯಲ್ಲಿ ಇಂದು {crop} ಬೆಲೆ {price} ರೂಪಾಯಿ ಪ್ರತಿ {unit}.",
             "en": "The price of {crop} in {location} mandi today is {price} rupees per {unit}.",
+            "ta": "{location} சந்தையில் இன்று {crop} விலை {price} ரூபாய் {unit}.",
+            "te": "{location} మార్కెట్‌లో ఈ రోజు {crop} ధర {price} రూపాయలు {unit}.",
+            "mr": "{location} बाजारात आज {crop} चा भाव {price} रुपये {unit} आहे.",
+            "bn": "{location} বাজারে আজ {crop} এর দাম {price} টাকা {unit}।",
+            "gu": "{location} બજારમાં આજે {crop} નો ભાવ {price} રૂ. {unit} છે.",
+            "pa": "{location} ਮੰਡੀ ਵਿੱਚ ਅੱਜ {crop} ਦਾ ਭਾਅ {price} ਰੁ. {unit} ਹੈ।",
+            "ml": "{location} ചന്തയിൽ ഇന്ന് {crop} വില {price} രൂ. {unit}.",
         },
         VoiceIntent.TRACK_ORDER: {
             "hi": "आपका ऑर्डर रास्ते में है। करीब {eta} में पहुंच जाएगा।",
             "kn": "ನಿಮ್ಮ ಆರ್ಡರ್ ಹಾದಿಯಲ್ಲಿದೆ. ಸುಮಾರು {eta} ನಲ್ಲಿ ತಲುಪುತ್ತದೆ.",
             "en": "Your order is on the way. It will arrive in about {eta}.",
+            "ta": "உங்கள் ஆர்டர் வழியில் உள்ளது. சுமார் {eta} இல் வரும்.",
+            "te": "మీ ఆర్డర్ దారిలో ఉంది. సుమారు {eta} లో చేరుకుంటుంది.",
+            "mr": "तुमची ऑर्डर वाटेत आहे. सुमारे {eta} मध्ये पोहोचेल.",
+            "bn": "আপনার অর্ডার পথে আছে। প্রায় {eta} এর মধ্যে পৌঁছাবে।",
+            "gu": "તમારો ઓર્ડર રસ્તામાં છે. આશરે {eta} માં પહોંચશે.",
+            "pa": "ਤੁਹਾਡਾ ਆਰਡਰ ਰਸਤੇ ਵਿੱਚ ਹੈ। ਲਗਭਗ {eta} ਵਿੱਚ ਪਹੁੰਚੇਗਾ।",
+            "ml": " നിങ്ങളുടെ ഓർഡർ വഴിയിലാണ്. ഏകദേശം {eta} ൽ എത്തും.",
         },
         VoiceIntent.GREETING: {
             "hi": "नमस्ते! मैं क्रॉपफ्रेश हूं। आप सब्जी बेचना चाहते हैं या भाव जानना चाहते हैं?",
-            "kn": "ನಮಸ್ಕಾರ! ನಾನು ಕ್ರಾಪ್‌ಫ್ರೆಶ್. ನೀವು ತರಕಾರಿ ಮಾರಾಟ ಮಾಡಲು ಅಥವಾ ಬೆಲೆ ತಿಳಿಯಲು ಬಯಸುತ್ತೀರಾ?",
+            "kn": "ನಮಸ್ಕಾರ! ನಾನು ಕ್ರಾಪ್‌ಫ್ರೆಶ್. ತರಕಾರಿ ಮಾರಾಟ ಮಾಡಲು ಅಥವಾ ಬೆಲೆ ತಿಳಿಯಲು ಬಯಸುತ್ತೀರಾ?",
             "en": "Hello! I'm CropFresh. Would you like to sell vegetables or check prices?",
+            "ta": "வணக்கம்! நான் CropFresh. காய்கறி விற்கவா அல்லது விலை அறியவா?",
+            "te": "నమస్కారం! నేను CropFresh. కూరగాయలు అమ్మాలా లేదా ధర తెలుసుకోవాలా?",
+            "mr": "नमस्कार! मी CropFresh आहे. भाजी विकायची आहे की भाव जाणून घ्यायचा आहे?",
+            "bn": "নমস্কার! আমি CropFresh। সবজি বিক্রি করবেন নাকি দাম জানবেন?",
+            "gu": "નમસ્તે! હું CropFresh છું. શાકભાજી વેચવા છે કે ભાવ જાણવો છે?",
+            "pa": "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ CropFresh ਹਾਂ। ਸਬਜ਼ੀ ਵੇਚਣੀ ਹੈ ਜਾਂ ਭਾਅ ਜਾਣਨਾ ਹੈ?",
+            "ml": "നമസ്കാരം! ഞാൻ CropFresh ആണ്. പച്ചക്കറി വിൽക്കണോ അതോ വില അറിയണോ?",
         },
         VoiceIntent.HELP: {
-            "hi": "आप बोलकर सब्जी बेच सकते हैं। बस बोलें - मेरे पास 100 किलो टमाटर है। या भाव जानने के लिए बोलें - टमाटर का भाव क्या है।",
-            "kn": "ನೀವು ಮಾತನಾಡುವ ಮೂಲಕ ತರಕಾರಿ ಮಾರಾಟ ಮಾಡಬಹುದು. ಹೇಳಿ - ನನ್ನ ಬಳಿ 100 ಕೆಜಿ ಟೊಮೆಟೊ ಇದೆ.",
-            "en": "You can sell vegetables by speaking. Just say - I have 100 kg tomatoes. Or to check prices, say - what is the price of tomatoes.",
+            "hi": "बोलकर सब्जी बेचें। कहें: मेरे पास 100 किलो टमाटर है। भाव जानने के लिए: टमाटर का भाव क्या है।",
+            "kn": "ಮಾತನಾಡಿ ತರಕಾರಿ ಮಾರಿ. ಹೇಳಿ: ನನ್ನ ಬಳಿ 100 ಕೆಜಿ ಟೊಮೆಟೊ ಇದೆ. ಬೆಲೆ: ಟೊಮೆಟೊ ಬೆಲೆ ಎಷ್ಟು.",
+            "en": "Sell by speaking. Say: I have 100 kg tomatoes. For price: what is the price of tomatoes.",
+            "ta": "பேசி விற்கலாம். சொல்லுங்கள்: என்னிடம் 100 கிலோ தக்காளி உள்ளது. விலைக்கு: தக்காளி விலை என்ன.",
+            "te": "మాట్లాడి అమ్మవచ్చు. చెప్పండి: నా దగ్గర 100 కిలో టమాటాలు ఉన్నాయి. ధరకు: టమాటా ధర ఎంత.",
+            "mr": "बोलून भाजी विका. म्हणा: माझ्याकडे 100 किलो टोमॅटो. भावासाठी: टोमॅटोचा भाव काय.",
+            "bn": "বলে বিক্রি করুন। বলুন: আমার কাছে 100 কেজি টমেটো। দামের জন্য: টমেটোর দাম কত।",
+            "gu": "બોલી વેચો. કહો: મારી પાસે 100 કિલો ટામેટા. ભાવ: ટામેટાનો ભાવ.",
+            "pa": "ਬੋਲ ਕੇ ਵੇਚੋ। ਕਹੋ: ਮੇਰੇ ਕੋਲ 100 ਕਿਲੋ ਟਮਾਟਰ ਹਨ। ਭਾਅ: ਟਮਾਟਰ ਦਾ ਭਾਅ ਕੀ ਹੈ।",
+            "ml": "സംസാരിച്ചു വിൽക്കൂ. പറയൂ: എന്റെ കൈയിൽ 100 കിലോ തക്കാളിയുണ്ട്. വിലയ്ക്ക്: തക്കാളി വില എന്ത്.",
         },
         VoiceIntent.MY_LISTINGS: {
             "hi": "आपकी {count} लिस्टिंग चल रही हैं। {details}",
-            "kn": "ನಿಮ್ಮ {count} ಪಟ್ಟಿಗಳು ಸಕ್ರಿಯವಾಗಿವೆ. {details}",
+            "kn": "ನಿಮ್ಮ {count} ಪಟ್ಟಿಗಳು ಸಕ್ರಿಯ. {details}",
             "en": "You have {count} active listings. {details}",
+            "ta": "உங்கள் {count} பட்டியல்கள் செயலில். {details}",
+            "te": "మీకు {count} సక్రియ జాబితాలు. {details}",
+            "mr": "तुमच्या {count} सूची सक्रिय. {details}",
+            "bn": "আপনার {count} তালিকা সক্রিয়। {details}",
+            "gu": "તમારી {count} સૂચિ સક્રિય. {details}",
+            "pa": "ਤੁਹਾਡੀਆਂ {count} ਸੂਚੀਆਂ ਸਰਗਰਮ। {details}",
+            "ml": "നിങ്ങൾക്ക് {count} സജീവ ലിസ്റ്റിംഗ്. {details}",
         },
         VoiceIntent.FIND_BUYER: {
-            "hi": "{crop} के लिए {count} खरीदार मिले। सबसे अच्छा: {buyer_name}, {buyer_district} से, ₹{price}/किलो पर {qty} किलो चाहिए।",
-            "kn": "{crop} ಗಾಗಿ {count} ಖರೀದಿದಾರರು ಸಿಕ್ಕಿದ್ದಾರೆ. ಉತ್ತಮ: {buyer_name}, {buyer_district}, ₹{price}/ಕೆಜಿ.",
-            "en": "Found {count} buyers for {crop}. Best match: {buyer_name} in {buyer_district}, offering ₹{price}/kg for {qty} kg.",
+            "hi": "{crop} के लिए {count} खरीदार मिले। सबसे अच्छा: {buyer_name}, {buyer_district} से, ₹{price}/किलो পर {qty} किलो चाहिए।",
+            "kn": "{crop} ಗಾಗಿ {count} ಖರೀದಿದಾರರು. ಉತ್ತಮ: {buyer_name}, {buyer_district}, ₹{price}/ಕೆಜಿ.",
+            "en": "Found {count} buyers for {crop}. Best: {buyer_name} in {buyer_district}, ₹{price}/kg for {qty} kg.",
+            "ta": "{crop} க்கு {count} வாங்குபவர். சிறந்தது: {buyer_name}, {buyer_district}, ₹{price}/கிலோ.",
+            "te": "{crop} కు {count} కొనుగోలుదారులు. ఉత్తమం: {buyer_name}, {buyer_district}, ₹{price}/కిలో.",
+            "mr": "{crop} साठी {count} खरेदीदार. उत्तम: {buyer_name}, {buyer_district}, ₹{price}/किलो.",
+            "bn": "{crop} এর {count} ক্রেতা। সেরা: {buyer_name}, {buyer_district}, ₹{price}/কেজি.",
+            "gu": "{crop} માટે {count} ખરીદદાર. શ્રેષ્ઠ: {buyer_name}, {buyer_district}, ₹{price}/કિલો.",
+            "pa": "{crop} ਲਈ {count} ਖਰੀਦਦਾਰ। ਉੱਤਮ: {buyer_name}, {buyer_district}, ₹{price}/ਕਿਲੋ.",
+            "ml": "{crop} ന് {count} വാങ്ങുന്നവർ. ഏറ്റവും: {buyer_name}, {buyer_district}, ₹{price}/കിലോ.",
         },
         VoiceIntent.CHECK_WEATHER: {
-            "hi": "{location} में आज मौसम: {condition}। तापमान {temp}°C। {advisory}",
-            "kn": "{location} ನಲ್ಲಿ ಇಂದು ಹವಾಮಾನ: {condition}. ತಾಪಮಾನ {temp}°C. {advisory}",
-            "en": "Weather in {location} today: {condition}. Temperature {temp}°C. {advisory}",
+            "hi": "{location} में आज: {condition}। तापमान {temp}°C। {advisory}",
+            "kn": "{location} ಇಂದು: {condition}. {temp}°C. {advisory}",
+            "en": "Weather in {location} today: {condition}. {temp}°C. {advisory}",
+            "ta": "{location} இன்று: {condition}. {temp}°C. {advisory}",
+            "te": "{location} ఈ రోజు: {condition}. {temp}°C. {advisory}",
+            "mr": "{location} आज: {condition}. {temp}°C. {advisory}",
+            "bn": "{location} আজ: {condition}। {temp}°C. {advisory}",
+            "gu": "{location} આજ: {condition}. {temp}°C. {advisory}",
+            "pa": "{location} ਅੱਜ: {condition}। {temp}°C. {advisory}",
+            "ml": "{location} ഇന്ന്: {condition}. {temp}°C. {advisory}",
         },
         VoiceIntent.GET_ADVISORY: {
             "hi": "{crop} के लिए सलाह: {advisory}",
             "kn": "{crop} ಗಾಗಿ ಸಲಹೆ: {advisory}",
             "en": "Advisory for {crop}: {advisory}",
+            "ta": "{crop} ஆலோசனை: {advisory}",
+            "te": "{crop} సలహా: {advisory}",
+            "mr": "{crop} सल्ला: {advisory}",
+            "bn": "{crop} পরামর্শ: {advisory}",
+            "gu": "{crop} સલાહ: {advisory}",
+            "pa": "{crop} ਸਲਾਹ: {advisory}",
+            "ml": "{crop} ഉപദേശം: {advisory}",
         },
         VoiceIntent.REGISTER: {
-            "hi": "रजिस्ट्रेशन सफल! आपका किसान ID है: {farmer_id}। CropFresh में आपका स्वागत है, {name}!",
-            "kn": "ನೋಂದಣಿ ಯಶಸ್ವಿ! ನಿಮ್ಮ ರೈತ ID: {farmer_id}. CropFresh ಗೆ ಸ್ವಾಗತ, {name}!",
-            "en": "Registration successful! Your farmer ID is: {farmer_id}. Welcome to CropFresh, {name}!",
+            "hi": "रजिस्ट्रेशन सफल! किसान ID: {farmer_id}। CropFresh में स्वागत है, {name}!",
+            "kn": "ನೋಂದಣಿ ಸಫಲ! ರೈತ ID: {farmer_id}. ಸ್ವಾಗತ, {name}!",
+            "en": "Registration successful! Farmer ID: {farmer_id}. Welcome to CropFresh, {name}!",
+            "ta": "பதிவு வெற்றி! உழவர் ஐடி: {farmer_id}. வரவேற்கிறோம், {name}!",
+            "te": "నమోదు విజయం! రైతు ID: {farmer_id}. స్వాగతం, {name}!",
+            "mr": "नोंदणी यशस्वी! शेतकरी ID: {farmer_id}. स्वागत, {name}!",
+            "bn": "নিবন্ধন সফল! কৃষক ID: {farmer_id}. স্বাগতম, {name}!",
+            "gu": "નોંધણી સફળ! ખેડૂત ID: {farmer_id}. સ્વાગત, {name}!",
+            "pa": "ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਸਫਲ! ਕਿਸਾਨ ID: {farmer_id}. ਸੁਆਗਤ, {name}!",
+            "ml": "രജിസ്ട്രേഷൻ വിജയം! കർഷക ID: {farmer_id}. സ്വാഗതം, {name}!",
         },
         VoiceIntent.DISPUTE_STATUS: {
-            "hi": "आपका विवाद {dispute_id} की स्थिति: {status}। {notes}",
-            "kn": "ನಿಮ್ಮ ವಿವಾದ {dispute_id} ಸ್ಥಿತಿ: {status}. {notes}",
-            "en": "Your dispute {dispute_id} status: {status}. {notes}",
+            "hi": "विवाद {dispute_id} स्थिति: {status}। {notes}",
+            "kn": "ವಿವಾದ {dispute_id} ಸ್ಥಿತಿ: {status}. {notes}",
+            "en": "Dispute {dispute_id} status: {status}. {notes}",
+            "ta": "புகார் {dispute_id} நிலை: {status}. {notes}",
+            "te": "వివాదం {dispute_id} స్థితి: {status}. {notes}",
+            "mr": "विवाद {dispute_id} स्थिती: {status}. {notes}",
+            "bn": "অভিযোগ {dispute_id} স্ট্যাটাস: {status}। {notes}",
+            "gu": "વિવાદ {dispute_id} સ્થિતિ: {status}. {notes}",
+            "pa": "ਵਿਵਾਦ {dispute_id} ਸਥਿਤੀ: {status}। {notes}",
+            "ml": "തർക്കം {dispute_id} നില: {status}. {notes}",
         },
         VoiceIntent.QUALITY_CHECK: {
-            "hi": "{commodity} की गुणवत्ता: {grade}। आत्मविश्वास: {confidence}%। {notes}",
-            "kn": "{commodity} ಗುಣಮಟ್ಟ: {grade}. ವಿಶ್ವಾಸ: {confidence}%. {notes}",
-            "en": "{commodity} quality grade: {grade}. Confidence: {confidence}%. {notes}",
+            "hi": "{commodity} गुणवत्ता: {grade}। विश्वास: {confidence}%। {notes}",
+            "kn": "{commodity} ಗುಣಮಟ್ಟ: {grade}. {confidence}%. {notes}",
+            "en": "{commodity} quality: {grade}. Confidence: {confidence}%. {notes}",
+            "ta": "{commodity} தரம்: {grade}. நம்பிக்கை: {confidence}%. {notes}",
+            "te": "{commodity} నాణ్యత: {grade}. {confidence}%. {notes}",
+            "mr": "{commodity} गुणवत्ता: {grade}. {confidence}%. {notes}",
+            "bn": "{commodity} মান: {grade}। {confidence}%। {notes}",
+            "gu": "{commodity} ગુણવત્તા: {grade}. {confidence}%. {notes}",
+            "pa": "{commodity} ਗੁਣਵੱਤਾ: {grade}। {confidence}%। {notes}",
+            "ml": "{commodity} ഗുണം: {grade}. {confidence}%. {notes}",
         },
         VoiceIntent.WEEKLY_DEMAND: {
             "hi": "इस हफ्ते {location} में मांग: {demand_list}",
-            "kn": "ಈ ವಾರ {location} ನಲ್ಲಿ ಬೇಡಿಕೆ: {demand_list}",
+            "kn": "ಈ ವಾರ {location} ಬೇಡಿಕೆ: {demand_list}",
             "en": "This week's demand in {location}: {demand_list}",
+            "ta": "இந்த வாரம் {location} தேவை: {demand_list}",
+            "te": "ఈ వారం {location} డిమాండ్: {demand_list}",
+            "mr": "या आठवड्यात {location} मागणी: {demand_list}",
+            "bn": "এই সপ্তাহে {location} চাহিদা: {demand_list}",
+            "gu": "આ અઠ. {location} માંગ: {demand_list}",
+            "pa": "ਇਸ ਹਫ਼ਤੇ {location} ਮੰਗ: {demand_list}",
+            "ml": "ഈ ആഴ്ച {location} ആവശ്യം: {demand_list}",
         },
         VoiceIntent.UNKNOWN: {
             "hi": "मुझे समझ नहीं आया। कृपया फिर से बोलें।",
             "kn": "ನನಗೆ ಅರ್ಥವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಹೇಳಿ.",
             "en": "I didn't understand. Please say that again.",
+            "ta": "புரியவில்லை. மீண்டும் சொல்லுங்கள்.",
+            "te": "అర్థం కాలేదు. దయచేసి మళ్ళీ చెప్పండి.",
+            "mr": "समजले नाही. पुन्हा सांगा.",
+            "bn": "বুঝিনি। আবার বলুন।",
+            "gu": "સમজ ન આવ્યું. ફરીથી કહો.",
+            "pa": "ਸਮਝ ਨਹੀਂ ਆਈ। ਦੁਬਾਰਾ ਬੋਲੋ।",
+            "ml": "മനസ്സിലായില്ല. ദയവായി വീണ്ടും പറയൂ.",
         },
     }
 
@@ -363,25 +461,49 @@ class VoiceAgent:
         asking_price = pending_entities.get("asking_price")
 
         if not crop:
-            if session.language == "hi":
-                return "कौन सी सब्जी की लिस्टिंग बनानी है?"
-            if session.language == "kn":
-                return "ಯಾವ ತರಕಾರಿ ಪಟ್ಟಿಯನ್ನು ರಚಿಸಬೇಕು?"
-            return "Which crop do you want to list?"
+            _ask = {
+                "hi": "कौन सी सब्जी की लिस्टिंग बनानी है?",
+                "kn": "ಯಾವ ತರಕಾರಿ ಪಟ್ಟಿಯನ್ನು ರಚಿಸಬೇಕು?",
+                "ta": "எந்த பயிரை பதிவு செய்ய வேண்டும்?",
+                "te": "ఏ పంటను నమోదు చేయాలి?",
+                "mr": "कोणत्या पिकाची यादी बनवायची आहे?",
+                "bn": "কোন ফসলের তালিকা তৈরি করতে হবে?",
+                "gu": "કયા પાકનું લિસ્ટિંગ બનાવવું છે?",
+                "pa": "ਕਿਹੜੀ ਫਸਲ ਦੀ ਸੂਚੀ ਬਣਾਉਣੀ ਹੈ?",
+                "ml": "ഏത് വിളയുടെ ലിസ്റ്റിംഗ് ഉണ്ടാക്കണം?",
+                "en": "Which crop do you want to list?",
+            }
+            return _ask.get(session.language, _ask["en"])
 
         if not quantity:
-            if session.language == "hi":
-                return f"कितने {unit} {crop} बेचना है?"
-            if session.language == "kn":
-                return f"ಎಷ್ಟು {unit} {crop} ಮಾರಾಟ ಮಾಡಬೇಕು?"
-            return f"How many {unit} of {crop} do you want to sell?"
+            _ask = {
+                "hi": f"कितने {unit} {crop} बेचना है?",
+                "kn": f"ಎಷ್ಟು {unit} {crop} ಮಾರಾಟಕ್ಕೆ?",
+                "ta": f"எத்தனை {unit} {crop} விற்க வேண்டும்?",
+                "te": f"ఎన్ని {unit} {crop} అమ్మాలి?",
+                "mr": f"किती {unit} {crop} विकायचे आहे?",
+                "bn": f"কত {unit} {crop} বিক্রি করবেন?",
+                "gu": f"કેટલા {unit} {crop} વેચવા છે?",
+                "pa": f"ਕਿੰਨੇ {unit} {crop} ਵੇਚਣੇ ਹਨ?",
+                "ml": f"എത്ര {unit} {crop} വിൽക്കണം?",
+                "en": f"How many {unit} of {crop} do you want to sell?",
+            }
+            return _ask.get(session.language, _ask["en"])
 
         if not asking_price:
-            if session.language == "hi":
-                return f"{crop} का बेचने का भाव प्रति {unit} कितना रखना है?"
-            if session.language == "kn":
-                return f"{crop} ಅನ್ನು ಪ್ರತಿ {unit}ಗೆ ಯಾವ ಬೆಲೆಗೆ ಮಾರಾಟ ಮಾಡಬೇಕು?"
-            return f"What is your asking price per {unit} for {crop}?"
+            _ask = {
+                "hi": f"{crop} का भाव प्रति {unit} कितना रखना है?",
+                "kn": f"{crop} ಪ್ರತಿ {unit}ಗೆ ಬೆಲೆ ಎಷ್ಟು?",
+                "ta": f"{crop} ஒரு {unit}க்கு உங்கள் விலை என்ன?",
+                "te": f"{crop} ఒక్క {unit}కి ధర ఎంత?",
+                "mr": f"{crop} प्रति {unit} भाव किती ठेवायचा?",
+                "bn": f"{crop} প্রতি {unit} দাম কত রাখবেন?",
+                "gu": f"{crop} प्रति {unit} भाव केटलो राखवो छे?",
+                "pa": f"{crop} प्रति {unit} भाअ ਕਿੰਨੀ ਰੱਖਣੀ ਹੈ?",
+                "ml": f"{crop} പ്രതി {unit} വില എന്താണ്?",
+                "en": f"What is your asking price per {unit} for {crop}?",
+            }
+            return _ask.get(session.language, _ask["en"])
 
         listing_id = "pending"
         if self.listing_service:
