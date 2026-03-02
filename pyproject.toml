@@ -54,6 +54,8 @@ dependencies = [
     # ═══════════════════════════════════════════════════════════════
     "numpy>=2.0.0",
     "pandas>=2.2.0",
+    "scikit-learn>=1.5.0",       # HDBSCAN clustering for multi-pickup
+    "ortools>=9.10.0",           # CVRP/TSP route optimization
     "pillow>=10.4.0,<11.0.0",
     # ═══════════════════════════════════════════════════════════════
     # Caching & Storage
@@ -175,3 +177,9 @@ addopts = "-v --tb=short"
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+]

@@ -15,37 +15,37 @@ CropFresh AI is the **intelligence layer** of an agri-marketplace connecting Ind
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                            CLIENTS                                   │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌────────────────┐  │
+│                            CLIENTS                                  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────────── ┐  │
 │  │ Farmer   │  │ Buyer    │  │ Agent (Mitra) │  │ Admin / Ops    │  │
 │  │  App     │  │  App     │  │  App          │  │  Dashboard     │  │
 │  │ (Voice)  │  │ (REST)   │  │  (Verify)     │  │  (Internal)    │  │
 │  └────┬─────┘  └────┬─────┘  └──────┬────────┘  └───────┬────────┘  │
-└───────┼─────────────┼────────────────┼───────────────────┼───────────┘
+└───────┼─────────────┼────────────────┼───────────────────┼──────────┘
         │ WebSocket   │ REST           │ REST               │ REST
         ▼             ▼                ▼                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     FastAPI Gateway  (src/api/)                      │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐  │
-│  │  /chat   │  │  /voice  │  │ /vision    │  │  /marketplace    │  │
-│  │  /rag    │  │  /ws     │  │ /logistics │  │  /dispute        │  │
-│  └────┬─────┘  └────┬─────┘  └─────┬──────┘  └────────┬─────────┘  │
+│                     FastAPI Gateway  (src/api/)                     │
+│  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐   │
+│  │  /chat   │  │  /voice  │  │ /vision    │  │  /marketplace    │   │
+│  │  /rag    │  │  /ws     │  │ /logistics │  │  /dispute        │   │
+│  └────┬─────┘  └────┬─────┘  └─────┬──────┘  └────────┬─────────┘   │
 │       └─────────────┴──────────────┴───────────────────┘            │
-│  ┌────────────────────────────────────────────────────────────────┐  │
-│  │        Middleware: Auth (JWT) │ Rate Limit │ RBAC │ Logging    │  │
-│  └────────────────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │        Middleware: Auth (JWT) │ Rate Limit │ RBAC │ Logging    │ │
+│  └────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────┬───────────────────────────┘
                                           │
                                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                LangGraph Multi-Agent Supervisor                      │
-│                     (src/agents/supervisor_agent.py)                 │
-│                                                                      │
-│   Routes queries at 0.9 confidence threshold to:                    │
-│                                                                      │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │                   5 CORE AI AGENTS (PDF-aligned)              │  │
-│  │                                                               │  │
+┌────────────────────────────────────────────────────────────────────┐
+│                LangGraph Multi-Agent Supervisor                    │
+│                     (src/agents/supervisor_agent.py)               │
+│                                                                    │
+│   Routes queries at 0.9 confidence threshold to:                   │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │                   5 CORE AI AGENTS (PDF-aligned)             │  │
+│  │                                                              │  │
 │  │  ┌─────────────────┐   ┌──────────────────────────────────┐  │  │
 │  │  │ 1. DPLE         │   │ 2. MATCHMAKING ENGINE            │  │  │
 │  │  │ (Pricing +      │   │ (Supply ↔ Demand Optimizer)      │  │  │
@@ -54,7 +54,7 @@ CropFresh AI is the **intelligence layer** of an agri-marketplace connecting Ind
 │  │  │ logistics_      │   │ buyer_matching/agent.py          │  │  │
 │  │  │  routing_agent  │   │                                  │  │  │
 │  │  └─────────────────┘   └──────────────────────────────────┘  │  │
-│  │                                                               │  │
+│  │                                                              │  │
 │  │  ┌─────────────────┐   ┌──────────────────────────────────┐  │  │
 │  │  │ 3. CV-QG        │   │ 4. VOICE ACCESSIBILITY           │  │  │
 │  │  │ (Computer       │   │ (Farmer-First UI)                │  │  │
@@ -64,7 +64,7 @@ CropFresh AI is the **intelligence layer** of an agri-marketplace connecting Ind
 │  │  │  quality_grader │   │ Pipecat WebRTC                   │  │  │
 │  │  │  digital_twin   │   │ 10+ Indian languages             │  │  │
 │  │  └─────────────────┘   └──────────────────────────────────┘  │  │
-│  │                                                               │  │
+│  │                                                              │  │
 │  │  ┌────────────────────────────────────────────────────────┐  │  │
 │  │  │ 5. RAG ADVISORY AGENT                                  │  │  │
 │  │  │ (Crop Intelligence + Agronomy + ADCL)                  │  │  │
@@ -72,16 +72,16 @@ CropFresh AI is the **intelligence layer** of an agri-marketplace connecting Ind
 │  │  │ agronomy_agent.py  +  ai/rag/ (full pipeline)          │  │  │
 │  │  │ adcl_agent.py  +  knowledge_agent.py                   │  │  │
 │  │  └────────────────────────────────────────────────────────┘  │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-│                                                                      │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │              Supporting Agents                                 │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐  │  │
-│  │  │ Agronomy │  │ Commerce │  │ Platform │  │ General     │  │  │
-│  │  │  Agent   │  │  Agent   │  │  Agent   │  │ (Fallback)  │  │  │
-│  │  └──────────┘  └──────────┘  └──────────┘  └─────────────┘  │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└───────────────────────┬─────────────────┬───────────────────────────┘
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                    │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │              Supporting Agents                              │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐  │   │
+│  │  │ Agronomy │  │ Commerce │  │ Platform │  │ General     │  │   │
+│  │  │  Agent   │  │  Agent   │  │  Agent   │  │ (Fallback)  │  │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └─────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└───────────────────────┬─────────────────┬──────────────────────────┘
                         │                 │
            ┌────────────┘                 └──────────────┐
            ▼                                             ▼
@@ -103,20 +103,20 @@ CropFresh AI is the **intelligence layer** of an agri-marketplace connecting Ind
                   │
                   ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                       Data & Storage Layer                           │
-│                                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────┐  ┌───────────┐  │
-│  │  Supabase    │  │    Qdrant    │  │  Neo4j   │  │   Redis   │  │
-│  │  (Postgres)  │  │  (Vectors)   │  │  (Graph) │  │  (Cache)  │  │
-│  │              │  │              │  │          │  │           │  │
-│  │  farmers     │  │  kb_chunks   │  │ entities │  │ sessions  │  │
-│  │  listings    │  │  embeddings  │  │ relations│  │ prices TTL│  │
-│  │  orders      │  │  digital_    │  │ crop     │  │ routes    │  │
-│  │  disputes    │  │  twin_index  │  │  graph   │  │           │  │
-│  │  haulers     │  │              │  │          │  │           │  │
-│  │  buyers      │  │              │  │          │  │           │  │
-│  │  price_hist  │  │              │  │          │  │           │  │
-│  └──────────────┘  └──────────────┘  └──────────┘  └───────────┘  │
+│                       Data & Storage Layer                          │
+│                                                                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────┐  ┌───────────┐    │
+│  │  Supabase    │  │    Qdrant    │  │  Neo4j   │  │   Redis   │    │
+│  │  (Postgres)  │  │  (Vectors)   │  │  (Graph) │  │  (Cache)  │    │
+│  │              │  │              │  │          │  │           │    │
+│  │  farmers     │  │  kb_chunks   │  │ entities │  │ sessions  │    │
+│  │  listings    │  │  embeddings  │  │ relations│  │ prices TTL│    │
+│  │  orders      │  │  digital_    │  │ crop     │  │ routes    │    │
+│  │  disputes    │  │  twin_index  │  │  graph   │  │           │    │
+│  │  haulers     │  │              │  │          │  │           │    │
+│  │  buyers      │  │              │  │          │  │           │    │
+│  │  price_hist  │  │              │  │          │  │           │    │
+│  └──────────────┘  └──────────────┘  └──────────┘  └───────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
