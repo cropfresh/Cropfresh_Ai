@@ -405,9 +405,11 @@ async def test_factors_list_non_empty():
 # * ═══════════════════════════════════════════════════════════════
 
 class TestSeasonalFactorParametrized:
+    # * tomato SEASONAL_CALENDAR: 1:1.0, 2:0.9, 4:0.7, 6:1.4, 8:1.0, 11:0.8
+    # * peak_harvest: mult<=0.85 | off_season: mult>=1.15 | normal: else
     @pytest.mark.parametrize("month, expected", [
-        (1, "normal"), (2, "peak_harvest"), (4, "peak_harvest"), 
-        (6, "off_season"), (8, "normal"), (11, "peak_harvest")
+        (1, "normal"), (2, "normal"), (4, "peak_harvest"),
+        (6, "off_season"), (8, "normal"), (11, "peak_harvest"),
     ])
     def test_seasonal_factor_all_months_tomato(self, month, expected):
         agent = _make_agent()
@@ -415,12 +417,13 @@ class TestSeasonalFactorParametrized:
         assert factor == expected
 
 class TestGenerateRecommendationParametrized:
+    # * HOLD_3D_DELTA=-0.03: delta in [-3%, +5%) → hold_3d
     @pytest.mark.parametrize("current, predicted, trend, seasonal, expected", [
         (25.0, 27.0, "rising", "normal", "sell_now"),         # +8%
-        (25.0, 25.5, "stable", "normal", "hold_3d"),          # +2%
+        (25.0, 25.5, "stable", "normal", "hold_3d"),         # +2%
         (25.0, 24.0, "rising", "off_season", "hold_7d"),      # -4%, rising, off_season
         (25.0, 20.0, "falling", "peak_harvest", "hold_30d"),  # -20%
-        (25.0, 24.5, "stable", "normal", "hold_30d"),         # -2%
+        (25.0, 24.5, "stable", "normal", "hold_3d"),          # -2% (within hold_3d band)
     ])
     def test_generate_recommendation_all_codes(
         self, current, predicted, trend, seasonal, expected

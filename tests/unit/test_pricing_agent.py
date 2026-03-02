@@ -89,6 +89,24 @@ class TestAISPCalculation:
 
         assert result.mandi_cap_applied is False
 
+    def test_aisp_zero_quantity_raises(self, agent: PricingAgent):
+        """AC: quantity_kg <= 0 must raise ValueError."""
+        with pytest.raises(ValueError, match="quantity_kg must be greater than 0"):
+            agent.calculate_aisp(
+                farmer_price_per_kg=20.0,
+                quantity_kg=0,
+                distance_km=10,
+            )
+
+    def test_aisp_negative_quantity_raises(self, agent: PricingAgent):
+        """Negative quantity must raise ValueError."""
+        with pytest.raises(ValueError, match="quantity_kg must be greater than 0"):
+            agent.calculate_aisp(
+                farmer_price_per_kg=20.0,
+                quantity_kg=-10.0,
+                distance_km=10,
+            )
+
     def test_platform_fee_tiers(self, agent: PricingAgent):
         """Platform fee % decreases with volume."""
         small = agent.calculate_aisp(
