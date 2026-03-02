@@ -1,8 +1,8 @@
 # Task 16: Expand Voice Agent — 10+ Languages & 5 New Intents
 
-> **Priority:** 🟡 P2 | **Phase:** 4 | **Effort:** 2–3 days  
-> **Files:** `src/agents/voice_agent.py`, `src/voice/entity_extractor.py`  
-> **Score Target:** 9/10 — Zero-literacy-barrier with 10+ Indian languages
+> **Priority:** 🟡 P2 | **Phase:** 4 | **Status:** ✅ COMPLETE  
+> **Files:** `src/agents/voice_agent.py`, `src/voice/entity_extractor/` (package)  
+> **Score:** 9/10 — Zero-literacy-barrier with 10 Indian languages
 
 ---
 
@@ -15,20 +15,22 @@ Voice agent currently supports 3 languages (Kannada, Hindi, English) with ~7 int
 ## 🏗️ Implementation Spec
 
 ### Languages to Add
-| Language | Code | Edge TTS Voice | Region Priority |
-|----------|------|-----------------|-----------------|
-| Kannada | kn | kn-IN-SapnaNeural | 🔴 Primary |
-| Hindi | hi | hi-IN-SwaraNeural | 🔴 Primary |
-| English | en | en-IN-NeerjaNeural | 🟠 Secondary |
-| Tamil | ta | ta-IN-PallaviNeural | 🟠 Secondary |
-| Telugu | te | te-IN-ShrutiNeural | 🟠 Secondary |
-| Marathi | mr | mr-IN-AarohiNeural | 🟡 Tertiary |
-| Bengali | bn | bn-IN-TanishaaNeural | 🟡 Tertiary |
-| Gujarati | gu | gu-IN-DhwaniNeural | 🟡 Tertiary |
-| Punjabi | pa | pa-IN-GurpreetNeural | 🟡 Tertiary |
-| Malayalam | ml | ml-IN-SobhanaNeural | 🟡 Tertiary |
+
+| Language  | Code | Edge TTS Voice       | Region Priority |
+| --------- | ---- | -------------------- | --------------- |
+| Kannada   | kn   | kn-IN-SapnaNeural    | 🔴 Primary      |
+| Hindi     | hi   | hi-IN-SwaraNeural    | 🔴 Primary      |
+| English   | en   | en-IN-NeerjaNeural   | 🟠 Secondary    |
+| Tamil     | ta   | ta-IN-PallaviNeural  | 🟠 Secondary    |
+| Telugu    | te   | te-IN-ShrutiNeural   | 🟠 Secondary    |
+| Marathi   | mr   | mr-IN-AarohiNeural   | 🟡 Tertiary     |
+| Bengali   | bn   | bn-IN-TanishaaNeural | 🟡 Tertiary     |
+| Gujarati  | gu   | gu-IN-DhwaniNeural   | 🟡 Tertiary     |
+| Punjabi   | pa   | pa-IN-GurpreetNeural | 🟡 Tertiary     |
+| Malayalam | ml   | ml-IN-SobhanaNeural  | 🟡 Tertiary     |
 
 ### New Intents
+
 ```python
 NEW_INTENTS = {
     'find_buyer': {
@@ -60,6 +62,7 @@ NEW_INTENTS = {
 ```
 
 ### Commodity Name Normalization (Regional → Standard)
+
 ```python
 COMMODITY_ALIASES = {
     # Kannada names → standard
@@ -77,10 +80,10 @@ COMMODITY_ALIASES = {
 
 ## ✅ Acceptance Criteria
 
-| # | Criterion | Weight |
-|---|-----------|--------|
-| 1 | Response templates in 10+ languages | 25% |
-| 2 | 5 new intents with multi-language patterns | 25% |
-| 3 | Commodity name normalization across languages | 20% |
-| 4 | Auto-language detection from STT output | 15% |
-| 5 | Unit test: templates × intents × languages coverage matrix | 15% |
+| #   | Criterion                                                  | Weight |
+| --- | ---------------------------------------------------------- | ------ |
+| 1   | Response templates in 10+ languages                        | 25%    |
+| 2   | 5 new intents with multi-language patterns                 | 25%    |
+| 3   | Commodity name normalization across languages              | 20%    |
+| 4   | Auto-language detection from STT output                    | 15%    |
+| 5   | Unit test: templates × intents × languages coverage matrix | 15%    |
