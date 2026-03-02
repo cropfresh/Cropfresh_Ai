@@ -67,9 +67,18 @@ class LogisticsRouter:
             return None
 
         clusters = cluster_pickups(pickups, min_cluster_size=2)
+
+        # * Always include the full pickup set as a candidate (depot-and-all).
+        # HDBSCAN may split nearby farms into multiple small clusters when the
+        # full set still fits in a single vehicle and achieves better cost/kg.
+        all_as_one = list(pickups)
+        candidate_clusters = [all_as_one] + [
+            c for c in clusters if c != all_as_one and sorted(c, key=lambda p: p.farm_id) != sorted(all_as_one, key=lambda p: p.farm_id)
+        ]
+
         best: Optional[RouteResult] = None
 
-        for cluster in clusters:
+        for cluster in candidate_clusters:
             if len(cluster) > max_stops:
                 continue
             total_weight = sum(p.weight_kg for p in cluster)

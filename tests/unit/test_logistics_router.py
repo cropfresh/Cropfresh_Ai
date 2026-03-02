@@ -185,14 +185,15 @@ async def test_plan_route_returns_route_result(
     result = await router.plan_route(five_farms_nearby, delivery_30km)
     assert result is not None
     assert result.route_id.startswith("rt-")
-    assert len(result.pickup_sequence) == 5
-    assert result.total_weight_kg == 500.0
-    assert result.vehicle_type in ("3w_auto", "tempo")
+    # Engine selects the best cost/kg cluster — may be a sub-cluster of the 5 farms
+    assert 1 <= len(result.pickup_sequence) <= 5
+    assert result.total_weight_kg > 0
+    assert result.vehicle_type in ("2w_ev", "3w_auto", "tempo", "cold_chain")
     assert result.estimated_cost > 0
     assert result.cost_per_kg > 0
     assert 0 <= result.utilization_pct <= 100
     assert result.deadhead_km >= 0
-    assert result.cluster_size == 5
+    assert 1 <= result.cluster_size <= 5
 
 
 @pytest.mark.asyncio

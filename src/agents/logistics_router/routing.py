@@ -77,30 +77,29 @@ def _solve_ortools(
         True,
         "Distance",
     )
-    search_params = routing.DefaultSearchParameters()
-    search_params.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
-    search_params.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
-    )
-
-    solution = routing.SolveWithParameters(search_params)
+    solution = routing.SolveWithParameters(pywrapcp.DefaultRoutingSearchParameters())
     if not solution:
         return _solve_greedy(pickups, delivery)
 
     route: list[PickupPoint] = []
     index = routing.Start(0)
-    total_m = 0
     while not routing.IsEnd(index):
         node = manager.IndexToNode(index)
         if node > 0:
             route.append(pickups[node - 1])
-        next_index = solution.Value(routing.NextVar(index))
-        total_m += routing.GetArcCostForVehicle(index, next_index, 0)
-        index = next_index
+        index = solution.Value(routing.NextVar(index))
 
-    total_km = total_m / 1000.0
+    # Compute total_km from ordered stops using Haversine (more reliable than
+    # OR-Tools arc cost accumulator across different library versions).
+    total_km = 0.0
+    if route:
+        # depot (delivery) → first pickup
+        total_km += haversine_km(delivery.lat, delivery.lon, route[0].lat, route[0].lon)
+        # consecutive stops
+        for a, b in zip(route, route[1:]):
+            total_km += haversine_km(a.lat, a.lon, b.lat, b.lon)
+        # last pickup → depot (return leg)
+        total_km += haversine_km(route[-1].lat, route[-1].lon, delivery.lat, delivery.lon)
     return route, total_km
 
 
