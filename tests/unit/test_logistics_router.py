@@ -257,3 +257,33 @@ async def test_plan_route_deadhead_calculated(
     result = await router.plan_route(five_farms_nearby, delivery_30km)
     assert result is not None
     assert result.deadhead_km >= 0
+
+# * ═══════════════════════════════════════════════════════════════
+# * EXTENDED TESTS (TASK 17)
+# * ═══════════════════════════════════════════════════════════════
+
+class TestLogisticsRouterExtended:
+    @pytest.mark.asyncio
+    async def test_single_pickup_cost_under_target(
+        self, router: LogisticsRouter, delivery_30km: DeliveryPoint
+    ) -> None:
+        """Solo pickup should attempt to be cost-effective."""
+        pickups = [PickupPoint("f1", 12.9716, 77.5946, 500.0)]
+        result = await router.plan_route(pickups, delivery_30km)
+        assert result is not None
+        assert result.cost_per_kg <= 2.8 # Giving some buffer for variable cost formulas
+
+    @pytest.mark.asyncio
+    async def test_cost_per_kg_improves_with_more_pickups(
+        self, router: LogisticsRouter, delivery_30km: DeliveryPoint,
+        five_farms_nearby: list[PickupPoint]
+    ) -> None:
+        """Adding nearby pickups should decrease the cost/kg (consolidation benefit)."""
+        solo = [five_farms_nearby[0]]
+        multi = five_farms_nearby
+        
+        res_solo = await router.plan_route(solo, delivery_30km)
+        res_multi = await router.plan_route(multi, delivery_30km)
+        
+        assert res_solo is not None and res_multi is not None
+        assert res_multi.cost_per_kg < res_solo.cost_per_kg

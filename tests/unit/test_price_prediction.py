@@ -399,3 +399,52 @@ async def test_factors_list_non_empty():
     pred = await agent.predict("tomato", "Kolar")
     assert len(pred.factors) > 0
     assert all(isinstance(f, str) for f in pred.factors)
+
+# * ═══════════════════════════════════════════════════════════════
+# * EXTENDED TESTS (TASK 17)
+# * ═══════════════════════════════════════════════════════════════
+
+class TestSeasonalFactorParametrized:
+    @pytest.mark.parametrize("month, expected", [
+        (1, "normal"), (2, "peak_harvest"), (4, "peak_harvest"), 
+        (6, "off_season"), (8, "normal"), (11, "peak_harvest")
+    ])
+    def test_seasonal_factor_all_months_tomato(self, month, expected):
+        agent = _make_agent()
+        factor = agent._get_seasonal_factor("tomato", month)
+        assert factor == expected
+
+class TestGenerateRecommendationParametrized:
+    @pytest.mark.parametrize("current, predicted, trend, seasonal, expected", [
+        (25.0, 27.0, "rising", "normal", "sell_now"),         # +8%
+        (25.0, 25.5, "stable", "normal", "hold_3d"),          # +2%
+        (25.0, 24.0, "rising", "off_season", "hold_7d"),      # -4%, rising, off_season
+        (25.0, 20.0, "falling", "peak_harvest", "hold_30d"),  # -20%
+        (25.0, 24.5, "stable", "normal", "hold_30d"),         # -2%
+    ])
+    def test_generate_recommendation_all_codes(
+        self, current, predicted, trend, seasonal, expected
+    ):
+        agent = _make_agent()
+        rec = agent._generate_recommendation(current, predicted, trend, seasonal)
+        assert rec == expected
+
+class TestExtractFeaturesBoundaryCoverage:
+    def test_extract_features_less_than_7_items(self):
+        history = _make_history(2500.0, days=5)
+        agent = _make_agent(history)
+        features = agent._extract_features(history, "tomato")
+        assert "avg_7d" in features
+        assert features["momentum_7d"] == 0.0
+
+    def test_extract_features_less_than_14_items(self):
+        history = _make_history(2500.0, days=10)
+        agent = _make_agent(history)
+        features = agent._extract_features(history, "tomato")
+        assert features["avg_14d"] == features["avg_7d"]
+
+    def test_extract_features_less_than_30_items(self):
+        history = _make_history(2500.0, days=20)
+        agent = _make_agent(history)
+        features = agent._extract_features(history, "tomato")
+        assert features["avg_30d"] == features["avg_14d"]

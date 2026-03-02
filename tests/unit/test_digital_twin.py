@@ -635,3 +635,32 @@ class TestQualityAgentTwinIntegration:
                 twin_id="dt-does-not-exist",
                 arrival_photos=["s3://bucket/img.jpg"],
             )
+
+# * ═══════════════════════════════════════════════════════════════
+# * EXTENDED TESTS (TASK 17)
+# * ═══════════════════════════════════════════════════════════════
+
+class TestArrivalGradeEstimationParametrized:
+    @pytest.mark.parametrize("degradation_ratio, dep_grade, expected_arrival_grade", [
+        (0.05, "A+", "A+"),
+        (0.05, "B", "B"),
+        (0.15, "A+", "A"),
+        (0.15, "A", "B"),
+        (0.30, "A+", "B"),
+        (0.30, "A", "C"),
+        (0.60, "A+", "C"),
+        (0.60, "A", "C")
+    ])
+    def test_estimate_arrival_grade_various_ratios(
+        self, degradation_ratio, dep_grade, expected_arrival_grade
+    ):
+        """Test degradation logic based on ratio thresholds (0.1, 0.25, 0.50)."""
+        twin = DigitalTwin(
+            twin_id="dt-param", listing_id="lst", grade=dep_grade, 
+            shelf_life_days=5, defect_types=[], confidence=0.8, created_at=datetime.now()
+        )
+        shelf_life_hours = 5 * 24.0
+        transit_hours = shelf_life_hours * degradation_ratio
+        
+        grade = _estimate_arrival_grade(twin, ["s3://arrival.jpg"], transit_hours)
+        assert grade == expected_arrival_grade
