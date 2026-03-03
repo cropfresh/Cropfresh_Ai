@@ -117,37 +117,32 @@ class VoiceSession:
         logger.info(f"Voice session created: {session_id} for user {user_id}")
     
     async def initialize(self) -> None:
-        """Initialize session components"""
-        if VAD_AVAILABLE:
-            # Initialize VAD
-            self.vad = SileroVAD()
-            await self.vad.initialize()
-            
-            # Setup barge-in
-            self.bargein_detector = BargeinDetector(self.vad)
-            self.bargein_detector.on_bargein = self._on_bargein
-            
-            # Initialize STT — faster-whisper primary, CPU-friendly
-            self.stt = MultiProviderSTT(
-                use_faster_whisper=True,
-                use_indicconformer=False,  # disabled on CPU — no model cached
-            )
+        """Initialize session components — STT/TTS always, VAD non-fatal."""
+        # STT + TTS always initialize (no GPU, no model cache needed)
+        self.stt = MultiProviderSTT(
+            use_faster_whisper=True,
+            use_indicconformer=False,  # CPU-safe
+        )
+        self.tts = EdgeTTSProvider()
 
-            # Initialize TTS — EdgeTTS, no download required
-            self.tts = EdgeTTSProvider()
-            
-            # Initialize local vLLM provider (Sarvam-1 or similar) for the "brain"
-            local_llm = create_llm_provider(
-                provider="vllm", 
-                base_url="http://localhost:8000/v1", 
-                model="sarvam-1"
-            )
-            
-            # Initialize voice agent
-            self.voice_agent = VoiceAgent(stt=self.stt, tts=self.tts, llm_provider=local_llm)
-        
+        # Voice agent (uses default LLM from settings, not hardcoded vLLM)
+        self.voice_agent = VoiceAgent(stt=self.stt, tts=self.tts)
+
+        # VAD — non-fatal, falls back to manual chunking
+        if VAD_AVAILABLE:
+            try:
+                self.vad = SileroVAD()
+                await self.vad.initialize()
+                self.bargein_detector = BargeinDetector(self.vad)
+                self.bargein_detector.on_bargein = self._on_bargein
+                logger.info(f"Session {self.session_id}: VAD ready")
+            except Exception as e:
+                logger.warning(f"Session {self.session_id}: VAD unavailable ({e}) — using manual flush")
+                self.vad = None
+
         self.is_active = True
-        logger.info(f"Session {self.session_id} initialized")
+        logger.info(f"Session {self.session_id} initialized (vad={'on' if self.vad else 'off'})")
+
     
     def _on_bargein(self) -> None:
         """Handle barge-in event"""
@@ -403,28 +398,60 @@ _session_manager = SessionManager()
 async def voice_websocket(
     websocket: WebSocket,
     user_id: str = "anonymous",
-    language: str = "hi"
+    language: str = "hi",
 ):
     """
-    WebSocket endpoint for real-time Pipecat voice communication.
-    
-    Audio format (Binary WebSocket payload):
-    - 16-bit PCM
-    - Mono (1 channel)
-    - 16kHz sample rate
+    WebSocket endpoint for real-time voice communication.
+
+    Audio format (JSON text frames):
+        { "type": "audio_chunk", "audio_base64": "<base64 PCM>" }
+        { "type": "audio_end" }   ← flush: trigger STT on buffered audio
+        { "type": "close" }       ← graceful close
+
+    Server sends back JSON frames for every pipeline event:
+        ready | vad_start | vad_end | transcript_final | response_text | response_audio | response_end | error
     """
     await websocket.accept()
-    
-    session_id = str(uuid.uuid4())
-    logger.info(f"Accepted WebSocket connection for {user_id}. Booting Pipecat Pipeline...")
 
-    from src.voice.pipecat_bot import run_voice_bot
+    session = _session_manager.create_session(user_id, websocket)
+    logger.info(f"WebSocket accepted for user={user_id} lang={language}")
+
     try:
-        await run_voice_bot(websocket, session_id, language)
+        # Initialize STT + TTS + VAD (non-fatal VAD)
+        await session.initialize()
+        await websocket.send_json({"type": "ready", "session_id": session.session_id})
+
+        # Message loop — keep running until disconnect or close message
+        while True:
+            try:
+                raw = await websocket.receive_text()
+            except WebSocketDisconnect:
+                break
+
+            try:
+                msg = json.loads(raw)
+            except Exception:
+                continue
+
+            msg_type = msg.get("type", "")
+
+            if msg_type == "audio_chunk":
+                await session.handle_audio_chunk(msg.get("audio_base64", ""))
+
+            elif msg_type == "audio_end":
+                # Manual flush — force STT processing without VAD silence detection
+                await session._process_speech()
+
+            elif msg_type == "close":
+                break
+
+    except WebSocketDisconnect:
+        pass
     except Exception as e:
-        logger.error(f"Pipecat pipeline error for {session_id}: {e}")
+        logger.error(f"WebSocket session error for {session.session_id}: {e}")
     finally:
-        await _session_manager.remove_session(session_id)  # Fixed: was session.session_id (undefined)
+        await _session_manager.remove_session(session.session_id)
+        logger.info(f"WebSocket session {session.session_id} cleaned up")
 
 
 @router.get("/ws/sessions")

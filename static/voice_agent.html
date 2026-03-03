@@ -114,26 +114,22 @@
             </div>
           </article>
 
-          <!-- Right: Results -->
+          <!-- Right: Conversation -->
           <article class="card">
-            <h3 class="card-title">📋 Results</h3>
+            <h3 class="card-title">💬 Conversation</h3>
 
-            <label class="label">Transcription</label>
-            <div class="transcript-card" id="restTranscript">—</div>
+            <!-- Status bar -->
+            <div id="restStatus" class="rest-status">Tap the mic to start speaking</div>
 
-            <label class="label" style="margin-top: 12px">Agent Response</label>
-            <div class="response-card" id="restResponse">—</div>
-
-            <div
-              class="badge-strip"
-              id="restBadges"
-              style="margin-top: 10px"
-            ></div>
-
-            <!-- Audio playback -->
-            <div class="audio-player" id="restAudioPlayer">
-              <audio id="restAudio" controls></audio>
+            <!-- Chat thread -->
+            <div class="chat-thread" id="restChat">
+              <div class="chat-bubble-wrap system">
+                <div class="chat-bubble system">Record your voice query — results will appear here as a conversation.</div>
+              </div>
             </div>
+
+            <!-- Badges -->
+            <div class="badge-strip" id="restBadges" style="margin-top: 10px"></div>
           </article>
         </div>
 
@@ -179,14 +175,8 @@
 
           <!-- Session controls -->
           <div class="ws-session-row">
-            <input
-              id="wsUserId"
-              class="input"
-              style="max-width: 180px"
-              placeholder="User ID"
-              value="ws-test-user"
-            />
-            <select id="wsLang" class="select" style="max-width: 140px">
+            <input id="wsUserId" class="input" style="max-width: 160px" placeholder="User ID" value="ws-test-user" />
+            <select id="wsLang" class="select" style="max-width: 120px">
               <option value="hi">Hindi</option>
               <option value="en">English</option>
               <option value="kn">Kannada</option>
@@ -195,18 +185,24 @@
               <option value="auto">Auto</option>
             </select>
             <button class="btn btn-primary" id="btnWsConnect">Connect</button>
-            <button class="btn btn-secondary" id="btnWsDisconnect" disabled>
-              Disconnect
+            <button class="btn btn-secondary" id="btnWsDisconnect" disabled>Disconnect</button>
+            <button class="btn btn-secondary" id="btnWsClearTimeline">🗑 Clear</button>
+          </div>
+
+          <!-- Live status bar -->
+          <div id="wsLiveStatus" class="ws-status-bar">Click Connect to begin</div>
+
+          <!-- Push-to-Talk -->
+          <div style="margin: 12px 0; text-align: center">
+            <button
+              class="btn btn-ptt"
+              id="btnWsPtt"
+              disabled
+              title="Hold to speak (or hold Spacebar)"
+            >
+              🎤 Hold to Speak (PTT)
             </button>
-            <button class="btn btn-primary" id="btnWsMic" disabled>
-              🎙 Start Mic
-            </button>
-            <button class="btn btn-secondary" id="btnWsStopMic" disabled>
-              ⏹ Stop Mic
-            </button>
-            <button class="btn btn-secondary" id="btnWsClearTimeline">
-              🗑 Clear
-            </button>
+            <div style="font-size:0.7rem; color: var(--text-muted); margin-top:6px">Hold button or Spacebar · release to send</div>
           </div>
 
           <!-- Event timeline -->
@@ -270,13 +266,11 @@
             >
           </div>
 
-          <!-- Response chat stream -->
-          <label class="label" style="margin-top: 16px"
-            >Agent Conversation</label
-          >
-          <div class="chat-stream" id="wsChat">
-            <div class="chat-message system">
-              Conversation will appear here after speech is processed.
+          <!-- Conversation thread -->
+          <label class="label" style="margin-top: 16px">💬 Conversation</label>
+          <div class="chat-thread" id="wsChat">
+            <div class="chat-bubble-wrap system">
+              <div class="chat-bubble system">Connect and hold PTT to start talking.</div>
             </div>
           </div>
         </article>
