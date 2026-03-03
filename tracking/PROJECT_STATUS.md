@@ -1,9 +1,9 @@
 # PROJECT_STATUS.md � CropFresh AI Current State
 
-> **Last Updated:** 2026-03-03 (Cloud DBs connected)
-> **Version/Tag:** `v0.9.2-cloud-dbs`
-> **Current Sprint:** Sprint 05 — Core Agent Completion + Voice Agent Fix
-> **Sprint Status:** 🟢 Active — Tasks 1–12 complete, cloud databases live
+> **Last Updated:** 2026-03-03 (Task 33 — ResNet50 Digital Twin Similarity Engine complete)
+> **Version/Tag:** `v0.9.3-resnet-similarity`
+> **Current Sprint:** Sprint 05 — Core Agent Completion + CV Vision Real Models
+> **Sprint Status:** 🟢 Active — Phase 4 (Tasks 31–33) complete, cloud databases live
 
 ---
 
@@ -34,8 +34,8 @@ Build India's most trusted AI-powered agri-marketplace with:
 | **Voice Agent**                | ? Task 4 Complete       | All 10+ intents wired, multi-turn flows (create_listing/find_buyer/register), 3-language templates (en/hi/kn), 20 tests pass                                              |
 | Pipecat Voice Pipeline         | ?? In Progress          | WebSocket not fully tested                                                                                                                                                |
 | **Matchmaking Engine**         | ?? In Progress          | Buyer-side matching core implemented; full cluster optimization pending                                                                                                   |
-| **CV-QG Vision Agent**         | 🟡 Phase 2 In Progress  | Stgs 1–2 complete ✅ — `yolo_detector.py` (Task 31) + `dinov2_classifier.py` (Task 32); 56 tests pass. Task 33 (ResNet Digital Twin) pending.                             |
-| **Digital Twin Engine**        | 🟡 Phase 2 Pending      | Departure twin, arrival diff, SSIM/pHash/rule-based similarity, 6-rule liability matrix, 42 tests ✅ (Task 10). ResNet50 cosine similarity pending (Task 33)              |
+| **CV-QG Vision Agent**         | ✅ **Phase 2 Complete** | `yolo_detector.py` (Task 31) + `dinov2_classifier.py` (Task 32) + `similarity.py` (Task 33); 56 + 25 = 81 tests pass                                                      |
+| **Digital Twin Engine**        | ✅ **Task 33 Complete** | ResNet50 cosine similarity, phash fallback, substitution fraud flag (Priority 0 liability rule), 50 + 25 = 75 tests pass                                                  |
 | **DPLE Logistics Routing**     | ✅ **Task 11 Complete** | `src/agents/logistics_router/` — HDBSCAN clustering, OR-Tools TSP, 4-vehicle model, deadhead cost, ₹&lt;2.5/kg proven in tests, 17 tests pass                             |
 | **ADCL Agent**                 | ✅ **Task 12 Complete** | `src/agents/adcl/` — 6-module package; demand aggregation (30/60/90d trend); seasonal calendar (20+ crops); green-label scoring; en/hi/kn summaries; 23 tests             |
 | APMC Live Scraper              | ? Not Started           | eNAM registration still pending                                                                                                                                           |
@@ -98,13 +98,13 @@ Build India's most trusted AI-powered agri-marketplace with:
 | 29  | Implement `GroqWhisperSTT` — `whisper-large-v3-turbo`, Groq API cloud fallback      | `src/voice/stt.py`                                   | P1       | [ ]   |
 | 30  | E2E verification + update `/health` to return dynamic provider status               | `src/api/rest/voice.py`                              | P1       | [ ]   |
 
-#### Phase 4 — CV Vision Real Models (Tasks 31–33) 🔴 Not Started
+#### Phase 4 — CV Vision Real Models (Tasks 31–33) ✅ Complete
 
 | #   | Task                                                                                               | Files                                                                              | Priority | Done? |
 | --- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------- | ----- |
 | 31  | Real YOLOv26 defect detection — replace stub with ONNX inference, NMS post-processing, real bboxes | `src/agents/quality_assessment/yolo_detector.py` [NEW], `vision_models.py`         | P0       | ✅    |
 | 32  | DINOv2 ViT-S/14 grade classification — ONNX inference, ImageNet normalize, YOLO ensemble override  | `src/agents/quality_assessment/dinov2_classifier.py` [NEW], `vision_models.py`     | P0       | ✅    |
-| 33  | ResNet50 Digital Twin similarity — new `similarity.py`, cosine similarity, substitution fraud flag | `src/agents/digital_twin/similarity.py` [NEW], `src/agents/digital_twin/engine.py` | P0       | [ ]   |
+| 33  | ResNet50 Digital Twin similarity — new `similarity.py`, cosine similarity, substitution fraud flag | `src/agents/digital_twin/similarity.py` [NEW], `src/agents/digital_twin/engine.py` | P0       | ✅    |
 
 ---
 
@@ -123,14 +123,14 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 ## Active Blockers
 
-| Blocker                                             | Impact                                                                           | Owner                     |
-| --------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------- |
-| eNAM API registration pending                       | Live mandi data blocked                                                          | external                  |
-| AWS Free Tier limit blocks RDS creation             | Production DB not provisioned yet                                                | manual (upgrade account)  |
-| `faster-whisper` not installed in venv              | Voice STT crashes on every call                                                  | Tasks 21–30               |
-| `use_groq` kwarg in voice.py REST router            | `/process` endpoint always 500                                                   | Tasks 21–30               |
-| IndicWhisper/IndicTTS try to download 600MB+ models | Primary STT/TTS fail without GPU                                                 | Tasks 21–30               |
-| ONNX model files absent (`models/vision/`)          | CV-QG always in rule-based fallback mode, Digital Twin uses heuristic similarity | **Tasks 31–33 (Phase 4)** |
+| Blocker                                             | Impact                                                                                                                     | Owner                    |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| eNAM API registration pending                       | Live mandi data blocked                                                                                                    | external                 |
+| AWS Free Tier limit blocks RDS creation             | Production DB not provisioned yet                                                                                          | manual (upgrade account) |
+| `faster-whisper` not installed in venv              | Voice STT crashes on every call                                                                                            | Tasks 21–30              |
+| `use_groq` kwarg in voice.py REST router            | `/process` endpoint always 500                                                                                             | Tasks 21–30              |
+| IndicWhisper/IndicTTS try to download 600MB+ models | Primary STT/TTS fail without GPU                                                                                           | Tasks 21–30              |
+| ONNX model files absent (`models/vision/`)          | CV-QG always in rule-based fallback mode; Digital Twin uses phash similarity (Task 33 ✅ graceful degradation implemented) | **Model training only**  |
 
 ---
 
@@ -138,6 +138,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 | Date             | Milestone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Mar 03, 2026** | **Task 33 complete — ResNet50 Digital Twin Similarity Engine**: `src/agents/digital_twin/similarity.py` — `ResNetSimilarityEngine` with 128-dim L2-normalised ONNX embeddings, cosine similarity, phash fallback; `compare_url_batches()` for S3 URL inputs; Priority 0 substitution fraud rule in `liability.py` (hauler 100% liable on min score < 0.50); `scripts/train_resnet_similarity.py` triplet-loss training + ONNX export; 25 new tests + 50 regression tests pass.                                                                           |
 | **Mar 03, 2026** | **Cloud databases all connected**: Qdrant Cloud (`cropfresh-vectors` cluster, EU-Central), Redis Labs Cloud (ap-south-1, PING ✅ SET/GET ✅), Neo4j AuraDB (`93ac2928.databases.neo4j.io`, CONNECT ✅ CREATE 20ms ✅). All credentials stored in `.env`. `src/db/neo4j_client.py` updated to read from env vars directly.                                                                                                                                                                                                                                |
 | **Mar 02, 2026** | **Task 12 complete — ADCL Agent**: `src/agents/adcl/` package — `ADCLAgent.generate_weekly_report()`; `aggregate_demand()` with 30/60/90d trend; `SeasonalCalendar` (20+ Karnataka crops); green-label rule; `SummaryGenerator` (en/hi/kn); 23 tests                                                                                                                                                                                                                                                                                                     |
 | **Mar 02, 2026** | **Task 11 complete — DPLE Logistics Routing Engine**: `src/agents/logistics_router/` package — `LogisticsRouter.plan_route()`; HDBSCAN density clustering (haversine); OR-Tools TSP with greedy fallback; 4-vehicle model (2W EV/3W Auto/Tempo/Cold Chain); deadhead return factor; `cost_per_kg < ₹2.5` proven for 5-farm 30km delivery; 17 unit tests; full suite **416 passed**                                                                                                                                                                       |
@@ -204,7 +205,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 | API cost per query avg | <?0.25                 | <?0.30             | ~?0.44                                                |
 | RAGAS faithfulness     | >0.80                  | baseline run       | (no baseline)                                         |
 | KB documents indexed   | >1,000                 | >100               | 32                                                    |
-| Test coverage          | >80% (Phase 6)         | >45%               | **~59%** (422 tests / 17 files)                       |
+| Test coverage          | >80% (Phase 6)         | >45%               | **~60%** (447 tests / 18 files)                       |
 | REST endpoints live    |                        |                    | **15** (7 listings + 8 orders)                        |
 | eNAM mandis integrated | 1,000+ (Y2)            | 5+                 | 0                                                     |
 

@@ -1,10 +1,10 @@
 # Task 33: ResNet50 Digital Twin Image Similarity Engine
 
 > **Priority:** 🔴 P0 | **Phase:** CV Vision Real Integration | **Effort:** 2–3 days
-> **Files:** `src/agents/digital_twin/engine.py`, `src/agents/digital_twin/similarity.py` [NEW], `models/vision/`
-> **Status:** [ ] Not Started
+> **Files:** `src/agents/digital_twin/similarity.py` [NEW], `src/agents/digital_twin/engine.py`, `src/agents/digital_twin/liability.py`, `scripts/train_resnet_similarity.py` [NEW]
+> **Status:** [x] Complete — 2026-03-03
 > **Depends On:** Task 10 (Digital Twin Engine ✅), Task 31 (YOLO ✅), Task 32 (DINOv2 ✅)
-> **Sprint:** Sprint 06 — CV Vision Real Models
+> **Sprint:** Sprint 05 — CV Vision Real Models
 
 ---
 
@@ -227,16 +227,16 @@ class ProduceSimilarityNet(nn.Module):
 
 ---
 
-## ✅ Acceptance Criteria
+## ✅ Acceptance Criteria — All Met (2026-03-03)
 
-| #   | Criterion                                                                                    | Weight |
-| --- | -------------------------------------------------------------------------------------------- | ------ |
-| 1   | `ResNetSimilarityEngine.similarity(img_a, img_b)` returns float in [0.0, 1.0]                | 20%    |
-| 2   | `compare_batches()` correctly averages pairwise scores across 3×3 image grid                 | 20%    |
-| 3   | `substitution_flag=True` when min pairwise score < 0.50                                      | 20%    |
-| 4   | `generate_diff_report()` in `DigitalTwinEngine` uses ResNet score in liability determination | 20%    |
-| 5   | Graceful phash fallback when model file not present                                          | 10%    |
-| 6   | Tests in `test_digital_twin_similarity.py` pass with mocked ONNX sessions                    | 10%    |
+| #   | Criterion                                                                                    | Weight | Result                                                                                            |
+| --- | -------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| 1   | `ResNetSimilarityEngine.similarity(img_a, img_b)` returns float in [0.0, 1.0]                | 20%    | ✅ `TestSimilarity::test_similarity_bounded_zero_to_one`                                          |
+| 2   | `compare_batches()` correctly averages pairwise scores across 3×3 image grid                 | 20%    | ✅ `TestCompareBatches::test_averages_pairwise_scores` — 9 calls, mean verified                   |
+| 3   | `substitution_flag=True` when min pairwise score < 0.50                                      | 20%    | ✅ `TestCompareBatches::test_substitution_flag_true_when_min_below_threshold`                     |
+| 4   | `generate_diff_report()` in `DigitalTwinEngine` uses ResNet score in liability determination | 20%    | ✅ `TestEngineIntegration::test_generate_diff_report_uses_resnet_when_available`                  |
+| 5   | Graceful phash fallback when model file not present                                          | 10%    | ✅ `TestPhashFallback::test_phash_similarity_returns_valid_score`; smoke check `available: False` |
+| 6   | Tests in `test_digital_twin_similarity.py` pass with mocked ONNX sessions                    | 10%    | ✅ **25/25 passed** — no GPU or real model required                                               |
 
 ---
 
