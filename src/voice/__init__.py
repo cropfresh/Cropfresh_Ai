@@ -28,6 +28,18 @@ try:
 except ImportError:
     STREAMING_TTS_AVAILABLE = False
 
+try:
+    from .duplex_pipeline import DuplexPipeline, PipelineState, PipelineEvent, AudioOutputChunk
+    DUPLEX_AVAILABLE = True
+except ImportError:
+    DUPLEX_AVAILABLE = False
+
+try:
+    from .groq_streaming import GroqLLMStreaming, SentenceChunk
+    GROQ_STREAMING_AVAILABLE = True
+except ImportError:
+    GROQ_STREAMING_AVAILABLE = False
+
 __all__ = [
     # STT
     "IndicWhisperSTT",
@@ -61,5 +73,15 @@ __all__ = [
     "AudioChunk",
     "MultiProviderStreamingTTS",
     "STREAMING_TTS_AVAILABLE",
+    # Duplex Pipeline (if available)
+    "DuplexPipeline",
+    "PipelineState",
+    "PipelineEvent",
+    "AudioOutputChunk",
+    "DUPLEX_AVAILABLE",
+    # Groq Streaming (if available)
+    "GroqLLMStreaming",
+    "SentenceChunk",
+    "GROQ_STREAMING_AVAILABLE",
 ]
 

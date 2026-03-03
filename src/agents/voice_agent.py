@@ -911,19 +911,22 @@ class VoiceAgent:
         for turn in session.history[-3:]:
             history_text += f"User: {turn['user']}\nBot: {turn['bot']}\n"
         
-        prompt = f"""You are a helpful voice assistant for CropFresh, an agricultural marketplace.
-Respond in {session.language} language. Keep response short (1-2 sentences) as it will be spoken.
-
-Previous conversation:
-{history_text}
-
-User's query: {extraction.original_text}
-
-Generate a helpful response:"""
+        system_prompt = (
+            "You are a helpful voice assistant for CropFresh, an agricultural marketplace. "
+            f"Respond in {session.language} language. Keep response short (1-2 sentences) as it will be spoken."
+        )
+        
+        user_prompt = f"Previous conversation:\n{history_text}\n\nUser's query: {extraction.original_text}\n\nGenerate a helpful response:"
 
         try:
-            response = await self.llm_provider.generate(prompt, max_tokens=100)
-            return response.strip()
+            # Use LLMMessage format expected by all providers
+            from src.orchestrator.llm_provider import LLMMessage
+            messages = [
+                LLMMessage(role="system", content=system_prompt),
+                LLMMessage(role="user", content=user_prompt),
+            ]
+            response = await self.llm_provider.generate(messages, max_tokens=100)
+            return response.content.strip()
         except Exception as e:
             logger.error(f"LLM response generation failed: {e}")
             return self.RESPONSE_TEMPLATES[VoiceIntent.UNKNOWN].get(session.language, "")

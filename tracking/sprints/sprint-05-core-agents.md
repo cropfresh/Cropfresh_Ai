@@ -197,3 +197,45 @@ Voice agent was built for a GPU server with cached AI4Bharat models. Running on 
 - [ ] `POST /api/v1/voice/process` with WAV file → `transcription` + `response_audio` fields
 - [ ] Frontend Voice Agent Hub — Tools Inspector shows green ✅ chips for all components
 - [ ] WebSocket `/api/v1/voice/ws` → connects, streams PCM → VAD segments → STT → TTS response
+
+---
+
+## 🧠 Sprint 05 Phase 4 — CV Vision Real Models (Tasks 31–33)
+
+> **Added:** 2026-03-03 | **Theme:** Replace all vision stubs with real ONNX model inference
+
+### Root Cause (from audit)
+
+The `CropVisionPipeline` in `vision_models.py` was built with placeholder methods (`_detect_defects_stub`, `_classify_grade_stub`) that never run YOLO or DINOv2 inference. The system always falls into rule-based mode because no ONNX model files exist. The Digital Twin's image similarity check is also heuristic-only. These three tasks replace all stubs with real model inference.
+
+### Three-Model Architecture
+
+```
+Image Input
+    │
+    ├── YOLOv26n (Task 31) → Defect bboxes [bruise, rot, fungal_growth ...]
+    │                         ↓
+    ├── DINOv2 ViT-S/14 (Task 32) → Grade probs + YOLO ensemble override → A+/A/B/C
+    │
+    └── ResNet50 Contrastive (Task 33) → Departure↔Arrival cosine similarity → Liability verdict
+```
+
+### Task List
+
+| #   | Task                                                                                                  | Files                                                                          | Priority | Done? |
+| --- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------- | ----- |
+| 31  | Real YOLOv26 defect detection — ONNX inference, NMS post-processing, real bboxes                      | `src/agents/quality_assessment/yolo_detector.py` [NEW], `vision_models.py`     | P0       | ✅    |
+| 32  | DINOv2 ViT-S/14 grade classification — ONNX inference, ImageNet normalization, YOLO ensemble override | `src/agents/quality_assessment/dinov2_classifier.py` [NEW], `vision_models.py` | P0       | ✅    |
+
+| 33 | ResNet50 Digital Twin similarity — new `similarity.py` module, cosine similarity, substitution flag, integrate into `generate_diff_report()` | `src/agents/digital_twin/similarity.py` [NEW], `src/agents/digital_twin/engine.py` | P0 | [ ] |
+
+### Definition of Done (Tasks 31–33)
+
+- [ ] `CropVisionPipeline.assess_quality(image_bytes, commodity)` runs real YOLO + DINOv2 ONNX sessions (not stubs) when model files present
+- [ ] Defect bboxes include `x1, y1, x2, y2, label, score` keys from real NMS post-processing
+- [ ] Grade output confidence is a real softmax probability (not `0.86` hardcoded)
+- [ ] `assessment_mode` field returns `"vision"` (not `"rule_based"`) when both models loaded
+- [ ] `ResNetSimilarityEngine.compare_batches(dep_imgs, arr_imgs)` returns `similarity_score` + `substitution_flag`
+- [ ] `DigitalTwinEngine.generate_diff_report()` uses ResNet score in liability determination
+- [ ] All three task unit tests pass: `test_vision_yolo.py`, `test_vision_dinov2.py`, `test_digital_twin_similarity.py`
+- [ ] Graceful fallback maintained — rule-based mode when ONNX files absent

@@ -57,6 +57,9 @@ dependencies = [
     "scikit-learn>=1.5.0",       # HDBSCAN clustering for multi-pickup
     "ortools>=9.10.0",           # CVRP/TSP route optimization
     "pillow>=10.4.0",
+    "imagehash>=4.3.1",              # Perceptual hash fallback for ResNet similarity (Task 33)
+    "onnxruntime>=1.18.0",          # YOLO + DINOv2 + ResNet ONNX inference (Tasks 31-33)
+    "opencv-python-headless>=4.10.0", # NMS post-processing; headless avoids X11 dep on CI
     # ═══════════════════════════════════════════════════════════════
     # Caching & Storage
     # ═══════════════════════════════════════════════════════════════
@@ -90,10 +93,9 @@ ml = [
     "accelerate>=1.2.0",
 ]
 
-# Vision Models
+# Vision Models (training / export; inference uses onnxruntime in core deps)
 vision = [
-    "ultralytics>=8.3.0",          # YOLOv11/12
-    "opencv-python>=4.10.0",
+    "ultralytics>=8.3.0",          # YOLOv26 training + ONNX export
     "supervision>=0.25.0",
 ]
 

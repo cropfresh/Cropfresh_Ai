@@ -1,0 +1,88 @@
+# CV Grading Implementation Analysis
+
+## Summary Verdict
+
+> [!CAUTION]
+> **None of the three models (YOLOv8, DINOv2, ResNet) are actually implemented.** The current codebase has only **scaffolding/stubs** — no real model inference runs at any point. The system always operates in **rule-based fallback mode**.
+
+---
+
+## Model-by-Model Status
+
+| Model | Referenced? | Model File Expected | Inference Implemented? | Status |
+|-------|-----------|-------------------|----------------------|--------|
+| **YOLOv8** (defect detection) | ✅ Yes | `yolov8n_agri_defects.onnx` | ❌ **No** — stub only | 🔴 Not Working |
+| **DINOv2** (grade classification) | ✅ Yes | `dinov2_grade_classifier.onnx` | ❌ **No** — stub only | 🔴 Not Working |
+| **ResNet** | ❌ **Not referenced anywhere** | — | ❌ No | 🔴 Not Present |
+
+---
+
+## Detailed Findings
+
+### 1. YOLOv8 — Defect Detection
+
+**What exists:** [vision_models.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py)
+
+- [_load_yolo()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#78-90) (line 78-89) — Attempts to load `models/vision/yolov8n_agri_defects.onnx` via `onnxruntime`. If the file doesn't exist (which it doesn't), it logs a warning and returns `None`.
+- [_detect_defects_stub()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#128-144) (line 128-143) — **This is what actually runs.** It does **zero** YOLO inference. Instead it:
+  - Scans the text `description_hint` for known defect keywords like "bruise", "worm_hole", etc.
+  - If no keywords match and image bytes exist, it uses `len(image) % 3` to pseudo-randomly pick defects
+  - Generates **fake bounding boxes** with hardcoded pixel offsets
+
+> [!WARNING]
+> The method is literally called [_detect_defects_stub](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#128-144) — it's explicitly marked as a placeholder. No actual object detection happens.
+
+### 2. DINOv2 — Grade Classification
+
+- [_load_classifier()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#91-103) (line 91-102) — Attempts to load `models/vision/dinov2_grade_classifier.onnx`. If missing, returns `None`.
+- [_classify_grade_stub()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#145-154) (line 145-153) — **This is what actually runs.** It does **zero** DINOv2 inference. Instead it:
+  - Counts the number of defects from the previous stub
+  - Returns hardcoded grade mappings: 0 defects → A+ (0.86), ≤2 → A (0.79), ≤4 → B (0.68), else → C (0.62)
+
+> [!WARNING]
+> The confidence scores are **hardcoded constants**, not real model outputs. Grades are assigned purely by defect count.
+
+### 3. ResNet
+
+- **Not referenced anywhere** in the entire codebase — not in code files, not in config, not in docs.
+- The spec mentions only YOLOv8 and DINOv2. ResNet is not part of the current architecture.
+
+### 4. Fallback Mode (What Actually Runs)
+
+Since no `.onnx` model files exist in `models/vision/`, the [CropVisionPipeline](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#67-185) **always** activates `fallback_mode = True` (line 76). This means:
+
+- All assessments go through [_rule_based_assessment()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#155-182) (line 155-181)
+- Grade is determined by **keyword matching** in text descriptions:
+  - Words like "fresh", "firm", "premium" → Grade A (0.74 confidence)
+  - Words like "damaged", "rotten", "fungal" → Grade C (0.64 confidence)
+  - Default → Grade B (0.66 confidence)
+
+---
+
+## Architecture Diagram (Current Reality)
+
+```mermaid
+flowchart TD
+    A[Image / Description Input] --> B{ONNX Models Exist?}
+    B -->|No - ALWAYS this path| C[Rule-Based Assessment]
+    B -->|Yes - NEVER happens| D[_detect_defects_stub]
+    D --> E[_classify_grade_stub]
+    E --> F[Hardcoded grades by defect count]
+    C --> G[Keyword matching in description]
+    G --> H["Grade: A/B/C based on keywords"]
+    F --> I[QualityResult]
+    H --> I
+```
+
+---
+
+## What Would Be Needed for Real Implementation
+
+To actually implement these models, the following work is required:
+
+1. **YOLOv8**: Train or fine-tune a YOLOv8 model on agricultural defect data, export to ONNX, place at `models/vision/yolov8n_agri_defects.onnx`, and implement real preprocessing + postprocessing (NMS, box decoding) in [_detect_defects_stub()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#128-144)
+2. **DINOv2**: Fine-tune DINOv2 ViT backbone on a crop grading dataset, export to ONNX, place at `models/vision/dinov2_grade_classifier.onnx`, and implement real feature extraction + classification in [_classify_grade_stub()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py#145-154)
+3. **ResNet**: If needed, would require building from scratch — no architecture exists for it currently
+4. **Image preprocessing**: Currently no image resizing, normalization, or tensor conversion exists
+5. **Model files**: No `.onnx` files exist in the project at all
+6. **Evaluation data**: The eval file [quality_grading_eval.json](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/data/eval/quality_grading_eval.json) is **empty** (`[]`)

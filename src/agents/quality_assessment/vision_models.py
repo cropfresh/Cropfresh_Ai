@@ -1,15 +1,32 @@
 """
-Vision models wrapper for quality assessment.
+Vision models orchestrator for quality assessment.
+
+Thin wrapper that owns the two-stage grading pipeline:
+  Stage 1 → YoloDefectDetector   (yolo_detector.py)      — defect localisation
+  Stage 2 → DinoV2GradeClassifier (dinov2_classifier.py)  — A+/A/B/C with confidence
+
+Falls back to rule-based keyword assessment when ONNX models are absent,
+keeping the pipeline functional in dev / CI without model weights.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from src.agents.quality_assessment.dinov2_classifier import (
+    DinoV2GradeClassifier,
+    _grade_from_defect_count,
+)
+from src.agents.quality_assessment.yolo_detector import (
+    YoloDefectDetector,
+    detect_from_description,
+)
+
+# * ─── shelf-life lookup table ───────────────────────────────────────────────
+# Keyed by (commodity_lower, grade).  Default 3 days when key absent.
 
 SHELF_LIFE_TABLE: dict[tuple[str, str], int] = {
     ("tomato", "A+"): 7,
@@ -34,7 +51,8 @@ SHELF_LIFE_TABLE: dict[tuple[str, str], int] = {
     ("mango", "C"): 2,
 }
 
-KNOWN_DEFECT_TYPES = [
+# Used by rule-based fallback and as a reference set for keyword extraction.
+KNOWN_DEFECT_TYPES: list[str] = [
     "bruise",
     "worm_hole",
     "colour_off",
@@ -47,8 +65,12 @@ KNOWN_DEFECT_TYPES = [
     "underripe",
 ]
 
+# * ─── result models ─────────────────────────────────────────────────────────
+
 
 class DefectDetectionResult(BaseModel):
+    """Public-facing defect result — kept for backwards compat with agent.py."""
+
     defects: list[str] = Field(default_factory=list)
     bboxes: list[dict] = Field(default_factory=list)
 
@@ -61,112 +83,98 @@ class QualityResult(BaseModel):
     hitl_required: bool = False
     annotations: list[dict] = Field(default_factory=list)
     shelf_life_days: int = 3
+    # * "vision" when ONNX models ran; "rule_based" otherwise — checked by tests
     assessment_mode: str = "rule_based"
+
+
+# * ─── pipeline ──────────────────────────────────────────────────────────────
 
 
 class CropVisionPipeline:
     """
-    Two-stage vision pipeline with graceful fallback.
+    Two-stage produce quality pipeline.
+
+    Stage 1: YoloDefectDetector — localise and classify defects on the image.
+    Stage 2: DINOv2 grade classifier ONNX — holistic A+/A/B/C grading.
+             (Task 32; stub used until DINOv2 model is integrated.)
+
+    Graceful degradation order:
+      ONNX models present → full vision pipeline
+      ONNX models absent  → rule-based keyword assessment
     """
 
-    def __init__(self, model_dir: str = "models/vision/"):
+    def __init__(self, model_dir: str = "models/vision/") -> None:
         self.model_dir = model_dir
-        self.defect_detector = self._load_yolo(model_dir)
-        self.grade_classifier = self._load_classifier(model_dir)
-        self.fallback_mode = self.defect_detector is None or self.grade_classifier is None
+        # Stage 1: YOLOv26 defect detector (Task 31 ✅)
+        self.defect_detector = YoloDefectDetector(model_dir)
+        # Stage 2: DINOv2 grade classifier (Task 32 ✅)
+        self.grade_classifier = DinoV2GradeClassifier(model_dir)
+        # * Pipeline degrades gracefully: both stages must be available for vision mode
+        self.fallback_mode = (
+            not self.defect_detector.is_available
+            or not self.grade_classifier.is_available
+        )
 
-    def _load_yolo(self, model_dir: str):
-        model_path = Path(model_dir) / "yolov8n_agri_defects.onnx"
-        if not model_path.exists():
-            logger.warning("YOLOv8 model not found, fallback mode enabled")
-            return None
-        try:
-            import onnxruntime as ort
+    # ── public API ─────────────────────────────────────────────────────────
 
-            return ort.InferenceSession(str(model_path))
-        except Exception as err:
-            logger.warning(f"Failed loading YOLOv8 model: {err}")
-            return None
-
-    def _load_classifier(self, model_dir: str):
-        model_path = Path(model_dir) / "dinov2_grade_classifier.onnx"
-        if not model_path.exists():
-            logger.warning("Classifier model not found, fallback mode enabled")
-            return None
-        try:
-            import onnxruntime as ort
-
-            return ort.InferenceSession(str(model_path))
-        except Exception as err:
-            logger.warning(f"Failed loading grade classifier: {err}")
-            return None
-
-    async def assess_quality(self, image: bytes, commodity: str, description_hint: str = "") -> QualityResult:
-        """
-        Full pipeline entrypoint.
-        """
+    async def assess_quality(
+        self,
+        image: bytes,
+        commodity: str,
+        description_hint: str = "",
+    ) -> QualityResult:
+        """Full two-stage pipeline entrypoint (called when an image is present)."""
         if self.fallback_mode:
             return self._rule_based_assessment(commodity, description_hint)
 
-        defect_results = self._detect_defects_stub(image, description_hint)
-        grade, confidence = self._classify_grade_stub(defect_results.defects)
-        hitl_required = confidence < 0.7 or grade == "A+" or len(defect_results.defects) > 3
+        # Stage 1 — real YOLOv26 defect detection
+        detection = self.defect_detector.detect(image, description_hint)
+
+        # Stage 2 — real DINOv2 grade classification + YOLO ensemble override
+        grade, confidence = self.grade_classifier.classify(
+            image, detected_defects=detection.defects
+        )
+
+        hitl_required = (
+            confidence < 0.7
+            or grade == "A+"
+            or len(detection.defects) > 3
+        )
         return QualityResult(
             grade=grade,
             confidence=confidence,
-            defects=defect_results.defects,
-            defect_count=len(defect_results.defects),
+            defects=detection.defects,
+            defect_count=len(detection.defects),
             hitl_required=hitl_required,
-            annotations=defect_results.bboxes,
+            annotations=detection.to_annotation_dicts(),
             shelf_life_days=self._estimate_shelf_life(commodity, grade),
             assessment_mode="vision",
         )
 
     async def assess_description(self, commodity: str, description: str) -> QualityResult:
+        """Text-only assessment path (no image supplied)."""
         return self._rule_based_assessment(commodity, description)
 
-    def _detect_defects_stub(self, image: bytes, description_hint: str) -> DefectDetectionResult:
-        hint = description_hint.lower()
-        detected = []
-        for defect in KNOWN_DEFECT_TYPES:
-            if defect in hint or defect.replace("_", " ") in hint:
-                detected.append(defect)
-        if not detected and image:
-            pseudo_index = len(image) % 3
-            if pseudo_index == 1:
-                detected = ["bruise"]
-            elif pseudo_index == 2:
-                detected = ["bruise", "colour_off"]
-        bboxes = []
-        for idx, defect in enumerate(detected):
-            bboxes.append({"x1": 10 + idx * 8, "y1": 12 + idx * 8, "x2": 60 + idx * 8, "y2": 52 + idx * 8, "label": defect})
-        return DefectDetectionResult(defects=detected, bboxes=bboxes)
-
-    def _classify_grade_stub(self, defects: list[str]) -> tuple[str, float]:
-        count = len(defects)
-        if count == 0:
-            return "A+", 0.86
-        if count <= 2:
-            return "A", 0.79
-        if count <= 4:
-            return "B", 0.68
-        return "C", 0.62
+    # ── internal helpers ───────────────────────────────────────────────────
 
     def _rule_based_assessment(self, commodity: str, description: str) -> QualityResult:
-        description_lower = description.lower()
-        detected_defects = []
-        for defect in KNOWN_DEFECT_TYPES:
-            if defect in description_lower or defect.replace("_", " ") in description_lower:
-                detected_defects.append(defect)
+        """
+        Keyword-based fallback when ONNX models are unavailable.
+        Returns honest low-confidence grades; always flags HITL.
+        """
+        detection = detect_from_description(description)
+        detected_defects = detection.defects
+
         if not detected_defects:
-            if any(token in description_lower for token in ["fresh", "firm", "uniform", "clean", "premium"]):
+            desc_lower = description.lower()
+            if any(t in desc_lower for t in ["fresh", "firm", "uniform", "clean", "premium"]):
                 grade, confidence = "A", 0.74
-            elif any(token in description_lower for token in ["soft", "damaged", "rotten", "fungal", "spot"]):
+            elif any(t in desc_lower for t in ["soft", "damaged", "rotten", "fungal", "spot"]):
                 grade, confidence = "C", 0.64
             else:
                 grade, confidence = "B", 0.66
         else:
-            grade, confidence = self._classify_grade_stub(detected_defects)
+            grade, confidence = _grade_from_defect_count(len(detected_defects))
 
         hitl_required = confidence < 0.7 or grade == "A+" or len(detected_defects) > 3
         return QualityResult(

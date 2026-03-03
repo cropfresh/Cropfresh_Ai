@@ -114,6 +114,7 @@ def determine_liability(
     new_defects: list[str],
     has_arrival_photos: bool,
     quantity_mismatch_percent: float = 0.0,
+    substitution_flag: bool = False,
 ) -> LiabilityResult:
     """
     Apply the CropFresh liability matrix to assign a responsible party.
@@ -130,6 +131,20 @@ def determine_liability(
     Returns:
         LiabilityResult with liable party, claim %, and reasoning string.
     """
+    # * Rule 0 — Produce substitution detected by ResNet similarity engine
+    # ! Possible swap or total loss: freeze payment and alert immediately
+    if substitution_flag:
+        return LiabilityResult(
+            liable_party="hauler",
+            claim_percent=100.0,
+            reasoning=(
+                "Possible produce substitution or total loss detected. "
+                "ResNet50 similarity engine found min pairwise score < 0.50 — "
+                "visual evidence suggests the delivered batch is not the same produce. "
+                "Payment frozen pending investigation. Hauler fully liable."
+            ),
+        )
+
     # * Rule 1 — No photos: claim rejected outright
     if not has_arrival_photos:
         return LiabilityResult(

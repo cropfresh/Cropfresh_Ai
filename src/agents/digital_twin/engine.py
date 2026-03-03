@@ -37,6 +37,7 @@ from src.agents.digital_twin.diff_analysis import (
 )
 from src.agents.digital_twin.liability import determine_liability
 from src.agents.digital_twin.models import ArrivalData, DiffReport, DigitalTwin
+from src.agents.digital_twin.similarity import ResNetSimilarityEngine
 from src.agents.quality_assessment.vision_models import QualityResult
 
 
@@ -79,6 +80,8 @@ class DigitalTwinEngine:
         # NOTE: db is AuroraPostgresClient — optional for dev/test
         self.db = db
         self._twin_cache: dict[str, DigitalTwin] = {}
+        # * ResNet50 similarity engine — degrades to phash/rule-based when model absent
+        self.similarity_engine = ResNetSimilarityEngine()
 
     # ─────────────────────────────────────────────────────────
     # * Public — Departure Twin Creation
@@ -228,15 +231,30 @@ class DigitalTwinEngine:
         # * Step 3: Infer arrival defects from grade + known departure defects
         arrival_defects = _infer_arrival_defects(grade_arrival, departure_twin.defect_types)
 
-        # * Step 4: Image similarity
-        similarity_score, analysis_method = compute_similarity(
-            departure_photos=departure_twin.all_photos(),
-            arrival_photos=arrival_data.arrival_photos,
-            grade_departure=departure_twin.grade,
-            grade_arrival=grade_arrival,
-            departure_defects=departure_twin.defect_types,
-            arrival_defects=arrival_defects,
-        )
+        # * Step 4: Image similarity — ResNet50 preferred; falls back to SSIM/phash/rule-based
+        substitution_flag = False
+        if self.similarity_engine.available:
+            batch_result = self.similarity_engine.compare_url_batches(
+                departure_twin.all_photos(),
+                arrival_data.arrival_photos,
+            )
+            similarity_score  = batch_result["similarity_score"]
+            substitution_flag = batch_result["substitution_flag"]
+            analysis_method   = "resnet50"
+            logger.debug(
+                "ResNet50 similarity: score={:.4f} min={:.4f} substitution={}",
+                similarity_score, batch_result["min_score"], substitution_flag,
+            )
+        else:
+            # * Fallback: SSIM → perceptual hash → rule-based (existing diff_analysis pipeline)
+            similarity_score, analysis_method = compute_similarity(
+                departure_photos=departure_twin.all_photos(),
+                arrival_photos=arrival_data.arrival_photos,
+                grade_departure=departure_twin.grade,
+                grade_arrival=grade_arrival,
+                departure_defects=departure_twin.defect_types,
+                arrival_defects=arrival_defects,
+            )
 
         # * Step 5: Quality delta
         quality_delta = compute_grade_delta(departure_twin.grade, grade_arrival)
@@ -244,7 +262,7 @@ class DigitalTwinEngine:
         # * Step 6: New defects introduced during transit
         new_defects = compute_new_defects(departure_twin.defect_types, arrival_defects)
 
-        # * Step 7: Liability determination
+        # * Step 7: Liability determination (substitution_flag escalates to hauler 100%)
         liability_result = determine_liability(
             grade_departure=departure_twin.grade,
             grade_arrival=grade_arrival,
@@ -252,6 +270,7 @@ class DigitalTwinEngine:
             transit_hours=transit_hours,
             new_defects=new_defects,
             has_arrival_photos=bool(arrival_data.arrival_photos),
+            substitution_flag=substitution_flag,
         )
 
         # * Step 8: Report confidence

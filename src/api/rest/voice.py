@@ -41,8 +41,27 @@ def get_voice_agent() -> VoiceAgent:
             faster_whisper_model="small",  # Good balance of speed/accuracy
         )
         _tts = EdgeTTSProvider()   # zero-download, 9-language neural TTS
-        _voice_agent = VoiceAgent(stt=_stt, tts=_tts)
-        logger.info(f"Voice agent initialized with providers: {_stt.get_available_providers()}, tts=EdgeTTSProvider")
+
+        # Initialize LLM provider for conversational responses (UNKNOWN intent)
+        llm = None
+        try:
+            from src.orchestrator.llm_provider import create_llm_provider
+            from dotenv import load_dotenv
+            import os
+            load_dotenv()  # Ensure .env is loaded
+            # Try Groq first (fastest for voice), then Bedrock
+            groq_key = os.getenv("GROQ_API_KEY", "")
+            if groq_key:
+                llm = create_llm_provider("groq", api_key=groq_key)
+                logger.info(f"Voice agent LLM provider: Groq (key={groq_key[:8]}...)")
+            else:
+                llm = create_llm_provider("bedrock")
+                logger.info("Voice agent LLM provider: Bedrock")
+        except Exception as e:
+            logger.error(f"Voice agent LLM provider initialization failed: {e}")
+
+        _voice_agent = VoiceAgent(stt=_stt, tts=_tts, llm_provider=llm)
+        logger.info(f"Voice agent initialized with providers: {_stt.get_available_providers()}, tts=EdgeTTSProvider, llm={'yes' if llm else 'no'}")
 
     return _voice_agent
 

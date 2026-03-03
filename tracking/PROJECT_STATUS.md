@@ -34,8 +34,8 @@ Build India's most trusted AI-powered agri-marketplace with:
 | **Voice Agent**                | ? Task 4 Complete       | All 10+ intents wired, multi-turn flows (create_listing/find_buyer/register), 3-language templates (en/hi/kn), 20 tests pass                                              |
 | Pipecat Voice Pipeline         | ?? In Progress          | WebSocket not fully tested                                                                                                                                                |
 | **Matchmaking Engine**         | ?? In Progress          | Buyer-side matching core implemented; full cluster optimization pending                                                                                                   |
-| **CV-QG Vision Agent**         | ? Task 3 Complete       | Quality pipeline + fallback + HITL + digital twin linkage + supervisor wiring                                                                                             |
-| **Digital Twin Engine**        | ✅ Task 10 Complete     | Departure twin, arrival diff, SSIM/pHash/rule-based similarity, 6-rule liability matrix, 42 tests                                                                         |
+| **CV-QG Vision Agent**         | 🟡 Phase 2 In Progress  | Stgs 1–2 complete ✅ — `yolo_detector.py` (Task 31) + `dinov2_classifier.py` (Task 32); 56 tests pass. Task 33 (ResNet Digital Twin) pending.                             |
+| **Digital Twin Engine**        | 🟡 Phase 2 Pending      | Departure twin, arrival diff, SSIM/pHash/rule-based similarity, 6-rule liability matrix, 42 tests ✅ (Task 10). ResNet50 cosine similarity pending (Task 33)              |
 | **DPLE Logistics Routing**     | ✅ **Task 11 Complete** | `src/agents/logistics_router/` — HDBSCAN clustering, OR-Tools TSP, 4-vehicle model, deadhead cost, ₹&lt;2.5/kg proven in tests, 17 tests pass                             |
 | **ADCL Agent**                 | ✅ **Task 12 Complete** | `src/agents/adcl/` — 6-module package; demand aggregation (30/60/90d trend); seasonal calendar (20+ crops); green-label scoring; en/hi/kn summaries; 23 tests             |
 | APMC Live Scraper              | ? Not Started           | eNAM registration still pending                                                                                                                                           |
@@ -98,6 +98,14 @@ Build India's most trusted AI-powered agri-marketplace with:
 | 29  | Implement `GroqWhisperSTT` — `whisper-large-v3-turbo`, Groq API cloud fallback      | `src/voice/stt.py`                                   | P1       | [ ]   |
 | 30  | E2E verification + update `/health` to return dynamic provider status               | `src/api/rest/voice.py`                              | P1       | [ ]   |
 
+#### Phase 4 — CV Vision Real Models (Tasks 31–33) 🔴 Not Started
+
+| #   | Task                                                                                               | Files                                                                              | Priority | Done? |
+| --- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------- | ----- |
+| 31  | Real YOLOv26 defect detection — replace stub with ONNX inference, NMS post-processing, real bboxes | `src/agents/quality_assessment/yolo_detector.py` [NEW], `vision_models.py`         | P0       | ✅    |
+| 32  | DINOv2 ViT-S/14 grade classification — ONNX inference, ImageNet normalize, YOLO ensemble override  | `src/agents/quality_assessment/dinov2_classifier.py` [NEW], `vision_models.py`     | P0       | ✅    |
+| 33  | ResNet50 Digital Twin similarity — new `similarity.py`, cosine similarity, substitution fraud flag | `src/agents/digital_twin/similarity.py` [NEW], `src/agents/digital_twin/engine.py` | P0       | [ ]   |
+
 ---
 
 ## 6-Phase Upgrade Roadmap
@@ -115,14 +123,14 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 ## Active Blockers
 
-| Blocker                                             | Impact                            | Owner                    |
-| --------------------------------------------------- | --------------------------------- | ------------------------ |
-| eNAM API registration pending                       | Live mandi data blocked           | external                 |
-| AWS Free Tier limit blocks RDS creation             | Production DB not provisioned yet | manual (upgrade account) |
-| `faster-whisper` not installed in venv              | Voice STT crashes on every call   | Tasks 21–30              |
-| `use_groq` kwarg in voice.py REST router            | `/process` endpoint always 500    | Tasks 21–30              |
-| IndicWhisper/IndicTTS try to download 600MB+ models | Primary STT/TTS fail without GPU  | Tasks 21–30              |
-| YOLOv8 model weights not downloaded                 | CV-QG grading blocked             | Phase 3                  |
+| Blocker                                             | Impact                                                                           | Owner                     |
+| --------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------- |
+| eNAM API registration pending                       | Live mandi data blocked                                                          | external                  |
+| AWS Free Tier limit blocks RDS creation             | Production DB not provisioned yet                                                | manual (upgrade account)  |
+| `faster-whisper` not installed in venv              | Voice STT crashes on every call                                                  | Tasks 21–30               |
+| `use_groq` kwarg in voice.py REST router            | `/process` endpoint always 500                                                   | Tasks 21–30               |
+| IndicWhisper/IndicTTS try to download 600MB+ models | Primary STT/TTS fail without GPU                                                 | Tasks 21–30               |
+| ONNX model files absent (`models/vision/`)          | CV-QG always in rule-based fallback mode, Digital Twin uses heuristic similarity | **Tasks 31–33 (Phase 4)** |
 
 ---
 
@@ -165,7 +173,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 | --------------------- | -------------------------------------------------------- | ------------ |
 | Backend               | FastAPI + Python 3.11+                                   | ✅           |
 | AI Framework          | LangGraph + LangChain                                    | ✅           |
-| Vision                | YOLOv8 + ViT-B/16 + ONNX Runtime                         | 🟡           |
+| Vision                | YOLOv26 + DINOv2 ViT-S/14 + ResNet50 + ONNX Runtime      | 🔴 Pending   |
 | **LLM (Production)**  | **AWS Bedrock Claude Sonnet 4**                          | ✅           |
 | **LLM (Router/Dev)**  | **Groq Llama-3.1-8B (~80ms)**                            | ✅           |
 | **Vector DB**         | **Qdrant Cloud** (`cropfresh-vectors`, EU-Central)       | ✅ Connected |

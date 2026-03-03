@@ -37,6 +37,16 @@ except ImportError as e:
     logger.warning(f"Voice components not fully available: {e}")
     VAD_AVAILABLE = False
 
+# Import duplex pipeline
+try:
+    from src.voice.duplex_pipeline import (
+        DuplexPipeline, PipelineState, PipelineEvent, AudioOutputChunk,
+    )
+    DUPLEX_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Duplex pipeline not available: {e}")
+    DUPLEX_AVAILABLE = False
+
 
 # WebSocket message types
 class MessageType(str, Enum):
@@ -452,6 +462,239 @@ async def voice_websocket(
     finally:
         await _session_manager.remove_session(session.session_id)
         logger.info(f"WebSocket session {session.session_id} cleaned up")
+
+
+# ═══════════════════════════════════════════════════════════════
+# Duplex WebSocket Endpoint (Streaming Pipeline)
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.websocket("/ws/duplex")
+async def voice_duplex_websocket(
+    websocket: WebSocket,
+    user_id: str = "anonymous",
+    language: str = "hi",
+):
+    """
+    Full-duplex WebSocket endpoint with streaming LLM + TTS.
+
+    This endpoint uses the DuplexPipeline for speculative TTS:
+    - LLM streams sentences in real-time
+    - Each sentence is immediately synthesized to audio
+    - Audio chunks are streamed back as they are generated
+    - Barge-in interrupts both LLM and TTS instantly
+
+    Audio format (JSON text frames):
+        { "type": "audio_chunk", "audio_base64": "<base64 PCM>" }
+        { "type": "audio_end" }   — flush: trigger STT on buffered audio
+        { "type": "bargein" }     — interrupt AI response
+        { "type": "close" }       — graceful close
+
+    Server sends back JSON frames:
+        ready | pipeline_state | transcript_final | response_audio |
+        response_sentence | response_end | error
+    """
+    if not DUPLEX_AVAILABLE:
+        await websocket.accept()
+        await websocket.send_json({
+            "type": "error",
+            "error": "Duplex pipeline not available. Missing dependencies.",
+        })
+        await websocket.close()
+        return
+
+    await websocket.accept()
+    session_id = str(uuid.uuid4())
+    logger.info(f"Duplex WebSocket accepted: user={user_id}, lang={language}")
+
+    # Initialize the duplex pipeline
+    pipeline = DuplexPipeline(
+        llm_provider="groq",
+        tts_provider="edge",
+        stt_provider="groq",
+    )
+
+    # VAD for server-side speech detection
+    vad = None
+    bargein_detector = None
+    audio_buffer: list[bytes] = []
+    detected_language = language
+
+    async def send_msg(msg_type: str, data: dict) -> None:
+        """Send JSON message to client."""
+        try:
+            await websocket.send_json({
+                "type": msg_type,
+                "timestamp": datetime.now().isoformat(),
+                **data,
+            })
+        except Exception:
+            pass
+
+    # Pipeline event callback
+    async def on_pipeline_event(event: PipelineEvent) -> None:
+        await send_msg("pipeline_state", {
+            "state": event.state.value,
+            **event.data,
+        })
+
+    pipeline.on_event(on_pipeline_event)
+
+    try:
+        # Initialize pipeline components
+        await pipeline.initialize()
+
+        # Initialize VAD (non-fatal)
+        if VAD_AVAILABLE:
+            try:
+                vad = SileroVAD()
+                await vad.initialize()
+                bargein_detector = BargeinDetector(vad)
+                logger.info(f"Duplex {session_id}: VAD ready")
+            except Exception as e:
+                logger.warning(f"Duplex {session_id}: VAD unavailable: {e}")
+                vad = None
+
+        await send_msg("ready", {
+            "session_id": session_id,
+            "mode": "duplex",
+            "features": {
+                "vad": vad is not None,
+                "streaming_llm": True,
+                "streaming_tts": True,
+                "bargein": True,
+            },
+        })
+
+        # ── Message loop ──
+        while True:
+            try:
+                raw = await websocket.receive_text()
+            except WebSocketDisconnect:
+                break
+
+            try:
+                msg = json.loads(raw)
+            except Exception:
+                continue
+
+            msg_type = msg.get("type", "")
+
+            if msg_type == "audio_chunk":
+                # Decode and buffer audio
+                try:
+                    audio_bytes = base64.b64decode(msg.get("audio_base64", ""))
+                except Exception:
+                    continue
+
+                audio_buffer.append(audio_bytes)
+
+                # Process through VAD if available
+                if vad:
+                    event = vad.process_chunk(audio_bytes)
+
+                    # Check for barge-in during AI response
+                    if pipeline.state == PipelineState.SPEAKING:
+                        if event.state in (VADState.SPEECH_START, VADState.SPEECH):
+                            if event.probability > 0.7:
+                                pipeline.interrupt()
+                                await send_msg("bargein", {})
+                                audio_buffer = [audio_bytes]  # Start new buffer
+
+                    # Speech ended — process the segment
+                    if event.state == VADState.SPEECH_END:
+                        await _process_duplex_speech(
+                            pipeline, audio_buffer, detected_language,
+                            websocket, send_msg,
+                        )
+                        audio_buffer = []
+
+            elif msg_type == "audio_end":
+                # Manual flush — process buffered audio
+                if audio_buffer:
+                    await _process_duplex_speech(
+                        pipeline, audio_buffer, detected_language,
+                        websocket, send_msg,
+                    )
+                    audio_buffer = []
+
+            elif msg_type == "bargein":
+                # Client-side barge-in signal
+                pipeline.interrupt()
+                await send_msg("bargein", {})
+
+            elif msg_type == "language_hint":
+                detected_language = msg.get("language", language)
+
+            elif msg_type == "close":
+                break
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.error(f"Duplex session error {session_id}: {e}")
+    finally:
+        await pipeline.close()
+        if vad:
+            vad.reset()
+        logger.info(f"Duplex session {session_id} cleaned up")
+
+
+async def _process_duplex_speech(
+    pipeline: "DuplexPipeline",
+    audio_buffer: list[bytes],
+    language: str,
+    websocket: WebSocket,
+    send_msg,
+) -> None:
+    """
+    Process buffered speech through the duplex pipeline.
+
+    Streams LLM sentences → TTS audio chunks back to the client.
+    """
+    if not audio_buffer:
+        return
+
+    # Combine and convert audio
+    audio = b"".join(audio_buffer)
+    if VAD_AVAILABLE:
+        audio_wav = bytes_to_wav(audio)
+    else:
+        audio_wav = audio
+
+    chunk_count = 0
+    response_text_parts = []
+
+    try:
+        async for audio_chunk in pipeline.process_speech(
+            audio_wav, language=language
+        ):
+            # Send each audio chunk immediately
+            await send_msg("response_audio", {
+                "audio_base64": audio_chunk.audio_base64,
+                "format": audio_chunk.format,
+                "sample_rate": audio_chunk.sample_rate,
+                "chunk_index": audio_chunk.chunk_index,
+                "is_last": audio_chunk.is_last,
+            })
+            chunk_count += 1
+
+            # Track sentence text for transcript
+            if audio_chunk.text and audio_chunk.text not in response_text_parts:
+                response_text_parts.append(audio_chunk.text)
+                await send_msg("response_sentence", {
+                    "text": audio_chunk.text,
+                })
+
+        # Signal response complete
+        await send_msg("response_end", {
+            "chunks_sent": chunk_count,
+            "full_text": " ".join(response_text_parts),
+        })
+
+    except Exception as e:
+        logger.error(f"Duplex speech processing error: {e}")
+        await send_msg("error", {"error": str(e)})
 
 
 @router.get("/ws/sessions")

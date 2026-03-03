@@ -515,3 +515,38 @@
 .rest-status.thinking  { background: rgba(168,85,247,0.1);  border-color: rgba(168,85,247,0.3);  color: #c084fc; }
 .rest-status.speaking  { background: rgba(245,158,11,0.1);  border-color: rgba(245,158,11,0.3);  color: #fbbf24; }
 .rest-status.error     { background: rgba(239,68,68,0.1);   border-color: rgba(239,68,68,0.3);   color: #f87171; }
+
+/* ── Duplex States ────────────────────────────────────── */
+.mic-orb.thinking {
+  border-color: #a855f7;
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.3);
+  animation: pulse-think 1.2s ease-in-out infinite;
+}
+
+.mic-orb.speaking {
+  border-color: #f59e0b;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.3);
+  animation: pulse-speak 0.8s ease-in-out infinite;
+}
+
+.ws-status-bar.interrupted {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  animation: flash-interrupt 0.3s ease-out;
+}
+
+@keyframes pulse-think {
+  0%, 100% { box-shadow: 0 0 12px rgba(168, 85, 247, 0.2); }
+  50%      { box-shadow: 0 0 28px rgba(168, 85, 247, 0.5); }
+}
+
+@keyframes pulse-speak {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+@keyframes flash-interrupt {
+  0%   { background: rgba(239, 68, 68, 0.4); }
+  100% { background: rgba(239, 68, 68, 0.15); }
+}
