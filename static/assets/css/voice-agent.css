@@ -1,0 +1,388 @@
+/* voice-agent.css — Voice Agent Hub page styles */
+
+/* ── Layout ───────────────────────────────────────────── */
+.va-layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ── Mic Orb ──────────────────────────────────────────── */
+.mic-orb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 10px 0 20px;
+}
+
+.mic-orb {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface));
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  user-select: none;
+}
+
+.mic-orb:hover {
+  transform: scale(1.04);
+  border-color: var(--primary);
+  box-shadow: 0 0 18px var(--mic-glow);
+}
+
+/* Pulse ring — only visible when recording */
+.mic-orb::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--danger);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.mic-orb.recording {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 0 var(--mic-glow-active);
+  animation: pulse-glow 1.4s ease-in-out infinite;
+}
+
+.mic-orb.recording::before {
+  opacity: 1;
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+
+.mic-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.mic-label.recording {
+  color: var(--danger);
+}
+
+/* ── Waveform canvas ──────────────────────────────────── */
+.waveform-canvas {
+  width: 100%;
+  height: 56px;
+  border-radius: 10px;
+  background: #070f1e;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+/* ── Status badges ────────────────────────────────────── */
+.badge-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.badge-lang {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.badge-intent {
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #c084fc;
+}
+
+.badge-entity {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.3);
+  color: #7dd3fc;
+}
+
+.badge-conf {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: var(--primary);
+}
+
+.badge-provider {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ── REST transcript card ─────────────────────────────── */
+.transcript-card {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(14, 165, 233, 0.04);
+  margin-top: 10px;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  font-style: italic;
+  color: var(--accent);
+  min-height: 44px;
+}
+
+.response-card {
+  padding: 12px 14px;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.05);
+  margin-top: 8px;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--text);
+  min-height: 44px;
+}
+
+/* ── Audio player ─────────────────────────────────────── */
+.audio-player {
+  margin-top: 10px;
+  display: none;
+}
+
+.audio-player audio {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.audio-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ── TTS Lab ──────────────────────────────────────────── */
+.tts-controls-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.tts-history {
+  margin-top: 14px;
+}
+
+.tts-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  gap: 8px;
+  animation: fade-in-up 0.15s ease;
+}
+
+.tts-history-text {
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tts-history-meta {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── WebSocket event timeline ─────────────────────────── */
+.event-timeline {
+  height: 240px;
+}
+
+.event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.76rem;
+  font-family: var(--mono);
+  animation: fade-in-up 0.12s ease;
+}
+
+.event-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.event-dot.vad      { background: var(--event-vad); }
+.event-dot.transcript { background: var(--event-transcript); }
+.event-dot.response { background: var(--event-response); }
+.event-dot.bargein  { background: var(--event-bargein); }
+.event-dot.lang     { background: var(--event-lang); }
+.event-dot.system   { background: var(--text-muted); }
+
+.event-time {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-size: 0.7rem;
+}
+
+.event-text {
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+}
+
+/* ── WS session controls ──────────────────────────────── */
+.ws-session-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── Tools Inspector ──────────────────────────────────── */
+.inspector-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.inspector-section h4 {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.lang-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+
+.lang-table th {
+  text-align: left;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+}
+
+.lang-table td {
+  padding: 5px 8px;
+  color: var(--text);
+}
+
+.lang-table tr:nth-child(even) td {
+  background: rgba(255,255,255,0.02);
+}
+
+.json-viewer {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: #070f1e;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 120px;
+  position: relative;
+}
+
+.json-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.json-copy-btn:hover {
+  background: rgba(255,255,255,0.10);
+  color: var(--text);
+}
+
+/* ── Health status row ────────────────────────────────── */
+.health-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.health-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.health-chip.ok {
+  background: rgba(34,197,94,0.10);
+  border-color: rgba(34,197,94,0.3);
+  color: var(--primary);
+}
+
+.health-chip.err {
+  background: rgba(239,68,68,0.10);
+  border-color: rgba(239,68,68,0.3);
+  color: var(--danger);
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tts-controls-row,
+  .inspector-grid {
+    grid-template-columns: 1fr;
+  }
+  .ws-session-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mic-orb {
+    width: 72px;
+    height: 72px;
+    font-size: 1.6rem;
+  }
+}

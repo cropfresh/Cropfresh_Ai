@@ -9,6 +9,7 @@ Features:
 - Recommendation engine support
 """
 
+import os
 from functools import lru_cache
 from typing import Any, Optional
 
@@ -329,14 +330,18 @@ class Neo4jClient:
 def get_neo4j(uri: str = None, user: str = None, password: str = None) -> Neo4jClient:
     """
     Get cached Neo4j client instance.
-    
-    If credentials not provided, reads from settings.
+
+    Reads from NEO4J_URI / NEO4J_USERNAME / NEO4J_PASSWORD env vars by default.
+    Raises RuntimeError if NEO4J_URI is not set or still a placeholder.
     """
-    if uri is None or user is None or password is None:
-        from src.config import get_settings
-        settings = get_settings()
-        uri = settings.neo4j_uri
-        user = settings.neo4j_user
-        password = settings.neo4j_password
-    
+    uri = uri or os.getenv("NEO4J_URI", "")
+    user = user or os.getenv("NEO4J_USERNAME", "neo4j")
+    password = password or os.getenv("NEO4J_PASSWORD", "")
+
+    if not uri or "REPLACE_WITH" in uri:
+        raise RuntimeError(
+            "NEO4J_URI not configured. "
+            "Set NEO4J_URI=neo4j+s://<id>.databases.neo4j.io in .env"
+        )
+
     return Neo4jClient(uri=uri, user=user, password=password)

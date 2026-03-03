@@ -163,3 +163,37 @@ Farmer grade-upgrade request → HITL_required = True
 | CRUD methods (postgres_client)  | 5                 | **22**                                       |
 | Logistics cost/kg               | — (unimplemented) | **₹1.33/kg** (3-farm cluster, 3W Auto, 30km) |
 | DPLE routing engine             | stub              | **✅ complete** (17 tests)                   |
+
+---
+
+## 🔊 Sprint 05 Phase 2 — Voice Agent Fix (Tasks 21–30)
+
+> **Added:** 2026-03-03 | **Theme:** Fix voice agent to work on CPU without AI4Bharat models
+
+### Root Cause (from audit)
+
+Voice agent was built for a GPU server with cached AI4Bharat models. Running on dev CPU, every STT/TTS call crashes. Fix: wire practical provider chain (faster-whisper + edge-tts + groq whisper fallback).
+
+### Task List
+
+| #   | Task                                                                                            | Files                                                | Priority | Done? |
+| --- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------- | ----- |
+| 21  | Install `faster-whisper>=1.0.3` package                                                         | `pyproject.toml` + `uv sync`                         | P0       | [ ]   |
+| 22  | Fix REST router: remove invalid `use_groq=True` kwarg from `MultiProviderSTT(...)`              | `src/api/rest/voice.py:40`                           | P0       | [ ]   |
+| 23  | Add `get_supported_languages()` to `MultiProviderSTT` — fixes `/languages` 500 error            | `src/voice/stt.py`                                   | P0       | [ ]   |
+| 24  | Add `EdgeTTSProvider` class with same interface as `IndicTTS` (synthesize → SynthesisResult)    | `src/voice/tts.py`                                   | P0       | [ ]   |
+| 25  | Wire `EdgeTTS` as default TTS in REST router + `VoiceAgent` (fallback if `IndicTTS` init fails) | `src/api/rest/voice.py`, `src/agents/voice_agent.py` | P0       | [ ]   |
+| 26  | Make faster-whisper primary STT, disable IndicConformer on CPU; add `GroqWhisperSTT` stub       | `src/voice/stt.py`                                   | P1       | [ ]   |
+| 27  | Fix WebSocket handler: use `MultiProviderSTT` + `EdgeTTS`, send `response_audio` base64         | `src/api/websocket/voice_ws.py`                      | P1       | [ ]   |
+| 28  | Pre-download Silero VAD ONNX model at startup in lifespan (1.8MB, non-fatal if fails)           | `src/api/main.py`                                    | P1       | [ ]   |
+| 29  | Implement `GroqWhisperSTT` class — `whisper-large-v3-turbo`, writes temp WAV, Groq API          | `src/voice/stt.py`                                   | P1       | [ ]   |
+| 30  | End-to-end verification: update `/health` to return dynamic providers, run all 5 E2E checks     | `src/api/rest/voice.py`                              | P1       | [ ]   |
+
+### Definition of Done (Tasks 21–30)
+
+- [ ] `GET /api/v1/voice/health` → returns `{stt_providers: [...], tts_provider: "EdgeTTSProvider"}`
+- [ ] `GET /api/v1/voice/languages` → returns non-empty language list (no 500)
+- [ ] `POST /api/v1/voice/synthesize` `{text: "Hello", language: "en"}` → audio base64 in response
+- [ ] `POST /api/v1/voice/process` with WAV file → `transcription` + `response_audio` fields
+- [ ] Frontend Voice Agent Hub — Tools Inspector shows green ✅ chips for all components
+- [ ] WebSocket `/api/v1/voice/ws` → connects, streams PCM → VAD segments → STT → TTS response

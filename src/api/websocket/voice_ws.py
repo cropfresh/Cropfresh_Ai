@@ -28,7 +28,7 @@ try:
     from src.voice.vad import SileroVAD, VADState, BargeinDetector
     from src.voice.webrtc_transport import WebRTCTransport, WebRTCSignaling, ConnectionState
     from src.voice.stt import MultiProviderSTT, TranscriptionResult
-    from src.voice.tts import IndicTTS
+    from src.voice.tts import IndicTTS, EdgeTTSProvider
     from src.agents.voice_agent import VoiceAgent
     from src.voice.vad import bytes_to_wav
     from src.orchestrator.llm_provider import create_llm_provider
@@ -98,7 +98,7 @@ class VoiceSession:
         self.bargein_detector: Optional[BargeinDetector] = None
         self.webrtc: Optional[WebRTCTransport] = None
         self.stt: Optional[MultiProviderSTT] = None
-        self.tts: Optional[IndicTTS] = None
+        self.tts: Optional[EdgeTTSProvider] = None
         self.voice_agent: Optional[VoiceAgent] = None
         
         # State
@@ -127,15 +127,14 @@ class VoiceSession:
             self.bargein_detector = BargeinDetector(self.vad)
             self.bargein_detector.on_bargein = self._on_bargein
             
-            # Initialize STT
+            # Initialize STT — faster-whisper primary, CPU-friendly
             self.stt = MultiProviderSTT(
                 use_faster_whisper=True,
-                use_indicconformer=True,
-                use_groq=True,
+                use_indicconformer=False,  # disabled on CPU — no model cached
             )
-            
-            # Initialize TTS
-            self.tts = IndicTTS()
+
+            # Initialize TTS — EdgeTTS, no download required
+            self.tts = EdgeTTSProvider()
             
             # Initialize local vLLM provider (Sarvam-1 or similar) for the "brain"
             local_llm = create_llm_provider(
@@ -418,14 +417,14 @@ async def voice_websocket(
     
     session_id = str(uuid.uuid4())
     logger.info(f"Accepted WebSocket connection for {user_id}. Booting Pipecat Pipeline...")
-    
+
     from src.voice.pipecat_bot import run_voice_bot
     try:
         await run_voice_bot(websocket, session_id, language)
     except Exception as e:
         logger.error(f"Pipecat pipeline error for {session_id}: {e}")
     finally:
-        await _session_manager.remove_session(session.session_id)
+        await _session_manager.remove_session(session_id)  # Fixed: was session.session_id (undefined)
 
 
 @router.get("/ws/sessions")

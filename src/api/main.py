@@ -139,6 +139,15 @@ async def lifespan(app: FastAPI):
 
     logger.info("🚀 CropFresh AI Service ready — http://{}:{}/docs", settings.api_host, settings.api_port)
 
+    # ── 7. Silero VAD pre-download ───────────────────
+    try:
+        from src.voice.vad import SileroVAD
+        vad = SileroVAD()
+        await vad.initialize()
+        logger.info("✅ Silero VAD ready")
+    except Exception as exc:
+        logger.warning("⚠️ Silero VAD unavailable: {} — WebSocket VAD will be skipped", exc)
+
     yield  # ─── App is running ───
 
     # ── Shutdown ─────────────────────────────────────

@@ -5,7 +5,7 @@
 # Transport: WebRTC for bidirectional streaming
 
 from .stt import IndicWhisperSTT, FasterWhisperSTT, MultiProviderSTT, TranscriptionResult
-from .tts import IndicTTS, SynthesisResult
+from .tts import IndicTTS, EdgeTTSProvider, SynthesisResult
 from .entity_extractor import VoiceEntityExtractor, ExtractionResult
 from .audio_utils import AudioProcessor
 
@@ -36,6 +36,7 @@ __all__ = [
     "TranscriptionResult",
     # TTS
     "IndicTTS",
+    "EdgeTTSProvider",
     "SynthesisResult",
     # Entity Extraction
     "VoiceEntityExtractor",

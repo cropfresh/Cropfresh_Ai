@@ -57,7 +57,6 @@ dependencies = [
     "scikit-learn>=1.5.0",       # HDBSCAN clustering for multi-pickup
     "ortools>=9.10.0",           # CVRP/TSP route optimization
     "pillow>=10.4.0",
-
     # ═══════════════════════════════════════════════════════════════
     # Caching & Storage
     # ═══════════════════════════════════════════════════════════════
@@ -78,6 +77,7 @@ dependencies = [
     "cohere>=5.20.1",
     "lxml>=5.3.0,<6.0.0",              # Compatible with crawl4ai
     "apscheduler>=3.11.2",
+    "faster-whisper>=1.2.1",
 ]
 
 [project.optional-dependencies]
@@ -104,6 +104,7 @@ qdrant = [
 
 # Voice / Audio Processing
 voice = [
+    "faster-whisper>=1.0.3",     # Local STT engine — Task 21
     "soundfile>=0.12.0",
     "edge-tts>=6.1.0",
     "gtts>=2.5.0",

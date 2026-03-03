@@ -357,3 +357,126 @@ class IndicTTS:
     def get_available_voices(self, language: str) -> list[str]:
         """Get available voices for a language"""
         return self.LANGUAGE_VOICES.get(language, ["default"])
+
+
+class EdgeTTSProvider:
+    """
+    Edge TTS provider — practical TTS using Microsoft Edge TTS.
+
+    No model download required. Supports 11 Indian languages.
+    Acts as a drop-in replacement for IndicTTS interface.
+
+    Usage:
+        tts = EdgeTTSProvider()
+        result = await tts.synthesize("Hello", language="en")
+        # result.audio contains MP3 bytes, result.format == "mp3"
+    """
+
+    EDGE_VOICES = {
+        "hi": {"male": "hi-IN-MadhurNeural",   "female": "hi-IN-SwaraNeural"},
+        "kn": {"male": "kn-IN-GaganNeural",    "female": "kn-IN-SapnaNeural"},
+        "te": {"male": "te-IN-MohanNeural",    "female": "te-IN-ShrutiNeural"},
+        "ta": {"male": "ta-IN-ValluvarNeural", "female": "ta-IN-PallaviNeural"},
+        "ml": {"male": "ml-IN-MidhunNeural",   "female": "ml-IN-SobhanaNeural"},
+        "mr": {"male": "mr-IN-ManoharNeural",  "female": "mr-IN-AarohiNeural"},
+        "gu": {"male": "gu-IN-NiranjanNeural", "female": "gu-IN-DhwaniNeural"},
+        "bn": {"male": "bn-IN-BashkarNeural",  "female": "bn-IN-TanishaaNeural"},
+        "en": {"male": "en-IN-PrabhatNeural",  "female": "en-IN-NeerjaNeural"},
+    }
+
+    # Sample rate reported by Edge TTS (MP3 @ 24 kHz stereo → 2 bytes/sample)
+    SAMPLE_RATE = 24000
+
+    async def synthesize(
+        self,
+        text: str,
+        language: str = "en",
+        gender: str = "female",
+        voice: str = "default",
+        emotion: str = "neutral",
+        speed: float = 1.0,
+    ) -> SynthesisResult:
+        """
+        Synthesize text using Edge TTS with automatic retry on transient errors.
+
+        Args:
+            text:     Text to synthesize.
+            language: BCP-47 language code ('hi', 'kn', 'en', …).
+            gender:   'male' or 'female' (overridden by voice if not 'default').
+            voice:    Specific voice name or 'default' / 'male' / 'female'.
+            emotion:  Ignored (Edge TTS uses Neural voices; emotion not tunable).
+            speed:    Speech rate multiplier (0.5 – 2.0) mapped to SSML rate %.
+
+        Returns:
+            SynthesisResult with MP3 audio bytes.
+        """
+        import edge_tts
+
+        # Resolve voice name
+        voices = self.EDGE_VOICES.get(language, self.EDGE_VOICES["en"])
+        if voice in ("default", "female"):
+            resolved_voice = voices["female"]
+        elif voice == "male":
+            resolved_voice = voices["male"]
+        elif voice in voices.values():
+            resolved_voice = voice          # explicit Edge TTS voice name passed
+        else:
+            resolved_voice = voices["female"]
+
+        # Map speed float → SSML rate string (e.g. 1.2 → "+20%", 0.8 → "-20%")
+        rate_pct = int((speed - 1.0) * 100)
+        rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
+
+        # Retry up to 3 times on transient network / asyncio cancellation errors
+        last_exc: Exception = RuntimeError("No attempts made")
+        for attempt in range(1, 4):
+            try:
+                communicate = edge_tts.Communicate(text, resolved_voice, rate=rate_str)
+                audio_buffer = io.BytesIO()
+
+                async for chunk in communicate.stream():
+                    if chunk["type"] == "audio":
+                        audio_buffer.write(chunk["data"])
+
+                audio_bytes = audio_buffer.getvalue()
+
+                if len(audio_bytes) == 0:
+                    raise RuntimeError("Edge TTS returned empty audio")
+
+                # Rough duration estimate (MP3 bitrate ~128 kbps = 16 KB/s)
+                duration_seconds = len(audio_bytes) / (self.SAMPLE_RATE * 2)
+
+                logger.info(
+                    f"EdgeTTS synthesized {len(text)} chars → {len(audio_bytes)} bytes "
+                    f"(lang={language}, voice={resolved_voice}, attempt={attempt})"
+                )
+
+                return SynthesisResult(
+                    audio=audio_bytes,
+                    sample_rate=self.SAMPLE_RATE,
+                    format="mp3",
+                    duration_seconds=duration_seconds,
+                    language=language,
+                    voice=resolved_voice,
+                    provider="edge-tts",
+                )
+
+            except (asyncio.CancelledError, ConnectionError, OSError, RuntimeError) as exc:
+                last_exc = exc
+                wait = attempt * 0.5   # 0.5s, 1.0s, 1.5s back-off
+                logger.warning(
+                    f"EdgeTTS attempt {attempt}/3 failed ({type(exc).__name__}: {exc}), "
+                    f"retrying in {wait}s…"
+                )
+                await asyncio.sleep(wait)
+
+        logger.error(f"EdgeTTS failed after 3 attempts: {last_exc}")
+        raise RuntimeError(f"EdgeTTS synthesis failed after 3 attempts: {last_exc}")
+
+    def get_supported_languages(self) -> list[str]:
+        """Get list of supported language codes."""
+        return list(self.EDGE_VOICES.keys())
+
+    def get_available_voices(self, language: str) -> dict:
+        """Get available male/female voices for a language."""
+        return self.EDGE_VOICES.get(language, self.EDGE_VOICES["en"])

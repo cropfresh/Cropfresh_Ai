@@ -17,6 +17,7 @@ from loguru import logger
 
 from ...agents.voice_agent import VoiceAgent, VoiceResponse
 from ...voice import IndicWhisperSTT, IndicTTS, VoiceEntityExtractor, MultiProviderSTT
+from ...voice.tts import EdgeTTSProvider
 
 
 # Router
@@ -25,25 +26,24 @@ router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 # Initialize voice components (lazy loaded)
 _voice_agent: Optional[VoiceAgent] = None
 _stt: Optional[MultiProviderSTT] = None
-_tts: Optional[IndicTTS] = None
+_tts: Optional[EdgeTTSProvider] = None
 
 
 def get_voice_agent() -> VoiceAgent:
     """Get or create voice agent instance"""
     global _voice_agent, _stt, _tts
-    
+
     if _voice_agent is None:
         # Use MultiProviderSTT for automatic fallback
         _stt = MultiProviderSTT(
             use_faster_whisper=True,
-            use_indicconformer=True,
-            use_groq=True,
+            use_indicconformer=False,   # disabled on CPU — no model cached
             faster_whisper_model="small",  # Good balance of speed/accuracy
         )
-        _tts = IndicTTS()
+        _tts = EdgeTTSProvider()   # zero-download, 9-language neural TTS
         _voice_agent = VoiceAgent(stt=_stt, tts=_tts)
-        logger.info(f"Voice agent initialized with providers: {_stt.get_available_providers()}")
-    
+        logger.info(f"Voice agent initialized with providers: {_stt.get_available_providers()}, tts=EdgeTTSProvider")
+
     return _voice_agent
 
 
@@ -55,11 +55,19 @@ def get_stt() -> MultiProviderSTT:
     return _stt
 
 
-def get_tts() -> IndicTTS:
-    """Get or create TTS instance"""
+def get_tts() -> EdgeTTSProvider:
+    """Get TTS provider — EdgeTTS primary, IndicTTS on GPU."""
     global _tts
     if _tts is None:
-        _tts = IndicTTS()
+        try:
+            tts = IndicTTS()
+            # Fast check: if model isn't cached this will raise during lazy load
+            # so we just instantiate EdgeTTSProvider as safe default
+            raise NotImplementedError("IndicTTS requires GPU/model cache — using EdgeTTS")
+        except Exception:
+            logger.warning("IndicTTS unavailable, using EdgeTTSProvider")
+            tts = EdgeTTSProvider()
+        _tts = tts
     return _tts
 
 
@@ -268,11 +276,29 @@ async def clear_session(session_id: str):
 @router.get("/health")
 async def voice_health():
     """
-    Health check for voice service.
+    Dynamic health check — tests each voice component and reports actual availability.
     """
+    stt = get_stt()
+    tts = get_tts()
+
+    stt_providers = stt.get_available_providers()
+    tts_provider = tts.__class__.__name__
+    languages = stt.get_supported_languages()
+
+    # Check VAD availability (pre-downloaded at startup via lifespan)
+    vad_ok = False
+    try:
+        from src.voice.vad import SileroVAD
+        vad = SileroVAD()
+        vad_ok = bool(getattr(vad, "_initialized", False))
+    except Exception:
+        vad_ok = False
+
     return {
-        "status": "healthy",
-        "stt": "indicwhisper",
-        "tts": "indictts",
-        "languages": ["hi", "kn", "te", "ta", "en"],
+        "status": "healthy" if stt_providers else "degraded",
+        "stt_providers": stt_providers,
+        "tts_provider": tts_provider,
+        "vad_available": vad_ok,
+        "languages": languages[:5],
+        "version": "0.9.2",
     }

@@ -17,8 +17,8 @@ from uuid import uuid4
 
 from loguru import logger
 
-from ..voice.stt import IndicWhisperSTT, TranscriptionResult
-from ..voice.tts import IndicTTS, SynthesisResult
+from ..voice.stt import IndicWhisperSTT, MultiProviderSTT, TranscriptionResult
+from ..voice.tts import IndicTTS, EdgeTTSProvider, SynthesisResult
 from ..voice.entity_extractor import VoiceEntityExtractor, VoiceIntent, ExtractionResult
 
 
@@ -261,8 +261,8 @@ class VoiceAgent:
     
     def __init__(
         self,
-        stt: Optional[IndicWhisperSTT] = None,
-        tts: Optional[IndicTTS] = None,
+        stt: Optional[MultiProviderSTT | IndicWhisperSTT] = None,  # accepts any STT
+        tts: Optional[EdgeTTSProvider | IndicTTS] = None,            # accepts any TTS
         entity_extractor: Optional[VoiceEntityExtractor] = None,
         llm_provider=None,
         orchestrator=None,
@@ -276,8 +276,9 @@ class VoiceAgent:
         registration_service=None,
         adcl_agent=None,
     ):
-        self.stt = stt or IndicWhisperSTT()
-        self.tts = tts or IndicTTS()
+        # Use CPU-friendly providers as defaults (no model download required)
+        self.stt = stt or MultiProviderSTT(use_faster_whisper=True, use_indicconformer=False)
+        self.tts = tts or EdgeTTSProvider()
         self.entity_extractor = entity_extractor or VoiceEntityExtractor(llm_provider)
         self.llm_provider = llm_provider
         self.orchestrator = orchestrator
@@ -1030,3 +1031,6 @@ Generate a helpful response:"""
     def get_supported_languages(self) -> list[str]:
         """Get supported languages"""
         return self.stt.get_supported_languages()
+
+    # Alias used by WebSocket handler (voice_ws.py)
+    process_text = handle_text_input

@@ -489,46 +489,136 @@ class IndicWhisperSTT:
         return [lang.value for lang in SupportedLanguage if lang != SupportedLanguage.AUTO]
 
 
+class GroqWhisperSTT:
+    """
+    Groq Whisper cloud STT fallback.
+
+    Uses ``whisper-large-v3-turbo`` via Groq API — near-zero cost, ~300ms latency.
+    Activated automatically by MultiProviderSTT when GROQ_API_KEY is set.
+
+    Reads GROQ_API_KEY from environment at construction time.
+    Raises ValueError if key is absent (caller should catch and skip).
+    """
+
+    MODEL = "whisper-large-v3-turbo"
+
+    def __init__(self) -> None:
+        import os
+        from groq import Groq  # type: ignore[import]
+
+        api_key = os.getenv("GROQ_API_KEY", "")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY not set — GroqWhisperSTT unavailable")
+        self._client = Groq(api_key=api_key)
+        logger.info("GroqWhisperSTT initialized (model={})", self.MODEL)
+
+    async def transcribe(
+        self,
+        audio_data: bytes,
+        language: str = "en",
+        sample_rate: int = 16000,
+    ) -> TranscriptionResult:
+        """
+        Transcribe audio bytes via Groq Whisper API.
+
+        Writes PCM data to a temporary WAV file, calls the sync Groq client
+        in a thread executor, then cleans up the temp file.
+
+        Args:
+            audio_data:   Raw PCM or WAV audio bytes.
+            language:     BCP-47 language code, or 'auto' (omitted from API call).
+            sample_rate:  Sample rate in Hz (default 16 000 Hz).
+
+        Returns:
+            TranscriptionResult with text, language, confidence=0.9, provider='groq_whisper'.
+        """
+        import asyncio
+        import os
+        import tempfile
+        import wave
+
+        # Write audio to temp WAV so the Groq API can parse it
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            wav_path = tmp.name
+            # If audio_data already starts with the RIFF header, write raw;
+            # otherwise wrap PCM samples in a valid WAV container.
+            if audio_data[:4] == b"RIFF":
+                tmp.write(audio_data)
+            else:
+                with wave.open(tmp, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)          # 16-bit PCM
+                    wf.setframerate(sample_rate)
+                    wf.writeframes(audio_data)
+
+        try:
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, self._transcribe_sync, wav_path, language
+            )
+            return result
+        finally:
+            os.unlink(wav_path)
+
+    def _transcribe_sync(self, wav_path: str, language: str) -> TranscriptionResult:
+        """Blocking Groq API call — run via run_in_executor."""
+        with open(wav_path, "rb") as f:
+            response = self._client.audio.transcriptions.create(
+                file=(wav_path, f.read()),
+                model=self.MODEL,
+                language=language if language not in ("auto", "") else None,
+            )
+        text = getattr(response, "text", "") or ""
+        logger.info("GroqWhisperSTT transcribed {} chars", len(text))
+        return TranscriptionResult(
+            text=text,
+            language=language if language != "auto" else "en",
+            confidence=0.9,         # Groq doesn't return confidence scores
+            duration_seconds=0.0,   # Groq API doesn't return duration
+            provider="groq_whisper",
+        )
+
+    def get_supported_languages(self) -> list[str]:
+        """Groq Whisper supports the same languages as OpenAI Whisper."""
+        return [
+            "en", "hi", "kn", "te", "ta", "ml", "mr", "gu", "pa", "bn",
+            "ur", "ne", "si", "or", "as",
+        ]
+
+
+
 class MultiProviderSTT:
     """
     Multi-provider Speech-to-Text with automatic fallback.
-    
+
     Provides maximum reliability by trying multiple STT providers in order:
-    1. Faster Whisper (fastest, local)
-    2. IndicConformer (best for Indian languages)  
-    3. Groq Whisper API (cloud fallback)
-    
+    1. Faster Whisper (fastest, local, CPU-friendly — default primary)
+    2. IndicConformer (best for Indian languages, needs GPU + cached model)
+    3. Groq Whisper API (cloud fallback, added in Task 29)
+
     Usage:
         stt = MultiProviderSTT()
         result = await stt.transcribe(audio_bytes, language="hi")
     """
-    
+
     def __init__(
         self,
-        use_faster_whisper: bool = True,
-        use_indicconformer: bool = True,
+        use_faster_whisper: bool = True,        # primary on CPU
+        use_indicconformer: bool = False,       # disabled by default (needs GPU + cached model)
         faster_whisper_model: str = "small",
     ):
         """
         Initialize multi-provider STT.
-        
+
         Args:
-            use_faster_whisper: Enable Faster Whisper (primary alternative)
-            use_indicconformer: Enable IndicConformer (Indian languages)
+            use_faster_whisper: Enable Faster Whisper (primary, CPU-friendly)
+            use_indicconformer: Enable IndicConformer (Indian languages, requires GPU)
             faster_whisper_model: Model size for Faster Whisper
         """
         self._providers = []
         self._provider_names = []
-        
-        # Add providers in priority order (IndicConformer first for Indian context)
-        if use_indicconformer:
-            try:
-                self._providers.append(IndicWhisperSTT())
-                self._provider_names.append("indicconformer")
-                logger.info("MultiProviderSTT: AI4Bharat IndicConformer enabled")
-            except Exception as e:
-                logger.warning(f"Could not init IndicConformer: {e}")
-                
+
+        # Priority 1: faster-whisper (local, CPU-friendly)
         if use_faster_whisper:
             try:
                 self._providers.append(FasterWhisperSTT(model_size=faster_whisper_model))
@@ -536,11 +626,34 @@ class MultiProviderSTT:
                 logger.info("MultiProviderSTT: Faster Whisper enabled")
             except Exception as e:
                 logger.warning(f"Could not init Faster Whisper: {e}")
-        
+
+        # Priority 2: IndicConformer (GPU, AI4Bharat model)
+        if use_indicconformer:
+            try:
+                self._providers.append(IndicWhisperSTT())
+                self._provider_names.append("indicconformer")
+                logger.info("MultiProviderSTT: AI4Bharat IndicConformer enabled")
+            except Exception as e:
+                logger.warning(f"Could not init IndicConformer: {e}")
+
+        # Priority 3: GroqWhisper (cloud fallback — activates when GROQ_API_KEY is set)
+        try:
+            self._providers.append(GroqWhisperSTT())
+            self._provider_names.append("groq_whisper")
+            logger.info("MultiProviderSTT: GroqWhisperSTT registered as cloud fallback")
+        except ValueError:
+            pass   # No GROQ_API_KEY — skip silently
+        except Exception as e:
+            logger.warning(f"GroqWhisperSTT unavailable: {e}")
+
         if not self._providers:
-            raise RuntimeError("No local STT providers available. Cannot run in cloud API fallback mode.")
-        
-        logger.info(f"MultiProviderSTT initialized with {len(self._providers)} local providers: {self._provider_names}")
+            raise RuntimeError(
+                "No STT providers available. Set GROQ_API_KEY for cloud fallback, "
+                "or install faster-whisper for local inference."
+            )
+
+        logger.info(f"MultiProviderSTT initialized with {len(self._providers)} providers: {self._provider_names}")
+
     
     async def transcribe(
         self,
@@ -595,3 +708,15 @@ class MultiProviderSTT:
     def get_available_providers(self) -> list[str]:
         """Get list of available provider names"""
         return self._provider_names.copy()
+
+    def get_supported_languages(self) -> list[str]:
+        """Get supported language codes from first available provider.
+
+        Delegates to the first provider that exposes get_supported_languages().
+        Falls back to all known CropFresh languages if no provider has the method.
+        """
+        for provider in self._providers:
+            if hasattr(provider, "get_supported_languages"):
+                return provider.get_supported_languages()
+        # Fallback: return all known CropFresh languages
+        return [lang.value for lang in SupportedLanguage if lang != SupportedLanguage.AUTO]

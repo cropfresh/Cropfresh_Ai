@@ -1,9 +1,9 @@
 # PROJECT_STATUS.md � CropFresh AI Current State
 
-> **Last Updated:** 2026-03-02 (Task 12 complete)
-> **Version/Tag:** `v0.9.1-adcl-agent`
-> **Current Sprint:** Sprint 05 — Core Agent Completion (Phase 1 + Phase 2 + Phase 3 start)
-> **Sprint Status:** 🟢 Active — Tasks 1–12 complete
+> **Last Updated:** 2026-03-03 (Cloud DBs connected)
+> **Version/Tag:** `v0.9.2-cloud-dbs`
+> **Current Sprint:** Sprint 05 — Core Agent Completion + Voice Agent Fix
+> **Sprint Status:** 🟢 Active — Tasks 1–12 complete, cloud databases live
 
 ---
 
@@ -47,32 +47,56 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 ---
 
-## Current Sprint 05 � Core Agent Completion
+## Current Sprint 05 Core Agent Completion
 
-**Goal:** Bring all 5 core AI agents + marketplace services from stub ? working implementation
+**Goal:** Bring all 5 core AI agents + marketplace services from stub → working implementation + fix voice agent
 
 ### Sprint Tasks (2026-03-01 to 2026-03-14)
 
-| #   | Task                                                                             | File                                     | Priority | Done? |
-| --- | -------------------------------------------------------------------------------- | ---------------------------------------- | -------- | ----- |
-| 1   | Fix Pricing Agent (deadhead + risk buffer + mandi cap + trend/seasonality)       | `src/agents/pricing_agent.py`            | P0       | ?     |
-| 2   | Implement Buyer Matching Engine core (5-factor score + reverse matching + cache) | `src/agents/buyer_matching/agent.py`     | P0       | ?     |
-| 3   | Implement Quality Assessment Agent                                               | `src/agents/quality_assessment/agent.py` | P0       | ?     |
-| 4   | Wire Voice Agent TODOs to real agents (all 10+ intents, multi-turn, 3-language)  | `src/agents/voice_agent.py`              | P0       | ?     |
-| 5   | Write unit tests for quality + routing increment                                 | `tests/unit/`                            | P1       | ?     |
-| 6   | Extend DB schema � 10 business tables, migrations, CRUD                          | `src/db/`                                | P1       | ?     |
-| 7   | Crop Listing Service � full REST API + NL agent                                  | `src/api/services/listing_service.py`    | P1       | ?     |
-| 8   | Order Management Service � state machine + escrow + disputes                     | `src/api/services/order_service.py`      | P1       | ?     |
+#### Phase 1 — Core Agents (Tasks 1–12) ✅ All Complete
 
-### Sprint KPIs
+| #   | Task                                                                             | File                                       | Priority | Done? |
+| --- | -------------------------------------------------------------------------------- | ------------------------------------------ | -------- | ----- |
+| 1   | Fix Pricing Agent (deadhead + risk buffer + mandi cap + trend/seasonality)       | `src/agents/pricing_agent.py`              | P0       | ✅    |
+| 2   | Implement Buyer Matching Engine core (5-factor score + reverse matching + cache) | `src/agents/buyer_matching/agent.py`       | P0       | ✅    |
+| 3   | Implement Quality Assessment Agent                                               | `src/agents/quality_assessment/agent.py`   | P0       | ✅    |
+| 4   | Wire Voice Agent TODOs to real agents (all 10+ intents, multi-turn, 3-language)  | `src/agents/voice_agent.py`                | P0       | ✅    |
+| 5   | Write unit tests for quality + routing                                           | `tests/unit/`                              | P1       | ✅    |
+| 6   | Extend DB schema — 10 business tables, migrations, CRUD                          | `src/db/`                                  | P1       | ✅    |
+| 7   | Crop Listing Service — full REST API + NL agent                                  | `src/api/services/listing_service.py`      | P1       | ✅    |
+| 8   | Order Management Service — state machine + escrow + disputes                     | `src/api/services/order_service.py`        | P1       | ✅    |
+| 9   | Registration & Auth Service — OTP, JWT, 6 REST endpoints                         | `src/api/services/registration_service.py` | P1       | ✅    |
+| 10  | Digital Twin Engine — departure/arrival diff, SSIM, liability matrix             | `src/agents/digital_twin/`                 | P1       | ✅    |
+| 11  | DPLE Logistics Routing — HDBSCAN, OR-Tools TSP, ₹<2.5/kg proven                  | `src/agents/logistics_router/`             | P1       | ✅    |
+| 12  | ADCL Agent — demand aggregation, seasonal calendar, 3-language summaries         | `src/agents/adcl/`                         | P1       | ✅    |
 
-- [x] 0 `NotImplementedError` in core agents (0 remaining)
-- [x] AISP calculation includes risk buffer
-- [x] Matching returns at least 1 valid farmer�buyer pair in unit test
-- [x] Voice `create_listing` intent creates a real DB record (AC6 verified 2026-03-01)
-- [x] Test coverage increases from 35% ? 45% (**now at ~56%** � 276 tests / 14 test files)
-- [x] Order lifecycle: confirmed ? pickup_scheduled ? in_transit ? delivered ? settled
-- [x] Escrow state machine: held ? released / refunded enforced in tests
+#### Phase 2 — Infrastructure (Tasks 13–20) ✅ All Complete
+
+| #   | Task                                                                  | File                                   | Priority | Done? |
+| --- | --------------------------------------------------------------------- | -------------------------------------- | -------- | ----- |
+| 13  | Voice Agent Frontend Hub (4 tabs: REST, WS, TTS Lab, Tools Inspector) | `static/voice_agent.html` + JS modules | P0       | ✅    |
+| 14  | Voice CSS + modular JS (core, rest, ws, tts, tools)                   | `static/css/`, `static/js/`            | P0       | ✅    |
+| 15  | RAGAS Evaluation Framework                                            | `src/evaluation/`                      | P1       | ✅    |
+| 16  | Unit test expansion (35% → 60% coverage)                              | `tests/unit/`                          | P1       | ✅    |
+| 17  | Entity extractor refactor into package with 10-language support       | `src/voice/entity_extractor/`          | P1       | ✅    |
+| 18  | Connect Qdrant Cloud (`cropfresh-vectors`, EU-Central)                | `.env`                                 | P0       | ✅    |
+| 19  | Connect Redis Labs Cloud (ap-south-1, port 13641)                     | `.env`                                 | P0       | ✅    |
+| 20  | Connect Neo4j AuraDB (`93ac2928.databases.neo4j.io`)                  | `.env`, `src/db/neo4j_client.py`       | P0       | ✅    |
+
+#### Phase 3 — Voice Agent Fix (Tasks 21–30) 🔴 In Progress
+
+| #   | Task                                                                                | Files                                                | Priority | Done? |
+| --- | ----------------------------------------------------------------------------------- | ---------------------------------------------------- | -------- | ----- |
+| 21  | Install `faster-whisper>=1.0.3` package                                             | `pyproject.toml` + `uv sync`                         | P0       | [ ]   |
+| 22  | Fix REST router: remove invalid `use_groq=True` kwarg from `MultiProviderSTT(...)`  | `src/api/rest/voice.py:40`                           | P0       | [ ]   |
+| 23  | Add `get_supported_languages()` to `MultiProviderSTT` — fixes `/languages` 500      | `src/voice/stt.py`                                   | P0       | [ ]   |
+| 24  | Add `EdgeTTSProvider` class with same interface as `IndicTTS`                       | `src/voice/tts.py`                                   | P0       | [ ]   |
+| 25  | Wire `EdgeTTS` as default TTS in REST router + `VoiceAgent`                         | `src/api/rest/voice.py`, `src/agents/voice_agent.py` | P0       | [ ]   |
+| 26  | Make faster-whisper primary STT, disable IndicConformer on CPU                      | `src/voice/stt.py`                                   | P1       | [ ]   |
+| 27  | Fix WebSocket handler: `MultiProviderSTT` + `EdgeTTS`, send `response_audio` base64 | `src/api/websocket/voice_ws.py`                      | P1       | [ ]   |
+| 28  | Pre-download Silero VAD ONNX at startup (1.8MB, non-fatal)                          | `src/api/main.py`                                    | P1       | [ ]   |
+| 29  | Implement `GroqWhisperSTT` — `whisper-large-v3-turbo`, Groq API cloud fallback      | `src/voice/stt.py`                                   | P1       | [ ]   |
+| 30  | E2E verification + update `/health` to return dynamic provider status               | `src/api/rest/voice.py`                              | P1       | [ ]   |
 
 ---
 
@@ -91,13 +115,14 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 ## Active Blockers
 
-| Blocker                                               | Impact                                   | Owner                    |
-| ----------------------------------------------------- | ---------------------------------------- | ------------------------ |
-| eNAM API registration pending                         | Live mandi data blocked                  | external                 |
-| AWS Free Tier limit blocks RDS creation               | Production DB not provisioned yet        | manual (upgrade account) |
-| pgvector not installed locally (needs VS Build Tools) | Local vector search uses Qdrant fallback | dev workaround           |
-| Pipecat WebSocket untested on Windows                 | Voice streaming blocked                  | Sprint 05 carry-over     |
-| YOLOv8 model weights not downloaded                   | CV-QG grading blocked                    | Phase 3                  |
+| Blocker                                             | Impact                            | Owner                    |
+| --------------------------------------------------- | --------------------------------- | ------------------------ |
+| eNAM API registration pending                       | Live mandi data blocked           | external                 |
+| AWS Free Tier limit blocks RDS creation             | Production DB not provisioned yet | manual (upgrade account) |
+| `faster-whisper` not installed in venv              | Voice STT crashes on every call   | Tasks 21–30              |
+| `use_groq` kwarg in voice.py REST router            | `/process` endpoint always 500    | Tasks 21–30              |
+| IndicWhisper/IndicTTS try to download 600MB+ models | Primary STT/TTS fail without GPU  | Tasks 21–30              |
+| YOLOv8 model weights not downloaded                 | CV-QG grading blocked             | Phase 3                  |
 
 ---
 
@@ -105,7 +130,8 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 | Date             | Milestone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Mar 02, 2026** | **Task 12 complete — ADCL Agent**: `src/agents/adcl/` package — `ADCLAgent.generate_weekly_report()`; `aggregate_demand()` with 30/60/90d trend; `SeasonalCalendar` (20+ Karnataka crops); green-label rule (demand>0.6 + rising/stable price + in-season); `SummaryGenerator` (en/hi/kn, template + async LLM path); mock order data; DB/LLM/price-agent all optional injection; 23 unit tests pass                                                                                                                                                     |
+| **Mar 03, 2026** | **Cloud databases all connected**: Qdrant Cloud (`cropfresh-vectors` cluster, EU-Central), Redis Labs Cloud (ap-south-1, PING ✅ SET/GET ✅), Neo4j AuraDB (`93ac2928.databases.neo4j.io`, CONNECT ✅ CREATE 20ms ✅). All credentials stored in `.env`. `src/db/neo4j_client.py` updated to read from env vars directly.                                                                                                                                                                                                                                |
+| **Mar 02, 2026** | **Task 12 complete — ADCL Agent**: `src/agents/adcl/` package — `ADCLAgent.generate_weekly_report()`; `aggregate_demand()` with 30/60/90d trend; `SeasonalCalendar` (20+ Karnataka crops); green-label rule; `SummaryGenerator` (en/hi/kn); 23 tests                                                                                                                                                                                                                                                                                                     |
 | **Mar 02, 2026** | **Task 11 complete — DPLE Logistics Routing Engine**: `src/agents/logistics_router/` package — `LogisticsRouter.plan_route()`; HDBSCAN density clustering (haversine); OR-Tools TSP with greedy fallback; 4-vehicle model (2W EV/3W Auto/Tempo/Cold Chain); deadhead return factor; `cost_per_kg < ₹2.5` proven for 5-farm 30km delivery; 17 unit tests; full suite **416 passed**                                                                                                                                                                       |
 | **Mar 01, 2026** | **Task 10 complete — Digital Twin Engine**: `DigitalTwinEngine` in `src/agents/digital_twin/` — `create_departure_twin()`, `compare_arrival()`, `generate_diff_report()`; SSIM → perceptual hash → rule-based similarity chain; 6-rule liability matrix (farmer/hauler/buyer/shared/none); `QualityAssessmentAgent.compare_twin()` + `create_departure_twin()`; `OrderService._trigger_twin_diff()` dual-path (engine + QA fallback); `get_digital_twin()` + `update_dispute_diff_report()` in postgres_client; 42 unit tests; full suite **382 passed** |
 | **Mar 01, 2026** | **Task 8 complete — Order Management Service**: `OrderService` with 11-status state machine (`VALID_TRANSITIONS`), escrow flow (held?released/refunded), AISP ratio breakdown (80/10/6/4%), Digital Twin dispute diff trigger, 4 new DB CRUD methods, 8 REST endpoints, 73 tests pass; full suite **276 passed**                                                                                                                                                                                                                                         |
@@ -135,22 +161,25 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 ## Tech Stack
 
-| Layer                    | Technology                                                 |
-| ------------------------ | ---------------------------------------------------------- |
-| Backend                  | FastAPI + Python 3.11+                                     |
-| AI Framework             | LangGraph + LangChain                                      |
-| Vision                   | YOLOv8 + ViT-B/16 + ONNX Runtime                           |
-| **LLM (Production)**     | **AWS Bedrock Claude Sonnet 4**                            |
-| **LLM (Router/Dev)**     | **Groq Llama-3.1-8B (~80ms)**                              |
-| **Primary DB + Vectors** | **RDS PostgreSQL + pgvector** (replaces Supabase + Qdrant) |
-| Graph DB                 | Neo4j                                                      |
-| Scraping                 | Scrapling + Camoufox (stealth)                             |
-| Voice                    | Pipecat + Edge-TTS + IndicWhisper                          |
-| Caching                  | Redis                                                      |
-| Embeddings               | BGE-M3 + AgriEmbeddingWrapper                              |
-| Evaluation               | RAGAS + LangSmith                                          |
-| Monitoring               | Prometheus + Grafana                                       |
-| Package Manager          | uv                                                         |
+| Layer                 | Technology                                               | Status       |
+| --------------------- | -------------------------------------------------------- | ------------ |
+| Backend               | FastAPI + Python 3.11+                                   | ✅           |
+| AI Framework          | LangGraph + LangChain                                    | ✅           |
+| Vision                | YOLOv8 + ViT-B/16 + ONNX Runtime                         | 🟡           |
+| **LLM (Production)**  | **AWS Bedrock Claude Sonnet 4**                          | ✅           |
+| **LLM (Router/Dev)**  | **Groq Llama-3.1-8B (~80ms)**                            | ✅           |
+| **Vector DB**         | **Qdrant Cloud** (`cropfresh-vectors`, EU-Central)       | ✅ Connected |
+| **Graph DB**          | **Neo4j AuraDB** (`93ac2928.databases.neo4j.io`)         | ✅ Connected |
+| **Cache**             | **Redis Labs Cloud** (ap-south-1, port 13641)            | ✅ Connected |
+| Primary Relational DB | Local PostgreSQL (dev) / RDS PostgreSQL (prod — pending) | 🟡 Dev only  |
+| Scraping              | Scrapling + Camoufox (stealth)                           | ✅           |
+| Voice STT             | Faster-Whisper (local) + Groq Whisper (cloud fallback)   | 🟡 Fixing    |
+| Voice TTS             | Edge-TTS (primary) + IndicTTS (GPU fallback)             | 🟡 Fixing    |
+| Voice VAD             | Silero VAD v5 (ONNX, auto-download)                      | 🟡 Fixing    |
+| Embeddings            | BGE-M3 + AgriEmbeddingWrapper                            | ✅           |
+| Evaluation            | RAGAS + LangSmith                                        | 🔴 Pending   |
+| Monitoring            | Prometheus + Grafana                                     | 🔴 Pending   |
+| Package Manager       | uv                                                       | ✅           |
 
 ---
 
