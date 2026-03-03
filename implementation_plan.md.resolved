@@ -1,0 +1,33 @@
+# Implementing Multi-modal Agentic RAG in CropFresh
+
+This document outlines the high-level plan for integrating visual capabilities into the existing RAG Orchestrator ([ai/rag/agentic_orchestrator.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py)), transforming it into a Multi-modal Agentic RAG.
+
+## Goal Description
+Evolve the existing text-based Agentic RAG system into a Multi-modal Agentic RAG. This enables the orchestrator to reason over image inputs (such as crop diseases or grades) alongside text queries. It will autonomously utilize vision tools (like DINOv2 or ResNet models) to extract structural data from images, and seamlessly ground its RAG retrievals and speculative drafts using those visual insights.
+
+## Proposed Changes
+
+### 1. API Changes (Routing logic)
+#### [MODIFY] [src/api/routers/rag.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/api/routers/rag.py)
+Update the [QueryRequest](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/api/routers/rag.py#22-26) model to accept an optional image parameter. This could be an image URL, base64 payload, or we could add a new endpoint specifically for multipart form data containing an image and text query. Update the RAG invocation router to pass this image flag or data down to the orchestrator.
+
+### 2. Multi-modal Orchestrator Integration
+#### [MODIFY] [ai/rag/agentic_orchestrator.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py)
+- Add a new tool called `"vision_analysis"` to the `PLANNER_SYSTEM_PROMPT`. The description will instruct the LLM to use this tool when `has_image` is true and it needs to examine a crop's visual status.
+- Implement the `_tool_vision_analysis(self, params: dict)` method inside [AgenticOrchestrator](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py#572-912). This method will interface with the actual computer vision components (DINOv2, ResNet, YOLO) natively available in CropFresh to extract tags like "Tomato Early Blight", quality grades, etc.
+- In the main [orchestrate](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py#659-747) loop, inject a visual-context summarization pre-processing step, or rely entirely on the autonomous [RetrievalPlanner](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py#125-212) to identify what to look for based on user queries.
+- Ensure the [SpeculativeDraftEngine](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py#218-435) prompt incorporates the derived visual traits so that answers are grounded in what the image actually depicts alongside the retrieved vector docs.
+
+### 3. Vision API Connectors
+If a unified `vision_client` doesn't exist to neatly wrap the various computer vision modules, we may need to implement a facade or leverage the existing `vision_models.py` logic to abstract the image inference away from the RAG orchestrator.
+
+## Verification Plan
+
+### Automated Tests
+- Create specific test cases using mock computer vision returns indicating specific crop diseases.
+- Verify the [RetrievalPlanner](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py#125-212) correctly synthesizes a plan involving `vision_analysis`, [vector_search](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py#798-811), and [weather_api](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py#867-891) when fed a query requesting disease diagnosis.
+- Verify the orchestrator's output prioritizes accurate context derived from the mock image over hallucinated diagnoses.
+
+### Manual Verification
+- Deploy to local/staging.
+- Submit a mock text query with a sample disease image payload via the `/rag/query` HTTP endpoint. Check that the final answer clearly describes the visible disease and provides contextually relevant organic/chemical treatments pulled from the vector DB.

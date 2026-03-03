@@ -10,9 +10,10 @@ Provides:
 - Real-Time Data Manager for unified access
 - Calculator for AISP and yield estimates
 - Web Search for real-time information
+- Deep Research for multi-source parallel analysis (10-15 sites)
 
 Author: CropFresh AI Team
-Version: 3.0.0
+Version: 3.1.0
 """
 
 from src.tools.registry import (
@@ -50,6 +51,8 @@ from src.tools.realtime_data import (
 from src.tools import weather
 from src.tools import calculator
 from src.tools import web_search
+from src.tools import deep_research
+from src.tools.deep_research import DeepResearchTool, DeepResearchResult
 
 __all__ = [
     # Registry
@@ -82,5 +85,8 @@ __all__ = [
     "RealTimeData",
     "DataFreshness",
     "get_realtime_data_manager",
+    # Deep Research (NEW)
+    "DeepResearchTool",
+    "DeepResearchResult",
 ]
 

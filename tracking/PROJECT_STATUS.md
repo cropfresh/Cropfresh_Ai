@@ -1,7 +1,7 @@
 # PROJECT_STATUS.md � CropFresh AI Current State
 
-> **Last Updated:** 2026-03-03 (Task 33 — ResNet50 Digital Twin Similarity Engine complete)
-> **Version/Tag:** `v0.9.3-resnet-similarity`
+> **Last Updated:** 2026-03-03 (Task 34 — Deep Research Tool complete)
+> **Version/Tag:** `v0.9.4-deep-research`
 > **Current Sprint:** Sprint 05 — Core Agent Completion + CV Vision Real Models
 > **Sprint Status:** 🟢 Active — Phase 4 (Tasks 31–33) complete, cloud databases live
 
@@ -42,8 +42,9 @@ Build India's most trusted AI-powered agri-marketplace with:
 | **RDS PostgreSQL Schema**      | ? Task 6 Complete       | 10 business tables (PostGIS GEOGRAPHY, JSONB, UUID PKs, check constraints), 4-file migration runner with SHA-256 checksum tracking, 17 CRUD methods, 32 tests pass        |
 | **Crop Listing Service**       | ? Task 7 Complete       | ListingService (auto-price, shelf-life expiry, QR code, ADCL tag, quality trigger), 7 REST endpoints, CropListingAgent NL interface, 50 tests pass                        |
 | **Order Management Service**   | ? Task 8 Complete       | OrderService with 11-status state machine, escrow flow (held?released/refunded), AISP ratio breakdown, Digital Twin dispute diff trigger, 8 REST endpoints, 73 tests pass |
-| Vision Agent (ai/vision/)      | ? Not Started           | Only placeholder exists                                                                                                                                                   |
-| RAGAS Evaluation               | ? Not Started           | No golden dataset yet                                                                                                                                                     |
+| Vision Agent (ai/vision/)      | 🔴 Not Started          | Only placeholder exists                                                                                                                                                   |
+| RAGAS Evaluation               | 🔴 Not Started          | No golden dataset yet                                                                                                                                                     |
+| **Deep Research Tool**         | ✅ **Task 34 Complete** | Map-Reduce pipeline: 15 pages parallel Jina fetch → Groq Map extract → Groq 70B Reduce synthesise; 28 tests pass                                                          |
 
 ---
 
@@ -106,9 +107,11 @@ Build India's most trusted AI-powered agri-marketplace with:
 | 32  | DINOv2 ViT-S/14 grade classification — ONNX inference, ImageNet normalize, YOLO ensemble override  | `src/agents/quality_assessment/dinov2_classifier.py` [NEW], `vision_models.py`     | P0       | ✅    |
 | 33  | ResNet50 Digital Twin similarity — new `similarity.py`, cosine similarity, substitution fraud flag | `src/agents/digital_twin/similarity.py` [NEW], `src/agents/digital_twin/engine.py` | P0       | ✅    |
 
----
+#### Phase 5 — Deep Research + Web Intelligence (Task 34) ✅ Complete
 
-## 6-Phase Upgrade Roadmap
+| #   | Task                                                                                               | Files                                                                        | Priority | Done? |
+| --- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------- | ----- |
+| 34  | Deep Research Tool — 15-site parallel fetch, Groq Map/Reduce, inline citations, ToolRegistry entry | `src/tools/deep_research.py` [NEW], `tests/unit/test_deep_research.py` [NEW] | P1       | ✅    |
 
 | Phase                 | Focus                                 | Target                | Status                                             |
 | --------------------- | ------------------------------------- | --------------------- | -------------------------------------------------- |
@@ -138,6 +141,7 @@ Build India's most trusted AI-powered agri-marketplace with:
 
 | Date             | Milestone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Mar 03, 2026** | **Task 34 complete — Deep Research Tool**: `src/tools/deep_research.py` — `DeepResearchTool` with 5-step Map-Reduce pipeline; parallel Jina Reader page fetching (15 sites); Groq `llama-3.1-8b-instant` Map extraction; Groq `llama-3.3-70b-versatile` Reduce synthesis; auto-registered in `ToolRegistry` (category: `web`); 28 unit tests in `test_deep_research.py`.                                                                                                                                                                                 |
 | **Mar 03, 2026** | **Task 33 complete — ResNet50 Digital Twin Similarity Engine**: `src/agents/digital_twin/similarity.py` — `ResNetSimilarityEngine` with 128-dim L2-normalised ONNX embeddings, cosine similarity, phash fallback; `compare_url_batches()` for S3 URL inputs; Priority 0 substitution fraud rule in `liability.py` (hauler 100% liable on min score < 0.50); `scripts/train_resnet_similarity.py` triplet-loss training + ONNX export; 25 new tests + 50 regression tests pass.                                                                           |
 | **Mar 03, 2026** | **Cloud databases all connected**: Qdrant Cloud (`cropfresh-vectors` cluster, EU-Central), Redis Labs Cloud (ap-south-1, PING ✅ SET/GET ✅), Neo4j AuraDB (`93ac2928.databases.neo4j.io`, CONNECT ✅ CREATE 20ms ✅). All credentials stored in `.env`. `src/db/neo4j_client.py` updated to read from env vars directly.                                                                                                                                                                                                                                |
 | **Mar 02, 2026** | **Task 12 complete — ADCL Agent**: `src/agents/adcl/` package — `ADCLAgent.generate_weekly_report()`; `aggregate_demand()` with 30/60/90d trend; `SeasonalCalendar` (20+ Karnataka crops); green-label rule; `SummaryGenerator` (en/hi/kn); 23 tests                                                                                                                                                                                                                                                                                                     |
