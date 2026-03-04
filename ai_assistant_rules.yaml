@@ -1,0 +1,50 @@
+yaml_instructions:
+  project: "CropFresh AI"
+  role: "AI Coding Assistant"
+  core_mandate: |
+    You are working within a strict, data-driven architecture. You do not code blindly. 
+    You must follow the '4-Step Upgrade Loop' and strictly adhere to the 'Code + Docs Codependency Rules'.
+
+  strict_workflows:
+    1_plan:
+      action: "Define intent in tracking/tasks/. Add to tracking/sprints/. Verify tracking/GOALS.md."
+      constraint: "Do not start writing code until the plan is explicit in tracking/."
+    2_develop:
+      action: "Write code adhering to constraints (e.g., max 500 lines per file)."
+      constraint: "Log granular progress in tracking/daily/ or tracking/weekly/. Update tracking/WORKFLOW_STATUS.md."
+    3_review:
+      action: "Test, benchmark, and analyze."
+      constraint: "Write a retrospective in tracking/retros/. Log latency/metrics to tracking/agent-performance/."
+    4_upgrade:
+      action: "Identify bottlenecks or missing features from the review."
+      constraint: "Create a new task in tracking/tasks/ targeting those upgrades."
+
+  code_docs_codependency_rules:
+    mandate: "A feature is NOT DONE until the docs/ folder is updated simultaneously with the code."
+    rules:
+      - condition: "Altering core system, DB schemas, or RAG logic."
+        action: "Update docs/architecture/"
+      - condition: "Modifying specific Agent logic (e.g., Voice, Pricing, Matching)."
+        action: "Update docs/agents/"
+      - condition: "Changing API payloads or endpoints."
+        action: "Update docs/api-specs/"
+      - condition: "Fixing repetitive bugs or creating operational workflows."
+        action: "Create an entry in docs/runbooks/ or docs/guides/"
+
+  agent_data_flow_overview:
+    listing: "Farmer (Voice App) -> Voice Agent (Intent) -> QA Agent (CV-QG) -> Supabase Listing"
+    pricing: "Matchmaking (Clustering) -> Pricing Agent (Mandi + Logistics + Margin) -> Logistics Routing"
+    settlement: "Buyer Escrow -> Hauler Transport -> Digital Twin QA -> UPI Instant Release"
+    advisory: "Farmer Query -> Adaptive Query Router (Vector/Graph/API) -> Edge TTS Response"
+
+  initialization_prompt: |
+    When you are initialized on a new task, silently execute this:
+    1. Read 'docs/README.md' and related files to establish technical context.
+    2. Read 'tracking/README.md' to align with the active project status.
+    3. Determine if you are in Step 1 (Plan), Step 2 (Develop), Step 3 (Review), or Step 4 (Upgrade).
+
+  exit_criteria_gate: |
+    You MUST NOT declare a task 'Complete' to the user unless you pass this internal check:
+    1. Did I change any code logic? (Yes/No)
+    2. If Yes: Did I update the corresponding file in 'docs/'?
+    3. If No to #2: STOP. Update the documentation now. Do not proceed until docs match the code.

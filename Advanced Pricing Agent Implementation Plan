@@ -1,0 +1,47 @@
+# Advanced Pricing Agent Implementation Plan
+
+This plan details the upgrade of the [PricingAgent](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#70-476) to utilize real-time market data, machine learning for price forecasting, external signals (like weather), and personalized farmer context for recommendations, moving away from simple heuristics and mock data.
+
+## Proposed Changes
+
+### Core Agent Logic
+
+This updates the main pricing logic to require real-time data and integrate new signals.
+
+#### [MODIFY] [pricing_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py)
+
+- **Disable Mock Mode by Default**: Change the default of `use_mock` to `False`.
+- **Integrate Time Series Forecasting**: Add a `_forecast_price(commodity, district, days)` method. Initially, this can use a statistical approach (like ARIMA from `statsmodels` if available, or a sophisticated algorithmic placeholder) instead of basic heuristics, moving towards a real trained model.
+- **Integrate External Signals**:
+  - Add a method to fetch real-time weather data for the `location` (using a new [WeatherTool](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/weather.py#56-228)).
+  - Add a method to fetch recent news/sentiment for the `commodity` (leveraging the Deep Research tool or a simplified news scraper tool).
+- **Personalized Context**: Update [get_recommendation](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#142-209) to accept a `FarmerContext` object (e.g., has cold storage, financial urgency) and feed this into the LLM prompt in [get_price_with_llm_analysis](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#425-476).
+- **Enhanced LLM Prompt**: Update the prompt in [get_price_with_llm_analysis](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#425-476) to explicitly include the ML forecast, current weather, news sentiment, and farmer context for a highly personalized and accurate recommendation.
+
+### External Tools
+
+We need tools to fetch the new signals.
+
+#### [NEW] [src/tools/weather.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/weather.py)
+
+- Create a [WeatherTool](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/weather.py#56-228) that fetches current and forecasted weather for a given district. This will provide signals like "heavy rain expected," which impacts supply and price.
+
+#### [MODIFY] [agmarknet.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/agmarknet.py)
+
+- Enhance error handling to ensure failing over to CEDA API is robust.
+- Provide a clear warning or error if both APIs fail and `use_mock` is False, rather than silently returning mock data in production.
+
+### Data Models
+
+Update the Pydantic models to support the new features.
+
+#### [MODIFY] [src/agents/pricing_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py) (or shared models file if it exists)
+
+- Add a `FarmerContext` BaseModel (e.g., `has_cold_storage: bool`, `financial_urgency: str`).
+- Update [PriceRecommendation](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#24-48) to include `forecasted_price_7d`, `weather_impact`, and `news_sentiment`.
+
+## Verification Plan
+
+1.  **Unit Tests (Mocked)**: Update `tests/unit/test_pricing_agent.py` to mock the new [WeatherTool](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/weather.py#56-228) and ensure the [PricingAgent](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#70-476) correctly incorporates weather data and farmer context into its LLM prompts and calculations.
+2.  **Integration Tests (Live)**: Create or update a script (e.g., `scripts/test_pricing.py`) to run a live test of the [PricingAgent](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#70-476) with `use_mock=False`, verifying that it successfully contacts Agmarknet, fetches weather (if implemented fully), and generates a coherent recommendation from the LLM based on these real signals.
+3.  **Manual Verification**: Run the pricing agent manually via a script or CLI for a specific crop (e.g., Tomato in Kolar) and manually verify that the reasoning provided by the LLM accurately reflects the current weather and recent price trends.

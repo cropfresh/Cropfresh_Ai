@@ -1,5 +1,5 @@
 /**
- * CropFresh Voice Agent — Duplex Client
+ * CropFresh Voice Agent — Duplex Client v2
  * ========================================
  *
  * Full-duplex WebSocket voice client with:
@@ -14,28 +14,28 @@
 (function () {
   "use strict";
 
-  // ── Configuration ──────────────────────────────────────
   const WS_PATH = "/api/v1/voice/ws/duplex";
   const SAMPLE_RATE = 16000;
   const CHUNK_DURATION_MS = 30;
   const CHUNK_SIZE = (SAMPLE_RATE * CHUNK_DURATION_MS) / 1000;
 
-  // ── State ──────────────────────────────────────────────
   let ws = null;
   let mediaStream = null;
   let audioContext = null;
   let workletNode = null;
+  let fallbackProcessor = null;
   let isRecording = false;
-  let currentState = "idle"; // idle | listening | thinking | speaking | interrupted
+  let currentState = "idle";
   let language = "hi";
   let playbackQueue = [];
   let isPlaying = false;
+  let lastVadEnd = 0;
+  let sessionLatency = 0;
+  let currentSessionId = "";
 
-  // ── DOM Elements ───────────────────────────────────────
   const $ = (sel) => document.querySelector(sel);
   const $all = (sel) => document.querySelectorAll(sel);
 
-  // ── Audio Playback ─────────────────────────────────────
   let playbackCtx = null;
 
   function ensurePlaybackContext() {
@@ -47,28 +47,17 @@
     return playbackCtx;
   }
 
-  /**
-   * Queue an audio chunk for sequential playback.
-   * @param {string} base64Audio - Base64-encoded audio data
-   * @param {string} format - Audio format (mp3, wav, pcm)
-   * @param {boolean} isLast - Whether this is the last chunk
-   */
   function queueAudioChunk(base64Audio, format, isLast) {
     playbackQueue.push({ base64Audio, format, isLast });
-    if (!isPlaying) {
-      playNextChunk();
-    }
+    if (!isPlaying) playNextChunk();
   }
 
   async function playNextChunk() {
     if (playbackQueue.length === 0) {
       isPlaying = false;
-      if (currentState === "speaking") {
-        setState("idle");
-      }
+      if (currentState === "speaking") setState("idle");
       return;
     }
-
     isPlaying = true;
     const chunk = playbackQueue.shift();
 
@@ -76,9 +65,7 @@
       const ctx = ensurePlaybackContext();
       const binaryStr = atob(chunk.base64Audio);
       const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
-      }
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
       const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
       const source = ctx.createBufferSource();
@@ -97,49 +84,84 @@
     isPlaying = false;
   }
 
-  // ── State Management ───────────────────────────────────
-
   function setState(newState) {
     const prev = currentState;
+    if (prev === newState) return;
     currentState = newState;
-    updateUI(newState);
+    updateUI(newState, prev);
     log(`State: ${prev} → ${newState}`);
   }
 
-  function updateUI(state) {
-    // Update status bar
+  function updateLatencyUI(ms) {
+    sessionLatency = ms;
+    const el = $("#metricLatency");
+    if (el) el.textContent = `⏱ ${ms}ms`;
+  }
+
+  function submitFeedback(rating) {
+    const payload = {
+      type: "feedback",
+      rating: rating,
+      latency_ms: sessionLatency,
+      session_id: currentSessionId
+    };
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload));
+    }
+    log(`Feedback sent: ${rating}`);
+    const panel = $("#feedbackPanel");
+    if (panel) panel.classList.remove("visible");
+  }
+
+  function updateUI(state, prevState) {
     const statusBar = $(".ws-status-bar");
     if (statusBar) {
       statusBar.className = "ws-status-bar " + state;
       const labels = {
-        idle: "🟢 Ready",
-        listening: "🎤 Listening...",
-        thinking: "🧠 Thinking...",
-        speaking: "🔊 Speaking...",
-        interrupted: "⚡ Interrupted",
-        error: "❌ Error",
-        connecting: "🔄 Connecting...",
+        idle: "🟢 Ready", listening: "🎤 Listening...", thinking: "🧠 Thinking...",
+        speaking: "🔊 Speaking...", interrupted: "⚡ Interrupted", error: "❌ Error", connecting: "🔄 Connecting..."
       };
       statusBar.textContent = labels[state] || state;
     }
 
-    // Update mic orb
-    const micOrb = $(".mic-orb");
-    if (micOrb) {
-      micOrb.classList.toggle("recording", state === "listening");
-      micOrb.classList.toggle("thinking", state === "thinking");
-      micOrb.classList.toggle("speaking", state === "speaking");
+    const legacyMicOrb = $(".mic-orb");
+    if (legacyMicOrb && !$("#voiceOrb")) {
+      legacyMicOrb.classList.toggle("recording", state === "listening");
+      legacyMicOrb.classList.toggle("thinking", state === "thinking");
+      legacyMicOrb.classList.toggle("speaking", state === "speaking");
     }
 
-    // Update PTT button
     const pttBtn = $(".btn-ptt");
-    if (pttBtn) {
-      pttBtn.classList.toggle("recording", state === "listening");
+    if (pttBtn) pttBtn.classList.toggle("recording", state === "listening");
+
+    // New UI Hooks
+    const voiceOrb = $("#voiceOrb");
+    if (voiceOrb) {
+      voiceOrb.className = "voice-orb"; // reset
+      if (state !== 'idle' && state !== 'error') voiceOrb.classList.add(state);
+    }
+
+    const connectBtnText = $("#btnConnectText");
+    if (connectBtnText) {
+      connectBtnText.textContent = state === "idle" ? "Disconnect" : (state === "connecting" ? "Connecting..." : "Live");
+    }
+
+    const wsStatusPill = $("#wsStatusPill");
+    if (wsStatusPill) {
+       wsStatusPill.innerHTML = (ws && ws.readyState === WebSocket.OPEN) ? "🟢 Online" : "⚫ Offline";
+    }
+
+    const feedbackPanel = $("#feedbackPanel");
+    if (feedbackPanel) {
+       if (state === "idle" && prevState === "speaking") {
+          feedbackPanel.classList.add("visible");
+       } else if (state === "listening" || state === "thinking") {
+          feedbackPanel.classList.remove("visible"); 
+       }
     }
   }
 
-  // ── WebSocket Connection ───────────────────────────────
-
+  let reconnectAttempts = 0;
   function connect() {
     if (ws && ws.readyState === WebSocket.OPEN) return;
 
@@ -147,31 +169,32 @@
     const url = `${protocol}//${location.host}${WS_PATH}?user_id=web_user&language=${language}`;
 
     setState("connecting");
-    log("Connecting to duplex endpoint...");
-
     ws = new WebSocket(url);
 
     ws.onopen = () => {
       log("WebSocket connected");
+      reconnectAttempts = 0;
+      updateUI(currentState, currentState);
     };
 
     ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        handleServerMessage(msg);
-      } catch (err) {
-        console.warn("[Duplex] Parse error:", err);
-      }
+      try { handleServerMessage(JSON.parse(event.data)); }
+      catch (err) { console.warn("[Duplex] Parse error:", err); }
     };
 
     ws.onclose = (ev) => {
       log(`WebSocket closed: ${ev.code}`);
-      setState("idle");
       ws = null;
+      setState("idle");
+      if (ev.code !== 1000 && reconnectAttempts < 5) {
+        const backoff = Math.pow(2, reconnectAttempts) * 1000;
+        reconnectAttempts++;
+        log(`Reconnecting in ${backoff}ms...`);
+        setTimeout(connect, backoff);
+      }
     };
 
     ws.onerror = (err) => {
-      log(`WebSocket error: ${err.message || "unknown"}`);
       setState("error");
     };
   }
@@ -179,7 +202,7 @@
   function disconnect() {
     if (ws) {
       sendJSON({ type: "close" });
-      ws.close();
+      ws.close(1000, "User disconnected");
       ws = null;
     }
     stopRecording();
@@ -187,131 +210,102 @@
     setState("idle");
   }
 
-  // ── Server Message Handling ────────────────────────────
-
   function handleServerMessage(msg) {
     switch (msg.type) {
       case "ready":
-        log(`Session: ${msg.session_id} | Mode: ${msg.mode}`);
+        currentSessionId = msg.session_id || "unknown";
         setState("idle");
-        addChatBubble("system", `Duplex session started. Say something!`);
+        addChatBubble("system", "Session ready. Say something!");
         break;
-
       case "pipeline_state":
+        if (msg.state === "thinking" && currentState === "listening") {
+            lastVadEnd = performance.now();
+        } else if (msg.state === "idle" && msg.latency_ms) {
+            updateLatencyUI(Math.round(msg.latency_ms));
+        }
         handlePipelineState(msg.state, msg);
         break;
-
       case "response_audio":
+        if (currentState !== "speaking" && lastVadEnd > 0) {
+            updateLatencyUI(Math.round(performance.now() - lastVadEnd));
+            lastVadEnd = 0;
+        }
         setState("speaking");
         queueAudioChunk(msg.audio_base64, msg.format, msg.is_last);
         break;
-
       case "response_sentence":
         addChatBubble("agent", msg.text);
         break;
-
-      case "response_end":
-        log(`Response complete: ${msg.chunks_sent} chunks`);
-        break;
-
       case "bargein":
         setState("interrupted");
         stopPlayback();
         setTimeout(() => setState("listening"), 200);
         break;
-
       case "error":
-        log(`Error: ${msg.error}`);
-        setState("error");
-        break;
-
-      default:
-        log(`Unknown: ${msg.type}`);
+        setState("error"); break;
     }
   }
 
   function handlePipelineState(state, msg) {
     switch (state) {
-      case "transcribing":
-        setState("thinking");
-        break;
+      case "transcribing": setState("thinking"); break;
       case "thinking":
         setState("thinking");
-        if (msg.text) {
-          addChatBubble("user", msg.text);
-        }
+        if (msg.text) addChatBubble("user", msg.text);
         break;
-      case "speaking":
-        setState("speaking");
-        break;
-      case "interrupted":
-        setState("interrupted");
-        break;
-      case "idle":
-        if (msg.latency_ms) {
-          log(`Latency: ${msg.latency_ms.toFixed(0)}ms`);
-        }
-        break;
+      case "speaking": setState("speaking"); break;
+      case "interrupted": setState("interrupted"); break;
+      case "idle": break;
     }
   }
-
-  // ── Audio Recording ────────────────────────────────────
 
   async function startRecording() {
     if (isRecording) return;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       connect();
-      // Wait for connection
       await new Promise((resolve) => {
         const check = setInterval(() => {
           if (ws && ws.readyState === WebSocket.OPEN) {
-            clearInterval(check);
-            resolve();
+            clearInterval(check); resolve();
           }
         }, 100);
-        setTimeout(() => {
-          clearInterval(check);
-          resolve();
-        }, 5000);
+        setTimeout(() => { clearInterval(check); resolve(); }, 3000);
       });
     }
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: SAMPLE_RATE,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
+        audio: { sampleRate: SAMPLE_RATE, channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
 
       audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
       const source = audioContext.createMediaStreamSource(mediaStream);
 
-      // Use ScriptProcessor for broad compatibility
-      const processor = audioContext.createScriptProcessor(
-        CHUNK_SIZE,
-        1,
-        1
-      );
-
-      processor.onaudioprocess = (e) => {
-        if (!isRecording) return;
-
-        const float32Data = e.inputBuffer.getChannelData(0);
-        const int16Data = float32ToInt16(float32Data);
-        const base64 = arrayBufferToBase64(int16Data.buffer);
-
-        sendJSON({
-          type: "audio_chunk",
-          audio_base64: base64,
-        });
-      };
-
-      source.connect(processor);
-      processor.connect(audioContext.destination);
+      try {
+        await audioContext.audioWorklet.addModule('./assets/js/voice-processor.js');
+        workletNode = new AudioWorkletNode(audioContext, 'voice-processor');
+        workletNode.port.onmessage = (e) => {
+          if (!isRecording) return;
+          const float32Data = e.data;
+          const int16Data = float32ToInt16(float32Data);
+          const base64 = arrayBufferToBase64(int16Data.buffer);
+          sendJSON({ type: "audio_chunk", audio_base64: base64 });
+        };
+        source.connect(workletNode);
+        workletNode.connect(audioContext.destination);
+      } catch (err) {
+        log("Worklet fallback due to error: " + err.message);
+        fallbackProcessor = audioContext.createScriptProcessor(CHUNK_SIZE, 1, 1);
+        fallbackProcessor.onaudioprocess = (e) => {
+          if (!isRecording) return;
+          const float32Data = e.inputBuffer.getChannelData(0);
+          const int16Data = float32ToInt16(float32Data);
+          const base64 = arrayBufferToBase64(int16Data.buffer);
+          sendJSON({ type: "audio_chunk", audio_base64: base64 });
+        };
+        source.connect(fallbackProcessor);
+        fallbackProcessor.connect(audioContext.destination);
+      }
 
       isRecording = true;
       setState("listening");
@@ -325,39 +319,25 @@
   function stopRecording() {
     if (!isRecording) return;
     isRecording = false;
-
-    // Send audio_end to flush the buffer
     sendJSON({ type: "audio_end" });
 
-    if (mediaStream) {
-      mediaStream.getTracks().forEach((t) => t.stop());
-      mediaStream = null;
-    }
-    if (audioContext) {
-      audioContext.close();
-      audioContext = null;
-    }
-
+    if (mediaStream) { mediaStream.getTracks().forEach((t) => t.stop()); mediaStream = null; }
+    if (workletNode) { workletNode.disconnect(); workletNode = null; }
+    if (fallbackProcessor) { fallbackProcessor.disconnect(); fallbackProcessor = null; }
+    if (audioContext) { audioContext.close(); audioContext = null; }
     log("Recording stopped");
   }
-
-  // ── Barge-in ───────────────────────────────────────────
 
   function triggerBargein() {
     if (currentState === "speaking") {
       stopPlayback();
       sendJSON({ type: "bargein" });
       setState("interrupted");
-      log("Barge-in triggered (client-side)");
     }
   }
 
-  // ── Utilities ──────────────────────────────────────────
-
   function sendJSON(obj) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(obj));
-    }
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
   }
 
   function float32ToInt16(float32Array) {
@@ -372,26 +352,32 @@
   function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
     return btoa(binary);
   }
 
   function addChatBubble(role, text) {
     const thread = $(".chat-thread");
-    if (!thread) return;
+    if (thread) {
+      const wrap = document.createElement("div");
+      wrap.className = `chat-bubble-wrap ${role}`;
+      const bubble = document.createElement("div");
+      bubble.className = `chat-bubble ${role}`;
+      bubble.textContent = text;
+      wrap.appendChild(bubble);
+      thread.appendChild(wrap);
+      thread.scrollTop = thread.scrollHeight;
+    }
 
-    const wrap = document.createElement("div");
-    wrap.className = `chat-bubble-wrap ${role}`;
-
-    const bubble = document.createElement("div");
-    bubble.className = `chat-bubble ${role}`;
-    bubble.textContent = text;
-
-    wrap.appendChild(bubble);
-    thread.appendChild(wrap);
-    thread.scrollTop = thread.scrollHeight;
+    if (role === 'user') {
+       const userEl = $('#transcriptUser');
+       if (userEl) userEl.textContent = text;
+    } else if (role === 'agent' || role === 'system') {
+       const agentEl = $('#transcriptAgent');
+       if (agentEl) {
+           agentEl.textContent = text;
+       }
+    }
   }
 
   function log(msg) {
@@ -399,18 +385,12 @@
     if (timeline) {
       const row = document.createElement("div");
       row.className = "event-row";
-      row.innerHTML = `
-        <span class="event-dot system"></span>
-        <span class="event-time">${new Date().toLocaleTimeString()}</span>
-        <span class="event-text">${msg}</span>
-      `;
+      row.innerHTML = `<span class="event-dot system"></span><span class="event-time">${new Date().toLocaleTimeString()}</span><span class="event-text">${msg}</span>`;
       timeline.appendChild(row);
       timeline.scrollTop = timeline.scrollHeight;
     }
     console.log(`[Duplex] ${msg}`);
   }
-
-  // ── Language Selection ─────────────────────────────────
 
   function setLanguage(lang) {
     language = lang;
@@ -418,109 +398,49 @@
     log(`Language set to: ${lang}`);
   }
 
-  // ── Push-to-Talk Binding ───────────────────────────────
-
   function bindPTT(button) {
     if (!button) return;
-
     let isDown = false;
-
-    const onDown = (e) => {
-      e.preventDefault();
-      if (isDown) return;
-      isDown = true;
-
-      // If agent is speaking, this acts as barge-in
-      if (currentState === "speaking") {
-        triggerBargein();
-      }
-
-      startRecording();
-    };
-
-    const onUp = (e) => {
-      e.preventDefault();
-      if (!isDown) return;
-      isDown = false;
-      stopRecording();
-    };
-
-    // Mouse events
-    button.addEventListener("mousedown", onDown);
-    button.addEventListener("mouseup", onUp);
-    button.addEventListener("mouseleave", onUp);
-
-    // Touch events
-    button.addEventListener("touchstart", onDown, { passive: false });
-    button.addEventListener("touchend", onUp, { passive: false });
-    button.addEventListener("touchcancel", onUp, { passive: false });
+    const onDown = (e) => { e.preventDefault(); if (isDown) return; isDown = true; if (currentState === "speaking") triggerBargein(); startRecording(); };
+    const onUp = (e) => { e.preventDefault(); if (!isDown) return; isDown = false; stopRecording(); };
+    button.addEventListener("mousedown", onDown); button.addEventListener("mouseup", onUp); button.addEventListener("mouseleave", onUp);
+    button.addEventListener("touchstart", onDown, { passive: false }); button.addEventListener("touchend", onUp, { passive: false });
   }
-
-  // ── Mic Orb Binding ────────────────────────────────────
-
-  function bindMicOrb(orb) {
-    if (!orb) return;
-
-    orb.addEventListener("click", () => {
-      if (isRecording) {
-        stopRecording();
-      } else {
-        if (currentState === "speaking") {
-          triggerBargein();
-        }
-        startRecording();
-      }
-    });
-  }
-
-  // ── Init ───────────────────────────────────────────────
 
   function init() {
-    // Bind UI elements
     bindPTT($(".btn-ptt"));
-    bindMicOrb($(".mic-orb"));
+    
+    // Legacy Mic Orb
+    const orb = $(".mic-orb");
+    if (orb) orb.addEventListener("click", () => {
+      if (isRecording) stopRecording(); else { if (currentState === "speaking") triggerBargein(); startRecording(); }
+    });
 
-    // Language selector
-    const langSelect = $(".duplex-lang-select");
-    if (langSelect) {
-      langSelect.addEventListener("change", (e) => {
-        setLanguage(e.target.value);
-      });
-    }
+    // New Orb
+    const voiceOrb = $("#voiceOrb");
+    if (voiceOrb) voiceOrb.addEventListener("click", () => {
+      if (isRecording) stopRecording(); else { if (currentState === "speaking") triggerBargein(); startRecording(); }
+    });
 
-    // Connect/disconnect buttons
-    const connectBtn = $(".duplex-connect-btn");
-    if (connectBtn) {
-      connectBtn.addEventListener("click", () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          disconnect();
-          connectBtn.textContent = "Connect";
-        } else {
-          connect();
-          connectBtn.textContent = "Disconnect";
-        }
-      });
-    }
+    const langSelect = $(".duplex-lang-select") || $("#langSelect");
+    if (langSelect) langSelect.addEventListener("change", (e) => setLanguage(e.target.value));
+
+    const connectBtn = $(".duplex-connect-btn") || $("#btnConnectToggle");
+    if (connectBtn) connectBtn.addEventListener("click", () => {
+      if (ws && ws.readyState === WebSocket.OPEN) disconnect(); else connect();
+    });
+
+    const fbUp = $("#btnFeedbackUp");
+    if (fbUp) fbUp.addEventListener("click", () => submitFeedback("up"));
+    const fbDown = $("#btnFeedbackDown");
+    if (fbDown) fbDown.addEventListener("click", () => submitFeedback("down"));
 
     log("Duplex client initialized");
   }
 
-  // ── Public API ─────────────────────────────────────────
   window.CropFreshDuplex = {
-    connect,
-    disconnect,
-    startRecording,
-    stopRecording,
-    triggerBargein,
-    setLanguage,
-    getState: () => currentState,
-    init,
+    connect, disconnect, startRecording, stopRecording, triggerBargein, setLanguage, getState: () => currentState, init,
   };
 
-  // Auto-init when DOM is ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

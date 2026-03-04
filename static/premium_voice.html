@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropFresh Premium Voice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/premium-voice.css" />
+  </head>
+  <body class="voice-mode">
+    <header class="voice-header">
+      <nav class="voice-nav">
+        <a href="./index.html">Dashboard</a>
+        <a href="./voice_agent.html">Test Lab</a>
+        <a href="./premium_voice.html" class="active">Premium Voice</a>
+      </nav>
+      <div class="voice-metrics">
+        <span id="metricLatency" title="VAD-to-First-Audio Latency"
+          >⏱ --ms</span
+        >
+        <span id="wsStatusPill">⚫ Offline</span>
+        <select
+          id="langSelect"
+          style="
+            background: transparent;
+            color: #fff;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            cursor: pointer;
+          "
+        >
+          <option value="hi" style="color: #000">HI</option>
+          <option value="en" style="color: #000">EN</option>
+          <option value="kn" style="color: #000">KN</option>
+          <option value="te" style="color: #000">TE</option>
+          <option value="ta" style="color: #000">TA</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="voice-stage">
+      <div class="orb-container">
+        <div class="voice-orb" id="voiceOrb" title="Tap to Toggle Microphone">
+          <!-- SVG inner icon optional -->
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="opacity: 0.5"
+          >
+            <path
+              d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"
+            ></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+          </svg>
+        </div>
+      </div>
+
+      <div class="transcript-box">
+        <div id="transcriptUser" class="transcript-line transcript-user"></div>
+        <div id="transcriptAgent" class="transcript-line transcript-agent">
+          Tap the orb to start connecting...
+        </div>
+      </div>
+
+      <div class="voice-controls">
+        <button class="control-btn" id="btnConnectToggle">
+          <span class="icon">⚡</span> <span id="btnConnectText">Connect</span>
+        </button>
+        <div class="feedback-panel" id="feedbackPanel">
+          <button class="feedback-btn" id="btnFeedbackUp" title="Good Response">
+            👍
+          </button>
+          <button
+            class="feedback-btn"
+            id="btnFeedbackDown"
+            title="Bad Response"
+          >
+            👎
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script src="./assets/js/voice-agent-duplex.js"></script>
+  </body>
+</html>
