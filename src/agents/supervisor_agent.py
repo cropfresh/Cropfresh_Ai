@@ -20,6 +20,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
+from src.agents.prompt_context import get_identity_preamble
 from src.memory.state_manager import AgentExecutionState, AgentStateManager, Message
 from src.tools.registry import ToolRegistry
 
@@ -35,7 +36,9 @@ class RoutingDecision(BaseModel):
 
 
 # Routing prompt for the supervisor
-ROUTING_PROMPT = """You are the Supervisor Agent for CropFresh AI, an agricultural marketplace platform.
+ROUTING_PROMPT = f"""You are the Supervisor Agent for CropFresh AI.
+
+{get_identity_preamble()}
 
 Your job is to analyze user queries and route them to the most appropriate specialized agent.
 
@@ -68,7 +71,22 @@ Available agents:
    - Keywords: find buyer, match buyer, who will buy, find farmer, supplier match, buyer matching, sell my produce
 
 9. **quality_assessment_agent**: Expert in produce grading (A+/A/B/C), defect detection, shelf life, and HITL verification
-   - Keywords: quality check, grade produce, defects, bruise, fungal, shelf life, quality assessment, inspect crop
+    - Keywords: quality check, grade produce, defects, bruise, fungal, shelf life, quality assessment, inspect crop
+
+10. **adcl_agent**: Expert in crop recommendations, what to sow now, weekly demand analysis
+    - Keywords: recommend, sow, what to grow, demand, crop suggestion, weekly report, which crop
+
+11. **price_prediction_agent**: Expert in price forecasting, trend analysis, sell/hold timing
+    - Keywords: predict, forecast, trend, future price, will price go up, hold or sell, price tomorrow
+
+12. **crop_listing_agent**: Expert in creating/managing produce listings for sale
+    - Keywords: list my crop, sell my produce, create listing, my listings, cancel listing, update listing
+
+13. **logistics_agent**: Expert in delivery routing, transport cost, vehicle assignment
+    - Keywords: delivery, transport, route, vehicle, logistics cost, shipping, pickup
+
+14. **knowledge_agent**: Deep knowledge retrieval from agricultural knowledge base
+    - Keywords: explain, tell me about, information, knowledge, learn, what is, how does
 
 Analyze the user query and respond with a JSON object:
 {{
@@ -315,13 +333,60 @@ class SupervisorAgent(BaseAgent):
             "research", "investigate", "comprehensive", "detailed",
             "compare", "analysis", "report", "study", "in-depth"
         ]
-        
+
+        # * NEW: ADCL crop recommendation keywords
+        adcl_kw = [
+            "recommend", "sow", "what to grow", "demand", "crop suggestion",
+            "weekly report", "which crop", "what should i grow",
+        ]
+
+        # * NEW: Price prediction keywords
+        prediction_kw = [
+            "predict", "forecast", "trend", "future price", "will price",
+            "hold or sell", "price tomorrow", "price next week",
+        ]
+
+        # * NEW: Crop listing keywords
+        listing_kw = [
+            "list my crop", "sell my produce", "create listing",
+            "my listings", "cancel listing", "update listing",
+        ]
+
+        # * NEW: Logistics keywords
+        logistics_kw = [
+            "delivery", "transport", "route", "vehicle", "logistics cost",
+            "shipping", "pickup", "truck", "tempo",
+        ]
+
+        # * NEW: Knowledge agent keywords
+        knowledge_kw = [
+            "explain", "tell me about", "information", "knowledge",
+            "learn", "what is", "how does",
+        ]
+
         # Direct/general keywords
         general_kw = [
             "hello", "hi", "thanks", "thank you", "bye", "help",
             "who are you", "what are you"
         ]
-        
+
+        # * Check explicit phrase matches first (before weighted scoring)
+        for kw in adcl_kw:
+            if kw in query_lower:
+                return RoutingDecision(
+                    agent_name="adcl_agent", confidence=0.83, reasoning="Rule-based: crop recommendation",
+                )
+        for kw in listing_kw:
+            if kw in query_lower:
+                return RoutingDecision(
+                    agent_name="crop_listing_agent", confidence=0.83, reasoning="Rule-based: listing",
+                )
+        for kw in logistics_kw:
+            if kw in query_lower:
+                return RoutingDecision(
+                    agent_name="logistics_agent", confidence=0.82, reasoning="Rule-based: logistics",
+                )
+
         # Score each category
         scores = {
             "agronomy_agent": sum(1 for kw in agronomy_kw if kw in query_lower),
@@ -332,6 +397,8 @@ class SupervisorAgent(BaseAgent):
             "web_scraping_agent": sum(1 for kw in scraping_kw if kw in query_lower),
             "browser_agent": sum(1 for kw in browser_kw if kw in query_lower),
             "research_agent": sum(1 for kw in research_kw if kw in query_lower),
+            "price_prediction_agent": sum(1 for kw in prediction_kw if kw in query_lower),
+            "knowledge_agent": sum(1 for kw in knowledge_kw if kw in query_lower),
             "general_agent": sum(1 for kw in general_kw if kw in query_lower),
         }
         
@@ -379,11 +446,19 @@ class SupervisorAgent(BaseAgent):
             )
         
         try:
-            # Step 1: Route query
-            if execution:
-                self.state_manager.add_step(execution.execution_id, "route_query")
-            
-            routing = await self.route_query(query, context)
+            # * Step 0: Photo/image detection — auto-route to QA agent
+            if context and context.get("image_b64"):
+                routing = RoutingDecision(
+                    agent_name="quality_assessment_agent",
+                    confidence=0.95,
+                    reasoning="Photo input detected — routing to quality assessment",
+                )
+                logger.info("Photo detected — routing to quality_assessment_agent")
+            else:
+                # Step 1: Route query
+                if execution:
+                    self.state_manager.add_step(execution.execution_id, "route_query")
+                routing = await self.route_query(query, context)
             
             if execution:
                 execution.selected_agent = routing.agent_name
@@ -544,9 +619,10 @@ class SupervisorAgent(BaseAgent):
         """
         agents = []
         for name, agent in self._agents.items():
+            # * Some agents (e.g. PricingAgent) don't inherit BaseAgent
             agents.append({
                 "name": name,
-                "description": agent.description,
-                "categories": agent.config.kb_categories,
+                "description": getattr(agent, "description", str(type(agent).__name__)),
+                "categories": getattr(getattr(agent, "config", None), "kb_categories", []),
             })
         return agents

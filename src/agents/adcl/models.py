@@ -3,8 +3,8 @@ ADCL Agent — Data Models
 ========================
 Data structures for the Adaptive Demand Crop List weekly report.
 
-ADCLCrop  : per-commodity demand + price + green label.
-WeeklyReport : full weekly output stored in adcl_reports table.
+ADCLCrop    : per-commodity demand + price + green label.
+WeeklyReport: full weekly output stored in adcl_reports table.
 """
 
 # * ADCL MODELS MODULE
@@ -31,14 +31,17 @@ class ADCLCrop:
     """
 
     commodity: str
-    demand_score: float              # 0.0–1.0 (normalised by max demand)
+    demand_score: float              # 0.0–1.0 (percentile-rank normalised)
     predicted_price_per_kg: float    # From PricePredictionAgent (₹/kg)
-    price_trend: str                 # 'rising' | 'stable' | 'falling'
-    seasonal_fit: str                # 'in_season' | 'off_season' | 'year_round'
+    price_trend: str                 # 'rising' | 'stable' | 'falling' — actual price movement
+    seasonal_fit: str                # 'in_season' | 'off_season' | 'year_round' (harvest)
     green_label: bool                # True = recommended to grow
     buyer_count: int                 # Unique buyers who ordered this
     total_demand_kg: float           # Estimated weekly demand (kg)
-    recommendation: str = ""        # Farmer-friendly advice (English)
+    recommendation: str = ""         # Farmer-friendly advice (English)
+    #! New fields added in upgrade (task35)
+    demand_trend: str = "stable"     # 'rising' | 'stable' | 'falling' — order volume trend
+    sow_season_fit: str = "year_round"  # 'ideal_sow' | 'possible_sow' | 'not_sow_season'
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to JSON-safe dict."""
@@ -47,7 +50,9 @@ class ADCLCrop:
             "demand_score": round(self.demand_score, 3),
             "predicted_price_per_kg": round(self.predicted_price_per_kg, 2),
             "price_trend": self.price_trend,
+            "demand_trend": self.demand_trend,
             "seasonal_fit": self.seasonal_fit,
+            "sow_season_fit": self.sow_season_fit,
             "green_label": self.green_label,
             "buyer_count": self.buyer_count,
             "total_demand_kg": round(self.total_demand_kg, 1),

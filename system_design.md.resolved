@@ -1,0 +1,695 @@
+# CropFresh AI — System Design & Agent Architecture
+
+> Complete system design of the multi-agent RAG platform connecting Karnataka farmers with buyers using AI-powered intelligence.
+
+---
+
+## High-Level Architecture
+
+```mermaid
+graph TB
+    subgraph "User Interfaces"
+        WEB["🌐 Web Chat UI"]
+        VOICE["🎤 Voice (STT/TTS)"]
+        WHATSAPP["📱 WhatsApp Bot"]
+        API["⚡ REST API"]
+    end
+
+    subgraph "Gateway Layer"
+        FASTAPI["FastAPI Server<br/>src/api/main.py"]
+        WS["WebSocket Endpoint"]
+    end
+
+    subgraph "Orchestration Layer"
+        SUPERVISOR["🧠 Supervisor Agent<br/>Query Router"]
+        LLM_PROV["LLM Provider<br/>Groq / Bedrock / Together"]
+    end
+
+    subgraph "Domain Agents"
+        AGRO["🌱 Agronomy Agent"]
+        COMMERCE["💰 Commerce Agent"]
+        PLATFORM["📱 Platform Agent"]
+        GENERAL["👋 General Agent"]
+        PRICING["📊 Pricing Agent"]
+        VOICE_AG["🗣️ Voice Agent"]
+    end
+
+    subgraph "Advanced Agents (Modular)"
+        QA["📷 Quality Assessment"]
+        BM["🤝 Buyer Matching"]
+        PP["📈 Price Prediction"]
+        DT["🔬 Digital Twin"]
+        CL["📋 Crop Listing"]
+        LR["🚚 Logistics Router"]
+        ADCL["🌾 ADCL Engine"]
+        RESEARCH["🔍 Research Agent"]
+    end
+
+    subgraph "RAG Pipeline"
+        RAG_GRAPH["LangGraph RAG<br/>(Adaptive+CRAG+Self-RAG)"]
+        ORCH["Agentic Orchestrator<br/>Speculative Drafting"]
+        KB["Knowledge Base<br/>Qdrant Vector DB"]
+        EMBED["Embeddings<br/>all-MiniLM-L6-v2"]
+    end
+
+    subgraph "Tools Layer"
+        TOOLS["Tool Registry<br/>16+ Tools"]
+        AGMARK["Agmarknet Scraper"]
+        ENAM["eNAM Client"]
+        WEATHER["IMD Weather"]
+        NEWS["News Sentiment"]
+        ML["ML Forecaster"]
+        DEEP["Deep Research"]
+        CALC["Calculator"]
+        SEARCH["Web Search"]
+    end
+
+    subgraph "Data Stores"
+        QDRANT["Qdrant Cloud"]
+        NEO4J["Neo4j Graph DB"]
+        SUPABASE["Supabase PostgreSQL"]
+        REDIS["Redis Cache"]
+    end
+
+    WEB --> FASTAPI
+    VOICE --> WS
+    WHATSAPP --> FASTAPI
+    API --> FASTAPI
+    FASTAPI --> SUPERVISOR
+    WS --> VOICE_AG
+    SUPERVISOR --> LLM_PROV
+    SUPERVISOR --> AGRO & COMMERCE & PLATFORM & GENERAL
+    COMMERCE --> PRICING
+    AGRO --> KB
+    COMMERCE --> KB
+    PLATFORM --> KB
+    PRICING --> AGMARK & ML & WEATHER & NEWS
+    PRICING --> LLM_PROV
+    VOICE_AG --> AGRO & PRICING & QA & BM
+    QA --> LLM_PROV
+    BM --> LLM_PROV
+    PP --> ML
+    RESEARCH --> DEEP & KB & NEO4J
+    RAG_GRAPH --> KB & EMBED
+    ORCH --> RAG_GRAPH
+    KB --> QDRANT
+    TOOLS --> AGMARK & ENAM & WEATHER & NEWS & ML & DEEP & CALC & SEARCH
+    AGRO --> LLM_PROV
+    GENERAL --> LLM_PROV
+```
+
+---
+
+## Agent Catalog
+
+### 1. Supervisor Agent — *The Router*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [supervisor_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/supervisor_agent.py) |
+| **Role** | Central orchestrator for the multi-agent system |
+| **LLM Connection** | ✅ Uses LLM for intent classification → routes to domain agents |
+| **RAG Connection** | ❌ No direct RAG — delegates to child agents |
+| **Fallback** | Rule-based keyword routing when LLM unavailable |
+
+**How it works:**
+1. Receives user query
+2. Uses LLM to classify intent → [RoutingDecision(agent_name, confidence, reasoning)](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/supervisor_agent.py#27-35)
+3. Routes to best-fit agent (or multiple agents for cross-domain queries)
+4. Merges multi-agent responses if needed
+5. Maintains session context via `AgentStateManager`
+
+**Registered Agents:**
+- `agronomy` → AgronomyAgent
+- `commerce` → CommerceAgent
+- `platform` → PlatformAgent
+- `general` → GeneralAgent (fallback)
+
+---
+
+### 2. Agronomy Agent — *The Farming Expert*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [agronomy_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/agronomy_agent.py) |
+| **Role** | Crop cultivation, pest management, soil health, irrigation |
+| **LLM Connection** | ✅ [generate_with_llm()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#287-321) — Groq Llama-3.3-70B |
+| **RAG Connection** | ✅ [retrieve_context(query, categories=["agronomy", "crops"])](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#203-246) → Qdrant KB |
+| **KB Categories** | `agronomy`, `crops`, `pest_management`, `soil`, `irrigation` |
+
+**Processing flow:**
+1. Retrieve relevant docs from Qdrant KB (top-5)
+2. Format docs as `RETRIEVED CONTEXT` block
+3. Build system prompt (Karnataka-focused agronomy expert)
+4. Send `[system_prompt, context+query]` to LLM
+5. Return [AgentResponse](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#28-51) with sources and follow-up suggestions
+
+---
+
+### 3. Commerce Agent — *The Market Analyst*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [commerce_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/commerce_agent.py) |
+| **Role** | Market prices, sell/hold recommendations, AISP calculation |
+| **LLM Connection** | ✅ [generate_with_llm()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#287-321) for narrative analysis |
+| **RAG Connection** | ✅ [retrieve_context(query, categories=["market", "commerce"])](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#203-246) |
+| **Tool Connection** | ✅ Uses [PricingAgent](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#93-448) for real-time mandi prices |
+| **KB Categories** | [market](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/commerce_agent.py#271-307), `commerce`, `pricing` |
+
+**Processing flow:**
+1. Extract commodity + location entities from query
+2. Fetch live prices via `PricingAgent.get_recommendation()`
+3. Retrieve KB documents for market context
+4. Combine price data + KB context → LLM for narrative response
+5. Include AISP breakdown and price display formatting
+
+---
+
+### 4. Platform Agent — *The App Guide*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [platform_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/platform_agent.py) |
+| **Role** | CropFresh app features, registration, orders, FAQs |
+| **LLM Connection** | ✅ [generate_with_llm()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#287-321) |
+| **RAG Connection** | ✅ [retrieve_context(query, categories=["platform", "general"])](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#203-246) |
+| **KB Categories** | `platform`, `general`, `faq`, `onboarding` |
+
+---
+
+### 5. General Agent — *The Friendly Fallback*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [general_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/general_agent.py) |
+| **Role** | Greetings, general questions, unclear intents |
+| **LLM Connection** | ✅ Higher temperature (0.8) for conversational tone |
+| **RAG Connection** | ❌ No RAG retrieval — uses LLM directly |
+| **Special** | Handles simple greetings without LLM (keyword match) |
+
+---
+
+### 6. Pricing Agent — *The Dynamic Pricing Engine (DPLE)*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [pricing_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py) |
+| **Role** | Real-time price recommendations with multi-signal analysis |
+| **LLM Connection** | ✅ [_llm_analysis()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/pricing_agent.py#360-432) — builds rich signal-aware prompt |
+| **RAG Connection** | ❌ Uses live data tools instead of RAG |
+| **Tools** | Agmarknet scraper, ML Forecaster, Weather tool, News Sentiment |
+
+**Signal pipeline (concurrent):**
+```
+① Agmarknet live mandi prices      → current price anchor
+② ML Forecaster (historical trend)  → 3/7/14-day forecast
+③ IMD Weather forecast              → supply disruption signals
+④ News Sentiment scraper            → demand shock indicators
+```
+
+All 4 signals fetched concurrently via `asyncio.gather()`, then combined into heuristic + LLM analysis.
+
+---
+
+### 7. Knowledge Agent — *The RAG Interface*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [knowledge_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/knowledge_agent.py) |
+| **Role** | High-level interface to the agentic RAG system |
+| **LLM Connection** | ✅ Via RAG graph pipeline |
+| **RAG Connection** | ✅ Direct — calls [run_agentic_rag()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#389-427) from [src/rag/graph.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py) |
+
+The primary entry point to the full RAG pipeline. Delegates to the LangGraph workflow.
+
+---
+
+### 8. Voice Agent — *The Voice-First Interface*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [voice_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py) (1040 lines) |
+| **Role** | Two-way voice in Hindi/Kannada/English for illiterate farmers |
+| **LLM Connection** | ✅ For complex responses after template matching |
+| **RAG Connection** | ❌ Routes to other agents which use RAG |
+| **Sub-agents** | PricingAgent, AgronomyAgent, QualityAgent, BuyerMatchingAgent, ADCL |
+
+**Voice flow:**
+```
+Audio → STT (IndicWhisper/MultiProvider) → Text
+  → Entity Extraction (VoiceEntityExtractor → VoiceIntent enum)
+  → Intent Handler (template-based or agent delegation)
+  → Response Text
+  → TTS (EdgeTTS/IndicTTS) → Audio Response
+```
+
+**Supported intents (14+):**
+[create_listing](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#447-542), [check_price](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#543-582), [track_order](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#583-610), [my_listings](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#611-633), [find_buyer](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#634-697), [check_weather](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#698-725), [get_advisory](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#726-754), [register](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/registry.py#86-154), [dispute_status](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#807-834), [quality_check](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/voice_agent.py#835-875), [greeting](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/general_agent.py#173-194), `help`, `farewell`, `unknown`
+
+---
+
+### 9. Browser Agent — *The Web Automator*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [browser_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/browser_agent.py) |
+| **Role** | Stealth browser automation for authenticated scraping |
+| **LLM Connection** | ❌ Not directly — pure automation |
+| **RAG Connection** | ❌ |
+| **Tech** | Playwright with anti-detection stealth |
+
+---
+
+### 10. Web Scraping Agent — *The Data Extractor*
+
+| Property | Detail |
+|----------|--------|
+| **File** | [web_scraping_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/web_scraping_agent.py) |
+| **Role** | Intelligent web scraping with LLM-powered extraction |
+| **LLM Connection** | ✅ For schema-based structured data extraction |
+| **RAG Connection** | ❌ |
+| **Modes** | Markdown extraction, CSS selector extraction, LLM+Pydantic schema extraction |
+
+---
+
+## Modular Agents (Subdirectory Pattern)
+
+Each follows: [agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py) + `prompts/` + [tools/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/registry.py#182-198) + [context/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#322-344) + `tests/`
+
+### 11. Quality Assessment Agent
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [quality_assessment/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment) |
+| **Role** | Produce quality grading via Computer Vision |
+| **LLM Connection** | ✅ For grade explanation and analysis |
+| **Vision Models** | DINOv2 classifier, YOLO detector |
+| **Special** | [dinov2_classifier.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/dinov2_classifier.py), [yolo_detector.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/yolo_detector.py), [vision_models.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/quality_assessment/vision_models.py) |
+
+### 12. Buyer Matching Agent
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [buyer_matching/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/buyer_matching) |
+| **Role** | Match farmers with optimal buyers |
+| **LLM Connection** | ✅ For scoring and recommendation |
+
+### 13. Price Prediction Agent
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [price_prediction/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/price_prediction) |
+| **Role** | ML-based price forecasting |
+| **LLM Connection** | ✅ For narrative price analysis |
+| **Tools** | ML Forecaster, historical data |
+
+### 14. Digital Twin Engine
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [digital_twin/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/digital_twin) |
+| **Role** | QR-based produce traceability, diff analysis |
+| **Modules** | [engine.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl/engine.py), [diff_analysis.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/digital_twin/diff_analysis.py), [liability.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/digital_twin/liability.py), [similarity.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/digital_twin/similarity.py) |
+| **LLM Connection** | ❌ Pure computational engine |
+
+### 15. Crop Listing Agent
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [crop_listing/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/crop_listing) |
+| **Role** | Create and manage crop listings |
+| **LLM Connection** | ✅ |
+
+### 16. Logistics Router
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [logistics_router/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/logistics_router) |
+| **Role** | Optimal delivery routing with vehicle assignment |
+| **Modules** | [routing.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/logistics_router/routing.py), [clustering.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/logistics_router/clustering.py), [cost.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/logistics_router/cost.py), [geo.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/logistics_router/geo.py), [vehicle.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/logistics_router/vehicle.py) |
+| **LLM Connection** | ❌ Pure computational engine |
+
+### 17. ADCL Engine (Adaptive Demand Crop Lifecycle)
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [adcl/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl) |
+| **Role** | Crop recommendations based on demand signals + seasonality |
+| **Modules** | [engine.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl/engine.py), [demand.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl/demand.py), [scoring.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl/scoring.py), [seasonal.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl/seasonal.py), [summary.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl/summary.py) |
+| **LLM Connection** | ✅ [summary.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/adcl/summary.py) uses LLM for farmer-friendly recommendations |
+
+### 18. Research Agent
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [research/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/research) |
+| **Role** | Deep multi-step research with citations |
+| **LLM Connection** | ✅ For planning, synthesis, and verification |
+| **RAG Connection** | ✅ Via knowledge base and Neo4j graph |
+| **Modules** | [planner.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/research/planner.py), [source_discovery.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/research/source_discovery.py), [verifier.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/research/verifier.py), [citation_manager.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/research/citation_manager.py), [memory.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/research/memory.py) |
+
+### 19. WhatsApp Bot Agent
+
+| Property | Detail |
+|----------|--------|
+| **Directory** | [whatsapp_bot/](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/whatsapp_bot) |
+| **Role** | WhatsApp-based farmer interaction |
+| **Status** | Scaffold only (minimal [agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py) at 480 bytes) |
+
+---
+
+## RAG Pipeline Deep Dive
+
+### Core RAG Graph — [src/rag/graph.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py)
+
+```mermaid
+stateDiagram-v2
+    [*] --> AnalyzeQuery
+    AnalyzeQuery --> RouteQuery
+
+    state RouteQuery <<choice>>
+    RouteQuery --> Retrieve: knowledge/factual
+    RouteQuery --> DirectAnswer: greeting/simple
+
+    Retrieve --> GradeDocuments
+    
+    state GradeDocuments <<choice>>
+    GradeDocuments --> Generate: docs relevant
+    GradeDocuments --> WebSearch: docs insufficient
+
+    WebSearch --> Generate
+
+    Generate --> CheckHallucination
+
+    state CheckHallucination <<choice>>
+    CheckHallucination --> FinalAnswer: grounded
+    CheckHallucination --> RetryDecision: hallucination
+
+    state RetryDecision <<choice>>
+    RetryDecision --> Retrieve: retries < max
+    RetryDecision --> FinalAnswer: max retries reached
+
+    DirectAnswer --> FinalAnswer
+    FinalAnswer --> [*]
+```
+
+**Pipeline stages:** [RAGState](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#17-43) flows through:
+
+| Node | RAG Technique | Purpose |
+|------|--------------|---------|
+| [analyze_query_node](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#77-96) | **Adaptive RAG** | Classify query type, determine routing |
+| [retrieve_node](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#97-127) | — | Fetch top-K docs from Qdrant via `KnowledgeBase.search()` |
+| [grade_documents_node](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#128-147) | **Corrective RAG (CRAG)** | Grade doc relevance, decide if web search needed |
+| [web_search_node](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#148-172) | **CRAG fallback** | Web search when KB docs insufficient |
+| [generate_node](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#173-223) | — | Build context + system prompt → LLM generation |
+| [check_hallucination_node](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#224-260) | **Self-RAG** | Verify answer grounded in sources |
+| [direct_answer_node](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/rag/graph.py#261-285) | — | Simple queries bypass retrieval |
+
+### Advanced Agentic Orchestrator — [ai/rag/agentic_orchestrator.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/ai/rag/agentic_orchestrator.py)
+
+A more sophisticated pipeline (ADR-007) with:
+
+| Component | Role |
+|-----------|------|
+| **RetrievalPlanner** | LLM-powered tool execution planner (Llama-3.1-8B-Instant) |
+| **SpeculativeDraftEngine** | Parallel speculative generation — splits docs into N subsets, generates N drafts, verifier selects best |
+| **AgenticSelfEvaluator** | Confidence gating with faithfulness + relevance scores |
+
+---
+
+## LLM Provider Architecture
+
+```mermaid
+classDiagram
+    class BaseLLMProvider {
+        <<abstract>>
+        +generate(messages, temperature, max_tokens)
+        +stream(messages, temperature, max_tokens)
+    }
+    
+    class GroqProvider {
+        -client: AsyncGroq
+        -model: "llama-3.3-70b-versatile"
+        +generate()
+        +stream()
+    }
+    
+    class BedrockProvider {
+        -client: boto3.bedrock-runtime
+        -models: Claude/Llama/Titan
+        +generate() via Converse API
+        +stream() via ConverseStream API
+    }
+    
+    class TogetherProvider {
+        -client: Together
+        -model: configurable
+        +generate()
+        +stream()
+    }
+    
+    BaseLLMProvider <|-- GroqProvider
+    BaseLLMProvider <|-- BedrockProvider
+    BaseLLMProvider <|-- TogetherProvider
+```
+
+| Provider | Use Case | Default Model |
+|----------|----------|---------------|
+| **Groq** | Development (fast inference) | `llama-3.3-70b-versatile` |
+| **Bedrock** | Production (Claude, Llama, Titan) | `claude-sonnet` (ap-south-1) |
+| **Together AI** | Backup | Configurable |
+
+---
+
+## Tools Ecosystem
+
+All tools registered via [ToolRegistry](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/registry.py#55-376) in [registry.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/registry.py).
+
+| Tool | File | Category | Description |
+|------|------|----------|-------------|
+| **Agmarknet** | [agmarknet.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/agmarknet.py) | commerce | Live mandi prices from APMC |
+| **eNAM Client** | [enam_client.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/enam_client.py) | commerce | National electronic market data |
+| **ML Forecaster** | [ml_forecaster.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/ml_forecaster.py) | commerce | Price prediction with seasonality |
+| **AISP Calculator** | [calculator.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/calculator.py) | commerce | AI-Suggested Price calculation |
+| **Weather (IMD)** | [imd_weather.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/imd_weather.py) | agronomy | India Meteorological Department forecasts |
+| **Weather** | [weather.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/weather.py) | agronomy | General weather tool |
+| **News Sentiment** | [news_sentiment.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/news_sentiment.py) | commerce | Commodity news sentiment analysis |
+| **Web Search** | [web_search.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/web_search.py) | general | General web search |
+| **Deep Research** | [deep_research.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/deep_research.py) | research | Multi-URL map-reduce research |
+| **Agri Scrapers** | [agri_scrapers.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/agri_scrapers.py) | agronomy | Agricultural data scrapers |
+| **Browser Stealth** | [browser_stealth.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/browser_stealth.py) | infra | Anti-detection browser config |
+| **Google AMED** | [google_amed.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/google_amed.py) | commerce | Google agricultural market data |
+| **Realtime Data** | [realtime_data.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/realtime_data.py) | commerce | Real-time market feeds |
+| **Session Manager** | [session_manager.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/session_manager.py) | infra | User session management |
+| **Calculator** | [calculator.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/tools/calculator.py) | general | Mathematical calculations |
+
+---
+
+## Voice Pipeline
+
+```mermaid
+flowchart LR
+    subgraph "Input"
+        MIC["🎤 Microphone"]
+    end
+    
+    subgraph "STT Layer"
+        WHISPER["IndicWhisper"]
+        MULTI_STT["MultiProvider STT"]
+    end
+    
+    subgraph "NLU"
+        ENTITY["VoiceEntityExtractor"]
+        INTENT["Intent Classification"]
+    end
+    
+    subgraph "Processing"
+        TEMPLATE["Template Matching<br/>(14+ intents)"]
+        AGENT_DEL["Agent Delegation"]
+    end
+    
+    subgraph "TTS Layer"
+        EDGE["EdgeTTS"]
+        INDIC["IndicTTS"]
+        STREAM["StreamingTTS"]
+    end
+    
+    subgraph "Output"
+        SPK["🔊 Speaker"]
+    end
+    
+    MIC --> WHISPER & MULTI_STT
+    WHISPER & MULTI_STT --> ENTITY
+    ENTITY --> INTENT
+    INTENT --> TEMPLATE & AGENT_DEL
+    TEMPLATE & AGENT_DEL --> EDGE & INDIC & STREAM
+    EDGE & INDIC & STREAM --> SPK
+```
+
+**Additional voice components:**
+- [vad.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/voice/vad.py) — Voice Activity Detection
+- [duplex_pipeline.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/voice/duplex_pipeline.py) — Full-duplex voice with barge-in support
+- [webrtc_transport.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/voice/webrtc_transport.py) — WebRTC real-time transport
+- [groq_streaming.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/voice/groq_streaming.py) / [bedrock_streaming.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/voice/bedrock_streaming.py) — Streaming LLM for voice
+- `pipecat/` — Pipecat framework integration
+
+---
+
+## RAG ↔ Agent Connection Matrix
+
+| Agent | Uses RAG? | Uses LLM? | Uses Tools? | Uses Vision? |
+|-------|-----------|-----------|-------------|-------------|
+| **Supervisor** | ❌ | ✅ routing | ❌ | ❌ |
+| **Agronomy** | ✅ Qdrant KB | ✅ response gen | ⚠️ weather | ❌ |
+| **Commerce** | ✅ Qdrant KB | ✅ narrative | ✅ PricingAgent | ❌ |
+| **Platform** | ✅ Qdrant KB | ✅ response gen | ❌ | ❌ |
+| **General** | ❌ | ✅ conversational | ❌ | ❌ |
+| **Pricing (DPLE)** | ❌ | ✅ analysis | ✅ 4 signals | ❌ |
+| **Knowledge** | ✅ Full RAG graph | ✅ via pipeline | ✅ web search | ❌ |
+| **Voice** | ❌ delegates | ✅ fallback | ❌ | ❌ |
+| **Quality** | ❌ | ✅ grading | ❌ | ✅ DINOv2+YOLO |
+| **Buyer Matching** | ❌ | ✅ scoring | ✅ custom | ❌ |
+| **Price Prediction** | ❌ | ✅ narrative | ✅ ML Forecaster | ❌ |
+| **Digital Twin** | ❌ | ❌ | ❌ | ❌ (computational) |
+| **Crop Listing** | ❌ | ✅ | ❌ | ❌ |
+| **Logistics** | ❌ | ❌ | ❌ | ❌ (computational) |
+| **ADCL** | ❌ | ✅ summary | ❌ | ❌ |
+| **Research** | ✅ KB+Neo4j | ✅ synthesis | ✅ deep research | ❌ |
+| **Browser** | ❌ | ❌ | ❌ | ❌ (automation) |
+| **Web Scraping** | ❌ | ✅ extraction | ❌ | ❌ |
+
+---
+
+## Data Flow: Complete Query Lifecycle
+
+```mermaid
+sequenceDiagram
+    actor Farmer
+    participant API as FastAPI
+    participant SUP as Supervisor
+    participant LLM as Groq LLM
+    participant AGENT as Domain Agent
+    participant RAG as RAG Pipeline
+    participant KB as Qdrant KB
+    participant TOOLS as Tools
+    
+    Farmer->>API: "What's the tomato price in Bangalore?"
+    API->>SUP: process(query, session_id)
+    SUP->>LLM: Classify intent
+    LLM-->>SUP: { agent: "commerce", confidence: 0.95 }
+    SUP->>AGENT: CommerceAgent.process(query)
+    
+    par Parallel Operations
+        AGENT->>RAG: retrieve_context("tomato price Bangalore")
+        RAG->>KB: search(query, category="market")
+        KB-->>RAG: [matching documents]
+        RAG-->>AGENT: formatted context
+    and
+        AGENT->>TOOLS: PricingAgent.get_recommendation("Tomato", "Bangalore")
+        TOOLS->>TOOLS: asyncio.gather(agmarknet, forecast, weather, sentiment)
+        TOOLS-->>AGENT: PriceRecommendation
+    end
+    
+    AGENT->>LLM: [system_prompt, context + price_data + query]
+    LLM-->>AGENT: Narrative price analysis
+    AGENT-->>SUP: AgentResponse
+    SUP-->>API: Final response
+    API-->>Farmer: "Tomato in Bangalore: ₹25/kg..."
+```
+
+---
+
+## BaseAgent Inheritance Pattern
+
+All domain agents follow this pattern from [base_agent.py](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py):
+
+```python
+class MyAgent(BaseAgent):
+    def __init__(self, llm, tool_registry, state_manager, knowledge_base):
+        config = AgentConfig(
+            name="my_agent",
+            description="...",
+            kb_categories=["category1", "category2"],  # RAG filter
+            tool_categories=["commerce"],               # Tool access
+        )
+        super().__init__(config, llm, tool_registry, state_manager, knowledge_base)
+    
+    def _get_system_prompt(self, context=None) -> str:
+        return "Domain-specific system prompt..."
+    
+    async def process(self, query, context=None, execution=None) -> AgentResponse:
+        # 1. RAG retrieval
+        docs = await self.retrieve_context(query, categories=self.config.kb_categories)
+        
+        # 2. Tool usage (optional)
+        tool_result = await self.use_tool("tool_name", param1="value")
+        
+        # 3. LLM generation
+        messages = [{"role": "system", "content": self._get_system_prompt()},
+                    {"role": "user", "content": f"Context: {docs}\n\nQuery: {query}"}]
+        answer = await self.generate_with_llm(messages)
+        
+        return AgentResponse(content=answer, agent_name=self.name, ...)
+```
+
+**Key [BaseAgent](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#74-414) methods:**
+
+| Method | Purpose |
+|--------|---------|
+| [retrieve_context()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#203-246) | Query Qdrant KB with category filters |
+| [generate_with_llm()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#287-321) | Send messages to LLM provider |
+| [use_tool()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#247-286) | Execute named tool from registry |
+| [format_context()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#322-344) | Format retrieved docs for LLM prompt |
+| [process_with_stream()](file:///d:/Cropfresh-dev/Cropfresh%20Ai/Cropfresh_Ai/src/agents/base_agent.py#179-202) | Streaming response support |
+
+---
+
+## Key Architecture Decisions
+
+| ADR | Decision | Rationale |
+|-----|----------|-----------|
+| RAG Pipeline | Adaptive + CRAG + Self-RAG hybrid | Query routing + doc grading + hallucination check |
+| LLM Strategy | Multi-provider with fallback | Groq (dev) → Bedrock (prod) → Together (backup) |
+| Agent Pattern | Supervisor → Domain Agents | Clean separation of concerns, easy to add agents |
+| Voice-First | Template matching → LLM fallback | Low latency for common intents, LLM for complex |
+| Pricing | 4-signal concurrent pipeline | Comprehensive analysis without serial bottleneck |
+| Embeddings | `all-MiniLM-L6-v2` | Fast, lightweight, good multilingual support |
+| Vector DB | Qdrant Cloud | Managed service, hybrid search support |
+| Graph DB | Neo4j | Entity relationships for research agent |
+
+---
+
+## Tech Stack Summary
+
+```
+┌──────────────────────────────────────────────────┐
+│  Frontend: Web Chat UI + Voice WebRTC + WhatsApp │
+├──────────────────────────────────────────────────┤
+│  API Layer: FastAPI + WebSocket                  │
+├──────────────────────────────────────────────────┤
+│  Orchestration: Supervisor Agent (LangGraph)     │
+├──────────────────────────────────────────────────┤
+│  Agents: 19 specialized agents                   │
+│  ├── 8 standalone (BaseAgent inheritance)        │
+│  ├── 8 modular (subdirectory pattern)            │
+│  └── 3 computational engines (no LLM)           │
+├──────────────────────────────────────────────────┤
+│  RAG: LangGraph pipeline + Agentic Orchestrator  │
+│  ├── Adaptive RAG (query routing)                │
+│  ├── Corrective RAG (doc grading + web fallback) │
+│  └── Self-RAG (hallucination checking)           │
+├──────────────────────────────────────────────────┤
+│  LLM: Groq / Bedrock / Together AI              │
+│  Models: Llama-3.3-70B, Claude, Titan           │
+├──────────────────────────────────────────────────┤
+│  Tools: 16+ (scrapers, forecasters, weather)     │
+├──────────────────────────────────────────────────┤
+│  Voice: STT(Whisper) + TTS(Edge/Indic) + VAD    │
+│  + WebRTC + Pipecat + Full-Duplex Pipeline       │
+├──────────────────────────────────────────────────┤
+│  Data: Qdrant + Neo4j + Supabase + Redis         │
+├──────────────────────────────────────────────────┤
+│  Infra: Docker + uv + Python 3.11+              │
+└──────────────────────────────────────────────────┘
+```

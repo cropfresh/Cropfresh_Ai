@@ -125,17 +125,42 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("KnowledgeAgent initialization failed: {} — RAG unavailable", exc)
 
-    # ── 6. SupervisorAgent ───────────────────────────
+    # ── 6. Full Agent System ──────────────────────────
+    #! Critical: Previously created a bare SupervisorAgent with zero agents.
+    #! Now uses agent_registry to wire ALL 15 agents at startup.
     app.state.supervisor = None
+    app.state.state_manager = None
     try:
-        from src.agents.supervisor_agent import SupervisorAgent
+        from src.agents.agent_registry import create_agent_system
 
-        supervisor = SupervisorAgent(llm=app.state.llm)
-        await supervisor.initialize()
+        # * Extract KB from KnowledgeAgent if available
+        kb = None
+        if app.state.knowledge_agent:
+            kb = getattr(app.state.knowledge_agent, "knowledge_base", None)
+
+        supervisor, state_manager = await create_agent_system(
+            llm=app.state.llm,
+            knowledge_base=kb,
+            redis_url=settings.redis_url if settings.use_redis_cache else None,
+            settings=settings,
+        )
         app.state.supervisor = supervisor
-        logger.info("✅ SupervisorAgent initialized")
+        app.state.state_manager = state_manager
+        logger.info(
+            "✅ Agent system: {} agents registered",
+            len(supervisor.get_available_agents()),
+        )
     except Exception as exc:
-        logger.warning("SupervisorAgent initialization failed: {}", exc)
+        logger.warning("Agent system initialization failed: {}", exc)
+        # * Fallback: create bare supervisor so health checks pass
+        try:
+            from src.agents.supervisor_agent import SupervisorAgent
+            supervisor = SupervisorAgent(llm=app.state.llm)
+            await supervisor.initialize()
+            app.state.supervisor = supervisor
+            logger.info("⚠️ Fallback: bare SupervisorAgent (no agents registered)")
+        except Exception:
+            pass
 
     logger.info("🚀 CropFresh AI Service ready — http://{}:{}/docs", settings.api_host, settings.api_port)
 

@@ -20,6 +20,7 @@ from typing import Optional
 from loguru import logger
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
+from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState, AgentStateManager
 from src.tools.registry import ToolRegistry
 
@@ -61,6 +62,9 @@ Guidelines:
 5. Celebrate user milestones (first sale, etc.)
 
 Respond in a friendly, supportive tone. Make users feel welcome to the CropFresh community."""
+
+
+PLATFORM_ROLE = "You are the Platform Expert Agent for CropFresh AI."
 
 
 class PlatformAgent(BaseAgent):
@@ -108,15 +112,14 @@ class PlatformAgent(BaseAgent):
         )
     
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
-        """Get platform-specific system prompt."""
-        base_prompt = PLATFORM_SYSTEM_PROMPT
-        
-        if context and context.get("user_profile"):
-            profile = context["user_profile"]
-            user_type = profile.get("type", "user")
-            base_prompt += f"\n\nUser type: {user_type}"
-        
-        return base_prompt
+        """Get platform system prompt with shared CropFresh context."""
+        return build_system_prompt(
+            role_description=PLATFORM_ROLE,
+            domain_prompt=PLATFORM_SYSTEM_PROMPT,
+            context=context,
+            include_platform=True,
+            agent_domain="platform",
+        )
     
     async def process(
         self,

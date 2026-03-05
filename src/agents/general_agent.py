@@ -18,33 +18,19 @@ from typing import Optional
 from loguru import logger
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
+from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState, AgentStateManager
 from src.tools.registry import ToolRegistry
 
 
-GENERAL_SYSTEM_PROMPT = """You are Prashna Krishi (प्रश्न कृषि), the friendly AI assistant for CropFresh.
-
-CropFresh is an agricultural marketplace connecting farmers directly with buyers, eliminating middlemen and ensuring fair prices.
-
-**About CropFresh:**
-- Founded to empower Indian farmers
-- Direct farmer-to-buyer marketplace
-- Quality grading with Digital Twin technology
-- Fair pricing with transparent AISP model
-- Voice support in Hindi, Kannada, English
-
-**What you can help with:**
+GENERAL_SYSTEM_PROMPT = """**What you can help with:**
 - 🌱 **Farming advice**: Crop cultivation, pest management, soil health
 - 💰 **Market prices**: Current mandi rates, sell/hold recommendations
 - 📱 **App support**: Registration, orders, payments, features
+- 📊 **Crop recommendations**: What to sow, demand analysis
+- 🚚 **Logistics**: Delivery costs, route planning
+- 🔍 **Quality grading**: Photo-based produce inspection
 - ❓ **General questions**: About CropFresh, agriculture in India
-
-**Communication style:**
-- Warm and welcoming
-- Use occasional emojis for friendliness
-- Be concise but helpful
-- If the query is unclear, ask clarifying questions
-- Guide users to the right topic area
 
 For specialized queries, you might say:
 - "I can help with that farming question!" (then answer)
@@ -52,6 +38,9 @@ For specialized queries, you might say:
 - "I can explain how to use that feature."
 
 Remember: You're here to make farmers' lives easier!"""
+
+
+GENERAL_ROLE = "You are Prashna Krishi (प्रश्न कृषि), the friendly AI assistant for CropFresh."
 
 
 class GeneralAgent(BaseAgent):
@@ -99,8 +88,14 @@ class GeneralAgent(BaseAgent):
         )
     
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
-        """Get general agent system prompt."""
-        return GENERAL_SYSTEM_PROMPT
+        """Get general agent prompt with shared CropFresh context."""
+        return build_system_prompt(
+            role_description=GENERAL_ROLE,
+            domain_prompt=GENERAL_SYSTEM_PROMPT,
+            context=context,
+            include_platform=True,
+            agent_domain="general",
+        )
     
     async def process(
         self,
@@ -179,10 +174,15 @@ class GeneralAgent(BaseAgent):
             "hi": "Hi there! 👋 Welcome to CropFresh. How can I assist you?",
             "hey": "Hey! 👋 I'm here to help with farming advice, market prices, or app questions. What would you like to know?",
             "namaste": "नमस्ते! 🙏 I'm Prashna Krishi. How can I help you today?",
+            "namaskara": "ನಮಸ್ಕಾರ! 🙏 ನಾನು ಪ್ರಶ್ನ ಕೃಷಿ, ನಿಮ್ಮ ಕ್ರಾಪ್‌ಫ್ರೆಶ್ ಎಐ ಸಹಾಯಕ. ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ?",
+            "ನಮಸ್ಕಾರ": "ನಮಸ್ಕಾರ! 🙏 ನಾನು ಪ್ರಶ್ನ ಕೃಷಿ, ನಿಮ್ಮ ಕ್ರಾಪ್‌ಫ್ರೆಶ್ ಎಐ ಸಹಾಯಕ. ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ?",
             "thanks": "You're welcome! 😊 Is there anything else I can help you with?",
             "thank you": "You're welcome! 😊 Happy to help. Need anything else?",
+            "dhanyavada": "ಧನ್ಯವಾದಗಳು! 😊 ನಿಮಗೆ ಬೇರೆ ಏನಾದರೂ ಸಹಾಯ ಬೇಕೆ?",
+            "ಧನ್ಯವಾದಗಳು": "ಧನ್ಯವಾದಗಳು! 😊 ನಿಮಗೆ ಬೇರೆ ಏನಾದರೂ ಸಹಾಯ ಬೇಕೆ?",
             "bye": "Goodbye! 👋 Good luck with your farming. Come back anytime!",
             "help": "I can help you with:\n\n🌱 **Farming**: Crop cultivation, pests, soil health\n💰 **Prices**: Current market rates, sell/hold advice\n📱 **App**: Registration, orders, payments\n\nWhat would you like to know?",
+            "ಸಹಾಯ": "ನಾನು ನಿಮಗೆ ಈ ಕೆಳಗಿನ ವಿಷಯಗಳಲ್ಲಿ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ:\n\n🌱 **ಕೃಷಿ**: ಬೆಳೆ ಸಾಗುವಳಿ, ಕೀಟಗಳು, ಮಣ್ಣಿನ ಆರೋಗ್ಯ\n💰 **ಬೆಲೆಗಳು**: ಪ್ರಸ್ತುತ ಮಾರುಕಟ್ಟೆ ದರಗಳು, ಮಾರ್ಗದರ್ಶನ\n📱 **ಆಪ್**: ನೋಂದಣಿ, ವಹಿವಾಟು, ಪಾವತಿಗಳು\n\nನೀವು ಏನನ್ನು ತಿಳಿಯಲು ಬಯಸುತ್ತೀರಿ?",
         }
         
         # Check for exact or partial matches

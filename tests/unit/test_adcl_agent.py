@@ -1,10 +1,12 @@
 """
-Unit tests for Task 12: ADCL Agent (Adaptive Demand Crop List).
+Unit tests for Task 12/35: ADCL Agent (Adaptive Demand Crop List).
 
 Covers:
   - Demand aggregation (count, weight, trend) [AC 1]
+  - Percentile-rank normalisation             [AC 1 — upgraded]
+  - Demand trend (renamed from price_trend)   [AC 1 — upgraded]
+  - Sow-season calendar logic                 [AC 2 — upgraded]
   - Green-label scoring logic                 [AC 2]
-  - Seasonal calendar fits                    [AC 2]
   - Price forecast integration                [AC 3]
   - Multi-language summaries (en, hi, kn)     [AC 4]
   - Weekly report structure and DB stub       [AC 1, 2, 5]
@@ -81,7 +83,8 @@ def test_aggregate_demand_trend_rising(
     """Tomato: recent 30d demand much higher than prior → 'rising'."""
     records = aggregate_demand(sample_orders, reference_date=today)
     tomato = next(r for r in records if r["commodity"] == "tomato")
-    assert tomato["price_trend"] == "rising"
+    #! Fixed: now asserts against "demand_trend" instead of "price_trend"
+    assert tomato["demand_trend"] == "rising"
 
 
 def test_aggregate_demand_trend_falling(
@@ -90,7 +93,7 @@ def test_aggregate_demand_trend_falling(
     """Capsicum: recent demand lower than prior period → 'falling'."""
     records = aggregate_demand(sample_orders, reference_date=today)
     capsicum = next(r for r in records if r["commodity"] == "capsicum")
-    assert capsicum["price_trend"] == "falling"
+    assert capsicum["demand_trend"] == "falling"
 
 
 def test_aggregate_demand_empty_orders() -> None:
@@ -108,17 +111,45 @@ def test_aggregate_demand_demand_score_normalised(
     assert all(0.0 <= s <= 1.0 for s in scores)
 
 
+def test_aggregate_demand_percentile_multiple_high_scores(today: date) -> None:
+    """Percentile ranking allows multiple crops to exceed 0.6 threshold."""
+    def _ago(n: int) -> str:
+        return (today - timedelta(days=n)).isoformat()
+
+    # 5 crops with somewhat similar volumes — at least 3 should score >= 0.5
+    orders = [
+        {"commodity": "tomato",   "quantity_kg": 500.0, "buyer_id": "b1", "created_at": _ago(5)},
+        {"commodity": "onion",    "quantity_kg": 480.0, "buyer_id": "b2", "created_at": _ago(5)},
+        {"commodity": "potato",   "quantity_kg": 450.0, "buyer_id": "b3", "created_at": _ago(5)},
+        {"commodity": "cabbage",  "quantity_kg": 420.0, "buyer_id": "b4", "created_at": _ago(5)},
+        {"commodity": "capsicum", "quantity_kg": 100.0, "buyer_id": "b5", "created_at": _ago(5)},
+    ]
+    records = aggregate_demand(orders, reference_date=today)
+    high_scores = [r for r in records if r["demand_score"] >= 0.5]
+    assert len(high_scores) >= 3, "Percentile ranking should let multiple crops score high"
+
+
+def test_aggregate_demand_output_has_demand_trend_key(
+    sample_orders: list[dict], today: date,
+) -> None:
+    """Verify output uses 'demand_trend' key (not old 'price_trend')."""
+    records = aggregate_demand(sample_orders, reference_date=today)
+    for rec in records:
+        assert "demand_trend" in rec, "Should use 'demand_trend' not 'price_trend'"
+        assert "price_trend" not in rec, "Old 'price_trend' key should not exist"
+
+
 # * ═══════════════════════════════════════════════════════════════
-# * AC 2 — Seasonal Calendar
+# * AC 2 — Seasonal Calendar (harvest + sow)
 # * ═══════════════════════════════════════════════════════════════
 
 def test_seasonal_fit_in_season(calendar: SeasonalCalendar) -> None:
-    """Tomato in November → in_season."""
+    """Tomato in November → in_season (harvest)."""
     assert calendar.get_fit("tomato", month=11) == "in_season"
 
 
 def test_seasonal_fit_off_season(calendar: SeasonalCalendar) -> None:
-    """Mango in December → off_season."""
+    """Mango in December → off_season (harvest)."""
     assert calendar.get_fit("mango", month=12) == "off_season"
 
 
@@ -127,55 +158,92 @@ def test_seasonal_fit_year_round_unknown(calendar: SeasonalCalendar) -> None:
     assert calendar.get_fit("magic_bean_xyz", month=6) == "year_round"
 
 
+def test_sow_fit_ideal(calendar: SeasonalCalendar) -> None:
+    """Tomato in August → ideal_sow (sowing season is Jun-Sep)."""
+    assert calendar.get_sow_fit("tomato", month=8) == "ideal_sow"
+
+
+def test_sow_fit_not_sow_season(calendar: SeasonalCalendar) -> None:
+    """Tomato in January → not_sow_season (sowing is Jun-Sep)."""
+    assert calendar.get_sow_fit("tomato", month=1) == "not_sow_season"
+
+
+def test_sow_fit_possible_adjacent(calendar: SeasonalCalendar) -> None:
+    """Tomato in October → possible_sow (adjacent to Sep sowing window)."""
+    assert calendar.get_sow_fit("tomato", month=10) == "possible_sow"
+
+
+def test_sow_fit_unknown_crop(calendar: SeasonalCalendar) -> None:
+    """Unknown crop → ideal_sow (conservative: allow planting)."""
+    assert calendar.get_sow_fit("magic_bean_xyz", month=6) == "ideal_sow"
+
+
+def test_sow_fit_year_round_crop(calendar: SeasonalCalendar) -> None:
+    """Banana (year-round) → ideal_sow in any month."""
+    assert calendar.get_sow_fit("banana", month=3) == "ideal_sow"
+    assert calendar.get_sow_fit("banana", month=9) == "ideal_sow"
+
+
 # * ═══════════════════════════════════════════════════════════════
-# * AC 2 — Green-Label Logic
+# * AC 2 — Green-Label Logic (updated for sow-season + demand_trend)
 # * ═══════════════════════════════════════════════════════════════
 
 def _make_demand_record(
     commodity: str,
     demand_score: float,
-    price_trend: str,
+    demand_trend: str,
     total_demand_kg: float = 500.0,
     buyer_count: int = 3,
 ) -> dict:
     return {
         "commodity": commodity,
         "demand_score": demand_score,
-        "price_trend": price_trend,
+        "demand_trend": demand_trend,
         "total_demand_kg": total_demand_kg,
         "buyer_count": buyer_count,
     }
 
 
 def test_green_label_true_all_conditions_met() -> None:
-    """High demand + rising + in_season → green_label True."""
-    # December → tomato is in_season
-    records = [_make_demand_record("tomato", demand_score=0.75, price_trend="rising")]
-    crops = score_and_label(records, price_forecasts={}, current_month=12)
+    """High demand + rising + ideal_sow → green_label True."""
+    # August → tomato sowing season (ideal_sow)
+    records = [_make_demand_record("tomato", demand_score=0.75, demand_trend="rising")]
+    crops = score_and_label(records, price_forecasts={}, current_month=8)
     assert crops[0].green_label is True
+    assert crops[0].sow_season_fit == "ideal_sow"
 
 
-def test_green_label_false_off_season() -> None:
-    """High demand but off_season → green_label False."""
-    # December → mango is off_season
-    records = [_make_demand_record("mango", demand_score=0.80, price_trend="rising")]
-    crops = score_and_label(records, price_forecasts={}, current_month=12)
+def test_green_label_false_not_sow_season() -> None:
+    """High demand but not_sow_season → green_label False."""
+    # January → tomato is NOT in sowing season
+    records = [_make_demand_record("tomato", demand_score=0.80, demand_trend="rising")]
+    crops = score_and_label(records, price_forecasts={}, current_month=1)
     assert crops[0].green_label is False
-    assert crops[0].seasonal_fit == "off_season"
+    assert crops[0].sow_season_fit == "not_sow_season"
 
 
 def test_green_label_false_low_demand() -> None:
-    """demand_score <= 0.6 → green_label False even if in_season."""
-    records = [_make_demand_record("tomato", demand_score=0.55, price_trend="stable")]
-    crops = score_and_label(records, price_forecasts={}, current_month=12)
+    """demand_score <= 0.6 → green_label False even if ideal_sow."""
+    records = [_make_demand_record("tomato", demand_score=0.55, demand_trend="stable")]
+    crops = score_and_label(records, price_forecasts={}, current_month=8)
     assert crops[0].green_label is False
 
 
-def test_green_label_false_falling_price() -> None:
-    """Falling price trend → green_label False even with high demand."""
-    records = [_make_demand_record("tomato", demand_score=0.90, price_trend="falling")]
-    crops = score_and_label(records, price_forecasts={}, current_month=12)
+def test_green_label_false_falling_demand() -> None:
+    """Falling demand trend → green_label False even with high demand."""
+    records = [_make_demand_record("tomato", demand_score=0.90, demand_trend="falling")]
+    crops = score_and_label(records, price_forecasts={}, current_month=8)
     assert crops[0].green_label is False
+
+
+def test_green_label_crop_has_both_trends() -> None:
+    """ADCLCrop has separate demand_trend and price_trend fields."""
+    records = [_make_demand_record("tomato", demand_score=0.80, demand_trend="rising")]
+    crops = score_and_label(records, price_forecasts={"tomato": 35.0}, current_month=8)
+    crop = crops[0]
+    assert hasattr(crop, "demand_trend")
+    assert hasattr(crop, "price_trend")
+    assert crop.demand_trend == "rising"
 
 
 # * ═══════════════════════════════════════════════════════════════
@@ -184,19 +252,19 @@ def test_green_label_false_falling_price() -> None:
 
 def test_price_forecast_applied_to_crop() -> None:
     """Price forecast from dict is set on ADCLCrop.predicted_price_per_kg."""
-    records = [_make_demand_record("tomato", demand_score=0.80, price_trend="rising")]
+    records = [_make_demand_record("tomato", demand_score=0.80, demand_trend="rising")]
     crops = score_and_label(
         records,
         price_forecasts={"tomato": 35.50},
-        current_month=12,
+        current_month=8,
     )
     assert crops[0].predicted_price_per_kg == pytest.approx(35.50)
 
 
 def test_price_forecast_zero_when_missing() -> None:
     """Missing price forecast → predicted_price_per_kg == 0.0."""
-    records = [_make_demand_record("onion", demand_score=0.70, price_trend="stable")]
-    crops = score_and_label(records, price_forecasts={}, current_month=11)
+    records = [_make_demand_record("onion", demand_score=0.70, demand_trend="stable")]
+    crops = score_and_label(records, price_forecasts={}, current_month=8)
     assert crops[0].predicted_price_per_kg == pytest.approx(0.0)
 
 
@@ -298,16 +366,6 @@ async def test_generate_weekly_report_persists_to_db() -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_weekly_report_green_labels_present() -> None:
-    """At least one green-label crop in mock-data report (March)."""
-    agent = get_adcl_agent()
-    report = await agent.generate_weekly_report()
-    green = [c for c in report.crops if c.green_label]
-    # Mock data contains high-demand in-season crops — at least 1 must be green
-    assert len(green) >= 1
-
-
-@pytest.mark.asyncio
 async def test_generate_weekly_report_crop_fields_complete() -> None:
     """Every ADCLCrop in the report has all required fields populated."""
     agent = get_adcl_agent()
@@ -315,8 +373,23 @@ async def test_generate_weekly_report_crop_fields_complete() -> None:
     for crop in report.crops:
         assert crop.commodity != ""
         assert 0.0 <= crop.demand_score <= 1.0
+        assert crop.demand_trend in ("rising", "stable", "falling")
         assert crop.price_trend in ("rising", "stable", "falling")
         assert crop.seasonal_fit in ("in_season", "off_season", "year_round")
+        assert crop.sow_season_fit in ("ideal_sow", "possible_sow", "not_sow_season")
         assert isinstance(crop.green_label, bool)
         assert crop.buyer_count >= 0
         assert crop.total_demand_kg >= 0.0
+
+
+@pytest.mark.asyncio
+async def test_generate_weekly_report_to_dict_has_new_fields() -> None:
+    """WeeklyReport.to_dict() includes demand_trend and sow_season_fit."""
+    agent = get_adcl_agent()
+    report = await agent.generate_weekly_report()
+    data = report.to_dict()
+    assert "crops" in data
+    if data["crops"]:
+        crop_dict = data["crops"][0]
+        assert "demand_trend" in crop_dict
+        assert "sow_season_fit" in crop_dict

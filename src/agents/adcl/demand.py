@@ -29,7 +29,8 @@ def aggregate_demand(
     1. Group orders by commodity.
     2. Sum quantity_kg and count unique buyers.
     3. Compare 30-day demand vs 60–90-day daily average to compute trend.
-    4. Normalise demand_score to [0, 1] relative to highest-demand commodity.
+    4. Normalise demand_score using percentile ranking so multiple
+       crops can independently exceed the 0.6 green-label threshold.
 
     Args:
         orders        : List of order dicts with keys:
@@ -45,8 +46,8 @@ def aggregate_demand(
             "commodity"      : str,
             "total_demand_kg": float,
             "buyer_count"    : int,
-            "demand_score"   : float,   # 0–1, normalised
-            "price_trend"    : str,     # 'rising' | 'stable' | 'falling'
+            "demand_score"   : float,   # 0–1, percentile-rank normalised
+            "demand_trend"   : str,     # 'rising' | 'stable' | 'falling'
         }
     """
     if not orders:
@@ -100,16 +101,30 @@ def aggregate_demand(
     if not total_kg:
         return []
 
-    # Normalise demand scores
-    max_kg = max(total_kg.values()) or 1.0
+    # * Percentile-rank normalisation (replaces simple max-normalisation)
+    # Each crop's score = fraction of crops it beats or ties on total_demand_kg
+    sorted_totals = sorted(total_kg.values())
+    n = len(sorted_totals)
+
+    def _percentile_score(value: float) -> float:
+        """Percentile rank in [0, 1]. Crops at the top get 1.0."""
+        if n <= 1:
+            return 1.0
+        # Count how many values are strictly less than this one
+        rank = sum(1 for v in sorted_totals if v < value)
+        return rank / (n - 1)
 
     results: list[dict[str, Any]] = []
     for commodity, total in total_kg.items():
-        demand_score = total / max_kg
+        demand_score = _percentile_score(total)
 
         # Trend: compare last-30 daily rate vs prior-60 daily rate
         last30_rate = kg_last_30[commodity] / 30.0
-        prior_rate = kg_30_to_90[commodity] / 60.0 if kg_30_to_90[commodity] > 0 else 0.0
+        prior_rate = (
+            kg_30_to_90[commodity] / 60.0
+            if kg_30_to_90[commodity] > 0
+            else 0.0
+        )
 
         if prior_rate == 0:
             # New commodity — treat as rising
@@ -126,7 +141,8 @@ def aggregate_demand(
             "total_demand_kg": round(total, 2),
             "buyer_count": len(buyers[commodity]),
             "demand_score": round(demand_score, 4),
-            "price_trend": trend,
+            #! Fixed: was "price_trend" — now correctly named "demand_trend"
+            "demand_trend": trend,
         })
 
     # Sort by total_demand_kg descending

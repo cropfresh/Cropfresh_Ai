@@ -64,17 +64,18 @@ Do not put files in the wrong place. Use this exact structure:
 
 ---
 
-## 🤖 Context: The 5 Core Agents & Architecture
+## 🤖 Context: The 6 Core Agents & Architecture
 
 To know _where_ you are working, you must understand the architecture:
 
 1. **Supervisor Routing Layer:** User queries hit the Supervisor. It uses high-confidence LLM routing to direct data.
-2. **The 5 Isolated App Agents:**
+2. **The 6 Isolated App Agents:**
    - **Voice Agent:** Whisper STT ➔ LLM ➔ Cartesia TTS.
    - **Pricing Agent:** Calculates real-time AISP (All-Inclusive Sourcing Price) capping at mandi + 5%.
    - **Buyer Matching:** 5-factor weighted algorithm connecting farmers to buyers.
    - **Vision (Quality) Agent:** DINOv2 classification + YOLOv26 defect detection.
    - **Digital Twin:** ResNet50 hashing to verify produce condition at departure vs. arrival.
+   - **ADCL (Market Intelligence) Agent:** Analyzes order volume, price trends, and planting seasons to issue weekly crop recommendations.
 3. **Data/RAG:** Deep Research tools, Qdrant/pgvector, Neo4j Graph DB.
 
 ---

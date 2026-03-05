@@ -6,7 +6,7 @@ ADCLAgent orchestrates the weekly Adaptive Demand Crop List report:
   1. Fetch last 90 days of buyer orders (DB or mock)
   2. Aggregate demand by commodity (demand.py)
   3. Get price forecasts per commodity (price_agent or fallback)
-  4. Apply seasonal fit + green-label scoring (scoring.py)
+  4. Apply seasonal fit + sow-season + green-label scoring (scoring.py)
   5. Generate multi-language summaries (summary.py)
   6. Persist report to DB (adcl_reports table) if DB available
   7. Return WeeklyReport
@@ -37,10 +37,10 @@ class ADCLAgent:
     Adaptive Demand Crop List Agent.
 
     Generates weekly market intelligence for farmers:
-    - Which crops to grow (green-label)
+    - Which crops to sow now (green-label based on sowing season)
     - Demand trends from buyer orders
     - Price forecasts
-    - Seasonal fit
+    - Seasonal fit (both harvest and sowing)
     - Multi-language summaries (en, hi, kn)
 
     All dependencies optional via constructor injection.
@@ -98,7 +98,7 @@ class ADCLAgent:
         # Step 3 — Price forecasts
         price_forecasts = await self._get_price_forecasts(demand_records)
 
-        # Step 4 — Score + green-label
+        # Step 4 — Score + green-label (now uses demand_trend + sow_season_fit)
         current_month = datetime.now().month
         crops: list[ADCLCrop] = score_and_label(
             demand_records, price_forecasts, current_month

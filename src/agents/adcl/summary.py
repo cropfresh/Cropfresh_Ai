@@ -77,9 +77,10 @@ class SummaryGenerator:
         top_green = [c.commodity.title() for c in green_crops[:5]]
         count = len(green_crops)
 
+        #! Updated: references demand_trend and sow_season_fit for richer context
         crop_lines = "\n".join(
             f"- {c.commodity.title()}: demand={c.demand_score:.0%}, "
-            f"price={c.price_trend}, seasonal={c.seasonal_fit}"
+            f"demand_trend={c.demand_trend}, sow_fit={c.sow_season_fit}"
             for c in crops[:10]
         )
 
@@ -88,9 +89,11 @@ class SummaryGenerator:
             prompt = (
                 f"You are an agricultural advisor. Write a 2–3 sentence weekly crop "
                 f"recommendation summary in {lang_name} for Indian farmers.\n\n"
-                f"This week {count} crops are recommended (green-label): "
+                f"This week {count} crops are recommended for sowing (green-label): "
                 f"{', '.join(top_green) or 'none'}.\n\n"
                 f"Crop data:\n{crop_lines}\n\n"
+                f"Emphasize that these crops are recommended for PLANTING NOW "
+                f"because demand will be high when they are harvested in 2-4 months. "
                 f"Keep the language simple and encouraging. Output only the summary text."
             )
             try:
@@ -117,7 +120,7 @@ class SummaryGenerator:
         return (
             f"This week {count} crop(s) are recommended for planting: {names}. "
             f"{top} shows the highest buyer demand this season. "
-            "Focus on green-labelled crops for the best price and market access."
+            "Plant these now for the best price and market access at harvest time."
         )
 
     def _template_hi(self, count: int, top_green: list[str]) -> str:
@@ -128,9 +131,9 @@ class SummaryGenerator:
             )
         names = ", ".join(top_green)
         return (
-            f"इस सप्ताह {count} फसल(ों) की सिफारिश की गई है: {names}। "
+            f"इस सप्ताह {count} फसल(ों) की बुवाई की सिफारिश की गई है: {names}। "
             "इन फसलों की बाजार में अच्छी मांग और बढ़ती कीमतें हैं। "
-            "हरे लेबल वाली फसलों पर ध्यान दें।"
+            "अभी बोएं — कटाई के समय सबसे अच्छा दाम मिलेगा।"
         )
 
     def _template_kn(self, count: int, top_green: list[str]) -> str:
@@ -141,7 +144,7 @@ class SummaryGenerator:
             )
         names = ", ".join(top_green)
         return (
-            f"ಈ ವಾರ {count} ಬೆಳೆ(ಗಳನ್ನು) ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ: {names}. "
+            f"ಈ ವಾರ {count} ಬೆಳೆ(ಗಳನ್ನು) ಬಿತ್ತನೆಗೆ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ: {names}. "
             "ಈ ಬೆಳೆಗಳಿಗೆ ಹೆಚ್ಚಿನ ಖರೀದಿದಾರರ ಬೇಡಿಕೆ ಮತ್ತು ಉತ್ತಮ ಬೆಲೆ ಇದೆ. "
-            "ಹಸಿರು ಲೇಬಲ್ ಬೆಳೆಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ."
+            "ಈಗ ಬಿತ್ತಿ — ಕೊಯ್ಲಿನ ಸಮಯದಲ್ಲಿ ಅತ್ಯುತ್ತಮ ಬೆಲೆ ಸಿಗುತ್ತದೆ."
         )

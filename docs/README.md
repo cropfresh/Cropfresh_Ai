@@ -15,7 +15,7 @@ To quickly find or update the context you need, use this directory guide:
 | Folder / File    | Purpose & AI Mandate                                                                                                                  |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `/architecture/` | Core system blueprints (RAG, data flow). **Mandate:** Update if you change core DB schemas or routing logic.                          |
-| `/agents/`       | Documentation for the 5 App Agents. **Mandate:** If you touch `src/agents/*.py`, you MUST update the corresponding file here.         |
+| `/agents/`       | Documentation for the 6 Core Agents. **Mandate:** If you touch `src/agents/*.py`, you MUST update the corresponding file here.        |
 | `/features/`     | Specs (F001 to F009). **Mandate:** Update these if business requirements or constraints are altered.                                  |
 | `/runbooks/`     | **[NEW]** Operational guides, common bugs, and debug steps. **Mandate:** If you fix a repetitive bug, document the fix here.          |
 | `/guides/`       | **[NEW]** Step-by-step how-to tutorials (e.g., adding a RAG pipeline). **Mandate:** Create a guide if you build a repeatable process. |
@@ -34,6 +34,7 @@ For a deep dive, read `architecture/data-flow.md`. Here is the 10,000-foot view:
 2. **Pricing & Matchmaking:** Matchmaking engine clusters farms/buyers ➔ Pricing Agent calculates AISP (Mandi price + logistics + margin) ➔ DPLE routes transport.
 3. **Escrow & Settlement:** Buyer pays Escrow ➔ Hauler picks up/delivers ➔ Digital Twin verifies quality ➔ Funds released.
 4. **Advisory (RAG):** Farmer queries ➔ Adaptive Query Router selects best source (Vector, Graph, Live API) ➔ Edge TTS responds.
+5. **Market Intelligence (ADCL):** Analyzes buyer demand patterns & seasonality ➔ Generates green-label "what to sow" recommendations.
 
 ---
 

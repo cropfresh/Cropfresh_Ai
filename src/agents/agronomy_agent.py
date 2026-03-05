@@ -20,6 +20,7 @@ from typing import Optional
 from loguru import logger
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
+from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState, AgentStateManager
 from src.tools.registry import ToolRegistry
 
@@ -47,6 +48,9 @@ If you have retrieved context, use it to ground your answer.
 If context is insufficient, provide general best practices clearly stating they are general recommendations.
 
 Respond in a helpful, professional tone. Be thorough but concise."""
+
+
+AGRONOMY_ROLE = "You are the Agronomy Expert Agent for CropFresh AI."
 
 
 class AgronomyAgent(BaseAgent):
@@ -101,16 +105,13 @@ class AgronomyAgent(BaseAgent):
         )
     
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
-        """Get agronomy-specific system prompt."""
-        base_prompt = AGRONOMY_SYSTEM_PROMPT
-        
-        # Add user context if available
-        if context and context.get("user_profile"):
-            profile = context["user_profile"]
-            location = profile.get("location", "Karnataka")
-            base_prompt += f"\n\nUser is a farmer from {location}."
-        
-        return base_prompt
+        """Get agronomy system prompt with shared CropFresh context."""
+        return build_system_prompt(
+            role_description=AGRONOMY_ROLE,
+            domain_prompt=AGRONOMY_SYSTEM_PROMPT,
+            context=context,
+            agent_domain="agronomy",
+        )
     
     async def process(
         self,

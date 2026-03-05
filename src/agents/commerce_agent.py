@@ -20,13 +20,12 @@ from typing import Optional
 from loguru import logger
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
+from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState, AgentStateManager
 from src.tools.registry import ToolRegistry
 
 
-COMMERCE_SYSTEM_PROMPT = """You are the Commerce Expert Agent for CropFresh AI, specializing in agricultural market intelligence and pricing.
-
-Your expertise covers:
+COMMERCE_SYSTEM_PROMPT = """Your expertise covers:
 - Real-time mandi prices across Indian markets
 - Price trend analysis and seasonal patterns
 - Sell/hold recommendations based on market conditions
@@ -55,6 +54,9 @@ For AISP calculations, show breakdown:
 - Total AISP: ₹XXX (₹XX/kg)
 
 Be practical, data-driven, and help farmers maximize profits."""
+
+
+COMMERCE_ROLE = "You are the Commerce Expert Agent for CropFresh AI, specializing in agricultural market intelligence and pricing."
 
 
 class CommerceAgent(BaseAgent):
@@ -123,16 +125,13 @@ class CommerceAgent(BaseAgent):
         return True
     
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
-        """Get commerce-specific system prompt."""
-        base_prompt = COMMERCE_SYSTEM_PROMPT
-        
-        if context and context.get("user_profile"):
-            profile = context["user_profile"]
-            user_type = profile.get("type", "farmer")
-            location = profile.get("location", "Karnataka")
-            base_prompt += f"\n\nUser is a {user_type} from {location}."
-        
-        return base_prompt
+        """Get commerce system prompt with shared CropFresh context."""
+        return build_system_prompt(
+            role_description=COMMERCE_ROLE,
+            domain_prompt=COMMERCE_SYSTEM_PROMPT,
+            context=context,
+            agent_domain="commerce",
+        )
     
     async def process(
         self,
