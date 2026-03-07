@@ -20,17 +20,13 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 
-# Check for OpenTelemetry availability
-OTEL_AVAILABLE = False
+# Check for Langsmith availability
 try:
-    from opentelemetry import trace, metrics
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.resources import Resource
-    OTEL_AVAILABLE = True
+    from langsmith import traceable
+    from langsmith.run_helpers import trace
+    LANGSMITH_AVAILABLE = True
 except ImportError:
-    pass
+    LANGSMITH_AVAILABLE = False
 
 
 class SpanContext(BaseModel):
@@ -78,51 +74,31 @@ def setup_observability(
     endpoint: Optional[str] = None,
 ) -> bool:
     """
-    Set up OpenTelemetry tracing and metrics.
+    Set up LangSmith tracing and metrics.
     
     Args:
         service_name: Name of this service
-        endpoint: OTLP endpoint (optional)
+        endpoint: Langsmith endpoint (optional)
         
     Returns:
         True if setup successful
     """
-    global _tracer, _meter
-    
-    if not OTEL_AVAILABLE:
-        logger.warning("OpenTelemetry not installed, using fallback metrics")
+    if "LANGCHAIN_API_KEY" not in os.environ:
+        logger.warning("LANGCHAIN_API_KEY not set, LangSmith tracing may be disabled")
         return False
-    
-    try:
-        resource = Resource.create({"service.name": service_name})
         
-        # Set up tracer
-        provider = TracerProvider(resource=resource)
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = service_name
+    if endpoint:
+        os.environ["LANGCHAIN_ENDPOINT"] = endpoint
         
-        if endpoint:
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-            exporter = OTLPSpanExporter(endpoint=endpoint)
-            provider.add_span_processor(SimpleSpanProcessor(exporter))
-        
-        trace.set_tracer_provider(provider)
-        _tracer = trace.get_tracer(__name__)
-        
-        # Set up meter
-        meter_provider = MeterProvider(resource=resource)
-        metrics.set_meter_provider(meter_provider)
-        _meter = metrics.get_meter(__name__)
-        
-        logger.info("OpenTelemetry observability enabled for {}", service_name)
-        return True
-        
-    except Exception as e:
-        logger.error("Failed to set up OpenTelemetry: {}", str(e))
-        return False
+    logger.info("LangSmith observability enabled for {}", service_name)
+    return True
 
 
 def trace_agent(agent_name: str):
     """
-    Decorator to trace agent operations.
+    Decorator to trace agent operations using LangSmith.
     
     Usage:
         @trace_agent("agronomy_agent")
@@ -130,6 +106,8 @@ def trace_agent(agent_name: str):
             ...
     """
     def decorator(func: Callable) -> Callable:
+        traced_func = traceable(name=f"{agent_name}.process", tags=["agent", agent_name])(func) if LANGSMITH_AVAILABLE else func
+
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             start_time = datetime.now()
@@ -141,35 +119,21 @@ def trace_agent(agent_name: str):
                 _agent_metrics[agent_name] = AgentMetrics()
             metrics = _agent_metrics[agent_name]
             
-            # Create span
-            span_context = None
-            if _tracer:
-                with _tracer.start_as_current_span(f"{agent_name}.process") as span:
-                    span.set_attribute("agent.name", agent_name)
-                    
-                    try:
-                        result = await func(*args, **kwargs)
-                        span.set_status(trace.Status(trace.StatusCode.OK))
-                    except Exception as e:
-                        error = str(e)
-                        span.set_status(trace.Status(trace.StatusCode.ERROR, error))
-                        raise
-            else:
-                try:
-                    result = await func(*args, **kwargs)
-                except Exception as e:
-                    error = str(e)
-                    raise
-            
-            # Update metrics
-            latency = (datetime.now() - start_time).total_seconds() * 1000
-            metrics.total_requests += 1
-            metrics.total_latency_ms += latency
-            
-            if error:
-                metrics.failed_requests += 1
-            else:
-                metrics.successful_requests += 1
+            try:
+                result = await traced_func(*args, **kwargs)
+            except Exception as e:
+                error = str(e)
+                raise
+            finally:
+                # Update metrics
+                latency = (datetime.now() - start_time).total_seconds() * 1000
+                metrics.total_requests += 1
+                metrics.total_latency_ms += latency
+                
+                if error:
+                    metrics.failed_requests += 1
+                else:
+                    metrics.successful_requests += 1
             
             return result
         
@@ -180,26 +144,15 @@ def trace_agent(agent_name: str):
 @contextmanager
 def trace_span(name: str, attributes: dict = None):
     """
-    Context manager for creating trace spans.
+    Context manager for creating LangSmith trace spans.
     
     Usage:
         with trace_span("database.query", {"table": "crops"}):
             result = await db.query(...)
     """
-    start_time = datetime.now()
-    
-    if _tracer:
-        with _tracer.start_as_current_span(name) as span:
-            if attributes:
-                for key, value in attributes.items():
-                    span.set_attribute(key, value)
-            
-            try:
-                yield span
-                span.set_status(trace.Status(trace.StatusCode.OK))
-            except Exception as e:
-                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
-                raise
+    if LANGSMITH_AVAILABLE:
+        with trace(name=name, metadata=attributes or {}) as run:
+            yield run
     else:
         yield SpanContext(name=name, attributes=attributes or {})
 

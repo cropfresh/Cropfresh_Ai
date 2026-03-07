@@ -117,8 +117,10 @@ class Settings(BaseSettings):
     otel_endpoint: str = ""
 
     # LangSmith tracing (for agent evaluation pipeline)
+    langsmith_tracing: str = "true"
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
     langsmith_api_key: str = ""
-    langsmith_project: str = "cropfresh-ai"
+    langsmith_project: str = "Cropfresh Ai"
 
     # ═══════════════════════════════════════════════════════════════
     # AI Kosha (India AI dataset platform)

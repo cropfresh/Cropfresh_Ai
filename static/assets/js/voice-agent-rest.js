@@ -15,6 +15,10 @@ const restVisualizer = (() => {
 const restPlayer = new AudioPlayer();
 let lastVoiceResult = null; // shared with tools inspector
 
+// Generate a session ID if one doesn't exist, to maintain multi-turn context
+let restSessionId = sessionStorage.getItem('voice_rest_session_id') || crypto.randomUUID();
+sessionStorage.setItem('voice_rest_session_id', restSessionId);
+
 // ── Chat helpers ───────────────────────────────────────────────────────────
 
 function restGetChat() { return document.getElementById('restChat'); }
@@ -147,6 +151,7 @@ restRecorder.onStop = async (blob) => {
   form.append('audio', blob, 'voice.webm');
   form.append('language', lang);
   form.append('user_id', 'voice-hub-user');
+  form.append('session_id', restSessionId);
 
   try {
     const t0  = performance.now();
@@ -154,6 +159,10 @@ restRecorder.onStop = async (blob) => {
     const ms  = Math.round(performance.now() - t0);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();
+    if (data.session_id) {
+      restSessionId = data.session_id;
+      sessionStorage.setItem('voice_rest_session_id', restSessionId);
+    }
     renderRestResult(data);
     setEl('restLatency', `↯ ${ms}ms`, '');
   } catch (err) {

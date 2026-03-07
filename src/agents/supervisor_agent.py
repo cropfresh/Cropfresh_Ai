@@ -531,51 +531,78 @@ class SupervisorAgent(BaseAgent):
     ) -> AgentResponse:
         """
         Process query with session context.
-        
+
         Maintains conversation history across multiple queries.
-        
+        On every turn:
+          1. Loads full ConversationContext from Redis/memory
+          2. Extracts entities from user query (commodity, quantity, district)
+          3. Builds rich context dict (history, entities, user_profile, current_agent)
+          4. Delegates to target agent via process()
+          5. Saves assistant reply + updates entities + current_agent back to session
+
         Args:
             query: User query
             session_id: Session identifier
-            
+
         Returns:
             AgentResponse
         """
         if not self.state_manager:
             return await self.process(query)
-        
-        # Get session context
+
+        # 1. Get session context
         session = await self.state_manager.get_context(session_id)
         if not session:
-            # Create new session
+            # Create new session if it has expired or is unknown
             session = await self.state_manager.create_session()
-        
-        # Add user message to history
+            session_id = session.session_id
+
+        # 2. Add user message to history
         await self.state_manager.add_message(
             session.session_id,
             Message(role="user", content=query),
         )
-        
-        # Build context from session
+
+        # 3. Entity extraction on user query (Phase 3 / G3 fix)
+        await self.state_manager.extract_and_merge_entities(session.session_id, query)
+
+        # Reload to get freshly merged entities
+        session = await self.state_manager.get_context(session.session_id) or session
+
+        # 4. Build rich context dict (Phase 4 / G4 fix)
         context = {
             "user_profile": session.user_profile,
-            "entities": session.entities,
+            "entities": session.entities,                          # structured facts
+            "current_agent": session.current_agent,                # previous agent name
             "conversation_summary": self.state_manager.get_conversation_summary(session),
         }
-        
-        # Create execution state
+
+        # 5. Create execution state
         execution = self.state_manager.create_execution(session.session_id, query)
-        
-        # Process
+
+        # 6. Process
         response = await self.process(query, context, execution)
-        
-        # Add assistant response to history
+
+        # 7. Save assistant reply
         await self.state_manager.add_message(
             session.session_id,
             Message(role="assistant", content=response.content),
         )
-        
+
+        # 8. Extract entities from assistant response too (catches commodity/price in answers)
+        await self.state_manager.extract_and_merge_entities(
+            session.session_id, response.content
+        )
+
+        # 9. Write current_agent back to session (Phase 5 / G5 fix)
+        if response.agent_name:
+            await self.state_manager.update_entities(
+                session.session_id,
+                {"__current_agent": response.agent_name},
+            )
+
         return response
+
     
     def _merge_responses(
         self,

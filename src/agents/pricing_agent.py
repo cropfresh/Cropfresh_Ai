@@ -114,6 +114,10 @@ class PricingAgent:
         #! use_mock overrides live APIs — only True in unit tests / CI
         self.use_mock   = use_mock
 
+    async def initialize(self) -> bool:
+        """Initialize agent resources."""
+        return True
+
     # ── Public interface ──────────────────────────────────────────────────────
 
     async def get_recommendation(

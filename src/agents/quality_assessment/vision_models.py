@@ -83,6 +83,8 @@ class QualityResult(BaseModel):
     hitl_required: bool = False
     annotations: list[dict] = Field(default_factory=list)
     shelf_life_days: int = 3
+    # * FR9: DINOv2 softmax probability vector [p_A+, p_A, p_B, p_C] — immutable audit trail
+    dinov2_confidence_vector: list[float] = Field(default_factory=list)
     # * "vision" when ONNX models ran; "rule_based" otherwise — checked by tests
     assessment_mode: str = "rule_based"
 
@@ -131,7 +133,8 @@ class CropVisionPipeline:
         detection = self.defect_detector.detect(image, description_hint)
 
         # Stage 2 — real DINOv2 grade classification + YOLO ensemble override
-        grade, confidence = self.grade_classifier.classify(
+        # FR9: unpack 3-tuple (grade, confidence, confidence_vector)
+        grade, confidence, confidence_vector = self.grade_classifier.classify(
             image, detected_defects=detection.defects
         )
 
@@ -148,6 +151,7 @@ class CropVisionPipeline:
             hitl_required=hitl_required,
             annotations=detection.to_annotation_dicts(),
             shelf_life_days=self._estimate_shelf_life(commodity, grade),
+            dinov2_confidence_vector=confidence_vector,
             assessment_mode="vision",
         )
 
@@ -168,13 +172,14 @@ class CropVisionPipeline:
         if not detected_defects:
             desc_lower = description.lower()
             if any(t in desc_lower for t in ["fresh", "firm", "uniform", "clean", "premium"]):
-                grade, confidence = "A", 0.74
+                grade, confidence, confidence_vector = "A", 0.74, [0.03, 0.74, 0.18, 0.05]
             elif any(t in desc_lower for t in ["soft", "damaged", "rotten", "fungal", "spot"]):
-                grade, confidence = "C", 0.64
+                grade, confidence, confidence_vector = "C", 0.64, [0.01, 0.05, 0.30, 0.64]
             else:
-                grade, confidence = "B", 0.66
+                grade, confidence, confidence_vector = "B", 0.66, [0.02, 0.10, 0.66, 0.22]
         else:
-            grade, confidence = _grade_from_defect_count(len(detected_defects))
+            # * FR9: _grade_from_defect_count now returns 3-tuple
+            grade, confidence, confidence_vector = _grade_from_defect_count(len(detected_defects))
 
         hitl_required = confidence < 0.7 or grade == "A+" or len(detected_defects) > 3
         return QualityResult(
@@ -185,6 +190,7 @@ class CropVisionPipeline:
             hitl_required=hitl_required,
             annotations=[],
             shelf_life_days=self._estimate_shelf_life(commodity, grade),
+            dinov2_confidence_vector=confidence_vector,
             assessment_mode="rule_based",
         )
 

@@ -134,6 +134,10 @@ class BrowserAgent:
         
         logger.info("BrowserAgent initialized (headless={}, stealth={})", headless, stealth)
     
+    async def initialize(self) -> bool:
+        """Initialize browser agent resources (no-op until start_session)."""
+        return True
+    
     async def start_session(self, session_id: Optional[str] = None) -> BrowserSession:
         """
         Initialize browser and start a new session.

@@ -94,6 +94,7 @@ class DigitalTwinEngine:
         agent_photos: list[str],
         quality_result: QualityResult,
         gps: tuple[float, float],
+        dinov2_confidence_vector: list[float] | None = None,
     ) -> DigitalTwin:
         """
         Create an immutable departure snapshot for a listing.
@@ -108,12 +109,21 @@ class DigitalTwinEngine:
             agent_photos:   S3 URLs of field agent verification photos.
             quality_result: QualityResult from the CV-QG quality assessment agent.
             gps:            (latitude, longitude) GPS coordinates at departure.
+            dinov2_confidence_vector: Optional explicit DINOv2 vector; if omitted,
+                            taken from quality_result.dinov2_confidence_vector (FR9).
 
         Returns:
             DigitalTwin with a stable twin_id for future comparison.
         """
         twin_id = f"dt-{uuid4().hex[:12]}"
         gps_lat, gps_lng = gps
+
+        # * FR9: prefer explicit arg; fall back to quality_result field
+        dino_vec = tuple(
+            dinov2_confidence_vector
+            if dinov2_confidence_vector is not None
+            else quality_result.dinov2_confidence_vector
+        )
 
         twin = DigitalTwin(
             twin_id=twin_id,
@@ -128,6 +138,7 @@ class DigitalTwinEngine:
             gps_lat=gps_lat,
             gps_lng=gps_lng,
             ai_annotations={"bboxes": quality_result.annotations},
+            dinov2_confidence_vector=dino_vec,
             created_at=datetime.now(UTC).replace(tzinfo=None),
         )
 
@@ -136,9 +147,9 @@ class DigitalTwinEngine:
 
         logger.info(
             "Departure twin {} created: listing={} grade={} confidence={:.2f} "
-            "defects={} farmer_photos={} agent_photos={}",
+            "defects={} dino_vector_len={} farmer_photos={} agent_photos={}",
             twin_id, listing_id, twin.grade, twin.confidence,
-            twin.defect_count, len(farmer_photos), len(agent_photos),
+            twin.defect_count, len(dino_vec), len(farmer_photos), len(agent_photos),
         )
         return twin
 
@@ -323,16 +334,19 @@ class DigitalTwinEngine:
         if not (self.db and hasattr(self.db, "create_digital_twin")):
             return
         try:
+            # * FR9 immutability: INSERT ... ON CONFLICT DO NOTHING ensures write-once
             await self.db.create_digital_twin({
                 "listing_id": twin.listing_id,
-                "farmer_photos": twin.farmer_photos,
-                "agent_photos": twin.agent_photos,
+                "farmer_photos": list(twin.farmer_photos),
+                "agent_photos": list(twin.agent_photos),
                 "ai_annotations": twin.ai_annotations,
                 "grade": twin.grade,
                 "confidence": twin.confidence,
-                "defect_types": twin.defect_types,
+                "defect_types": list(twin.defect_types),
                 "shelf_life_days": twin.shelf_life_days,
-            })
+                # * FR9: persist the DINOv2 softmax vector for immutable audit trail
+                "dinov2_confidence_vector": list(twin.dinov2_confidence_vector),
+            }, conflict="ignore")  # DB driver passes ON CONFLICT DO NOTHING
         except Exception as exc:
             logger.warning(f"Failed to persist digital twin {twin.twin_id}: {exc}")
 
@@ -548,6 +562,8 @@ def _row_to_twin(row: dict[str, Any]) -> DigitalTwin:
         gps_lat=float(gps.get("lat", 0.0)) if isinstance(gps, dict) else 0.0,
         gps_lng=float(gps.get("lng", 0.0)) if isinstance(gps, dict) else 0.0,
         ai_annotations=ai_annotations,
+        # * FR9: rehydrate DINOv2 vector as a tuple (required by frozen dataclass)
+        dinov2_confidence_vector=tuple(row.get("dinov2_confidence_vector") or []),
         created_at=row.get("created_at") or datetime.now(UTC).replace(tzinfo=None),
     )
 

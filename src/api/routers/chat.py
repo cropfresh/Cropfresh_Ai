@@ -196,27 +196,43 @@ async def get_supervisor_agent():
 async def chat(request: ChatRequest):
     """
     Multi-turn chat with the AI assistant.
-    
+
     Maintains conversation context across messages.
     Routes to appropriate specialized agent.
+
+    Always returns session_id — client must include it in
+    subsequent requests to maintain memory continuity.
     """
     supervisor = await get_supervisor_agent()
-    
-    # Get or create session
-    session_id = request.session_id or str(uuid.uuid4())
-    
-    # Process with session context
-    if request.session_id:
-        response = await supervisor.process_with_session(
-            query=request.message,
-            session_id=session_id,
-        )
+
+    # * G2 Fix: Always route through process_with_session so history is
+    # * saved and loaded on every turn, even for new conversations.
+    state_manager = supervisor.state_manager
+
+    # Resolve or create session
+    if request.session_id and state_manager:
+        session = await state_manager.get_context(request.session_id)
+        if not session:
+            # Expired or unknown — create fresh one
+            session = await state_manager.create_session()
+        session_id = session.session_id
+    elif state_manager:
+        # New conversation — create session now
+        session = await state_manager.create_session()
+        session_id = session.session_id
+        # * Merge any extra context (image, farmer_id) into session entities
+        if request.context:
+            await state_manager.update_entities(session_id, request.context)
     else:
-        response = await supervisor.process(
-            query=request.message,
-            context=request.context,
-        )
-    
+        # No state manager fallback (shouldn't happen in production)
+        session_id = request.session_id or str(uuid.uuid4())
+
+    # Delegate entirely through process_with_session for full memory
+    response = await supervisor.process_with_session(
+        query=request.message,
+        session_id=session_id,
+    )
+
     return ChatResponse(
         message=response.content,
         session_id=session_id,

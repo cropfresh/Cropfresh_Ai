@@ -1,24 +1,40 @@
-"""Test Qdrant Cloud connection."""
+"""Test Qdrant Cloud connection — reads credentials from .env."""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from dotenv import load_dotenv
+load_dotenv()
+
 from qdrant_client import QdrantClient
 
+host = os.getenv("QDRANT_HOST", "")
+port = int(os.getenv("QDRANT_PORT", "6333"))
+api_key = os.getenv("QDRANT_API_KEY", "")
+
+if not host or not api_key:
+    print("❌ QDRANT_HOST or QDRANT_API_KEY not set in .env")
+    sys.exit(1)
+
 print("🔗 Connecting to Qdrant Cloud...")
+print(f"   Host: {host}")
 
 client = QdrantClient(
-    url="https://33941042-8b02-48b3-8f31-f7a0fc3ebef3.europe-west3-0.gcp.cloud.qdrant.io:6333",
-    api_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.OP8l8EX3Rf4ncdh_eDUfOoAgUMpAgm9HcCeWsJsxyzc",
+    url=f"{host}:{port}",
+    api_key=api_key,
 )
 
 print("✅ Connected successfully!")
 
 collections = client.get_collections()
-print(f"📚 Collections: {collections}")
+existing = [c.name for c in collections.collections]
+print(f"📚 Collections: {existing}")
 
 # Try to get or create the agri_knowledge collection
 from qdrant_client.models import Distance, VectorParams
 
 collection_name = "agri_knowledge"
-existing = [c.name for c in collections.collections]
-print(f"📋 Existing collections: {existing}")
 
 if collection_name not in existing:
     print(f"🆕 Creating collection: {collection_name}")
@@ -32,4 +48,6 @@ else:
 
 # Get collection info
 info = client.get_collection(collection_name)
-print(f"📊 Collection info: {info}")
+print(f"📊 Points count: {info.points_count}")
+print(f"📊 Status: {info.status}")
+print(f"\n🎉 Qdrant Cloud test complete!")

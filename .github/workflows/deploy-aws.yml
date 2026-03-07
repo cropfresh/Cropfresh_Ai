@@ -1,0 +1,203 @@
+name: Deploy CropFresh AI to AWS
+
+on:
+  push:
+    branches: [main]          # → production
+    paths:
+      - 'src/**'
+      - 'ai/**'
+      - 'infra/docker/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  pull_request:
+    branches: [main]          # → run tests only, no deploy
+  workflow_dispatch:          # manual trigger
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: cropfresh-ai
+  APP_RUNNER_SERVICE_ARN: ${{ secrets.APP_RUNNER_SERVICE_ARN }}
+
+permissions:
+  id-token: write    # required for OIDC role assumption
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────
+  # JOB 1: Lint + Test
+  # ─────────────────────────────────────────────
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --extra voice --dev
+
+      - name: Lint (ruff)
+        run: uv run ruff check src/ ai/
+
+      - name: Type check (mypy)
+        run: uv run mypy src/ --ignore-missing-imports
+        continue-on-error: true   # non-blocking until Phase 5 type coverage complete
+
+      - name: Run tests
+        run: uv run pytest tests/ -x -q --timeout=30
+        env:
+          ENVIRONMENT: test
+          DATABASE_URL: sqlite:///./test.db   # in-memory for CI
+          REDIS_URL: ""                        # Redis skipped in CI
+
+  # ─────────────────────────────────────────────
+  # JOB 2: Build & Push Docker image to ECR
+  # ─────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push to ECR
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      image-uri: ${{ steps.build.outputs.image-uri }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC — no stored keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        id: build
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build with multi-stage Dockerfile
+          docker build \
+            -f infra/docker/api.Dockerfile \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            .
+
+          # Push both tags
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          echo "image-uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Scan image for vulnerabilities (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.build.outputs.image-uri }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'   # non-blocking until Phase 5
+
+  # ─────────────────────────────────────────────
+  # JOB 3: Deploy to App Runner
+  # ─────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy to App Runner
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update App Runner service (triggers redeployment)
+        run: |
+          aws apprunner update-service \
+            --service-arn ${{ env.APP_RUNNER_SERVICE_ARN }} \
+            --source-configuration '{
+              "ImageRepository": {
+                "ImageIdentifier": "${{ needs.build-and-push.outputs.image-uri }}",
+                "ImageRepositoryType": "ECR"
+              }
+            }'
+
+      - name: Wait for App Runner deployment to complete
+        run: |
+          echo "Waiting for App Runner service to reach RUNNING state..."
+          aws apprunner wait service-updated \
+            --service-arn ${{ env.APP_RUNNER_SERVICE_ARN }} || true
+
+      - name: Health check
+        run: |
+          HEALTH_URL="https://api.cropfresh.in/health"
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ Health check attempt $i failed (status $STATUS), retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Health check failed after 10 attempts"
+          exit 1
+
+  # ─────────────────────────────────────────────
+  # JOB 4: Deploy Buyer Web Dashboard to S3+CloudFront
+  # (Only if web frontend source changed)
+  # ─────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Web Frontend (S3 + CloudFront)
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Only run if web frontend files changed:
+    # Add path filter: paths: ['web/**'] when buyer dashboard repo is merged
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Uncomment when web/ directory exists:
+      # - name: Install Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      # - name: Build web dashboard
+      #   run: cd web && npm ci && npm run build
+      # - name: Sync to S3
+      #   run: |
+      #     aws s3 sync web/out/ s3://cropfresh-web-prod/ \
+      #       --delete \
+      #       --cache-control "public, max-age=0, must-revalidate" \
+      #       --exclude "_next/static/*"
+      #     aws s3 sync web/out/_next/static/ s3://cropfresh-web-prod/_next/static/ \
+      #       --cache-control "public, max-age=31536000, immutable"
+      # - name: Invalidate CloudFront cache
+      #   run: |
+      #     aws cloudfront create-invalidation \
+      #       --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION }} \
+      #       --paths "/*"
+
+      - name: Placeholder (web frontend not yet in this repo)
+        run: echo "Web frontend deployment placeholder — activate when web/ directory added"

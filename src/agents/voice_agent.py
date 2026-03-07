@@ -350,11 +350,18 @@ class VoiceAgent:
         # Update session language if detected
         if transcription.language != "auto" and transcription.language != session.language:
             session.language = transcription.language
+            
+        # If it's still auto somehow, fallback to hi
+        if session.language == "auto":
+            session.language = "hi"
         
         # Step 2: Extract intent and entities
+        # Pass pending intent from session so extractor can bias for multi-turn flows
+        pending_intent = session.context.get("pending_intent", "")
         extraction = await self.entity_extractor.extract(
             transcription.text,
             session.language,
+            context_intent=pending_intent,
         )
         
         logger.info(f"Extracted: intent={extraction.intent}, entities={extraction.entities}")
@@ -396,20 +403,33 @@ class VoiceAgent:
         templates = self.RESPONSE_TEMPLATES.get(intent, self.RESPONSE_TEMPLATES[VoiceIntent.UNKNOWN])
         template = templates.get(language, templates.get("en", ""))
         
-        # * Resume any active multi-turn flow on unknown/ambiguous turn
+        # * Resume any active multi-turn flow.
+        # When a pending_intent is active, the user is mid-flow (e.g. answering
+        # "20 kgs" or "20 rupees per kg"). Resume the pending flow UNLESS the
+        # user explicitly starts a DIFFERENT multi-turn intent with high confidence.
         pending_intent = session.context.get("pending_intent")
-        if pending_intent == VoiceIntent.CREATE_LISTING.value and intent in [VoiceIntent.CREATE_LISTING, VoiceIntent.UNKNOWN]:
-            create_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.CREATE_LISTING, {})
-            create_template = create_templates.get(language, create_templates.get("en", ""))
-            return await self._handle_create_listing(create_template, entities, session)
-        if pending_intent == VoiceIntent.FIND_BUYER.value and intent in [VoiceIntent.FIND_BUYER, VoiceIntent.UNKNOWN]:
-            fb_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.FIND_BUYER, {})
-            fb_template = fb_templates.get(language, fb_templates.get("en", ""))
-            return await self._handle_find_buyer(fb_template, entities, session)
-        if pending_intent == VoiceIntent.REGISTER.value and intent in [VoiceIntent.REGISTER, VoiceIntent.UNKNOWN]:
-            reg_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.REGISTER, {})
-            reg_template = reg_templates.get(language, reg_templates.get("en", ""))
-            return await self._handle_register(reg_template, entities, session)
+        if pending_intent:
+            # Only break out if user clearly starts a new multi-turn flow
+            NEW_MULTI_TURN = {VoiceIntent.REGISTER, VoiceIntent.FIND_BUYER, VoiceIntent.CREATE_LISTING}
+            starts_new_flow = (
+                intent in NEW_MULTI_TURN
+                and intent.value != pending_intent
+                and extraction.confidence >= 0.7
+            )
+            if not starts_new_flow:
+                # Resume the pending flow
+                if pending_intent == VoiceIntent.CREATE_LISTING.value:
+                    create_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.CREATE_LISTING, {})
+                    create_template = create_templates.get(language, create_templates.get("en", ""))
+                    return await self._handle_create_listing(create_template, entities, session)
+                if pending_intent == VoiceIntent.FIND_BUYER.value:
+                    fb_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.FIND_BUYER, {})
+                    fb_template = fb_templates.get(language, fb_templates.get("en", ""))
+                    return await self._handle_find_buyer(fb_template, entities, session)
+                if pending_intent == VoiceIntent.REGISTER.value:
+                    reg_templates = self.RESPONSE_TEMPLATES.get(VoiceIntent.REGISTER, {})
+                    reg_template = reg_templates.get(language, reg_templates.get("en", ""))
+                    return await self._handle_register(reg_template, entities, session)
 
         # * Route to specific intent handler
         if intent == VoiceIntent.CREATE_LISTING:
@@ -459,7 +479,7 @@ class VoiceAgent:
         crop = pending_entities.get("crop", "")
         quantity = pending_entities.get("quantity", pending_entities.get("quantity_kg"))
         unit = pending_entities.get("unit", "kg")
-        asking_price = pending_entities.get("asking_price")
+        asking_price = pending_entities.get("asking_price") or pending_entities.get("price")
 
         if not crop:
             _ask = {
@@ -959,7 +979,7 @@ class VoiceAgent:
         new_session = VoiceSession(
             session_id=session_id or str(uuid4()),
             user_id=user_id,
-            language=language if language != "auto" else "hi",  # Default to Hindi
+            language=language,  # Keep "auto" if provided
         )
         self._sessions[new_session.session_id] = new_session
         
@@ -989,15 +1009,26 @@ class VoiceAgent:
         Returns:
             VoiceResponse with response_text and synthesised audio.
         """
+        # Get or create session
         session = self._get_or_create_session(user_id, session_id, language)
+        
+        # Detect language from text if needed
+        if session.language == "auto":
+            detected_lang = self.entity_extractor.detect_language_from_text(text)
+            session.language = detected_lang if detected_lang != "unknown" else "hi"
+            logger.info(f"Auto-detected text language: {session.language}")
 
         logger.info(
-            f"handle_text_input: user={user_id!r} session={session.session_id!r} "
-            f"lang={session.language!r} text={text!r}"
+            f"handle_text_input: user='{user_id}' session='{session.session_id}' lang='{session.language}' text='{text}'"
         )
 
         # Step 1: Entity extraction (intent + entities from text)
-        extraction = await self.entity_extractor.extract(text, session.language)
+        pending_intent = session.context.get("pending_intent", "")
+        extraction = await self.entity_extractor.extract(
+            text, 
+            session.language,
+            context_intent=pending_intent
+        )
         logger.info(
             f"handle_text_input: intent={extraction.intent} entities={extraction.entities}"
         )

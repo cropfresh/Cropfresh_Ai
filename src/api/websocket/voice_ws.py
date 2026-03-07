@@ -371,13 +371,9 @@ class SessionManager:
     def __init__(self):
         self._sessions: Dict[str, VoiceSession] = {}
     
-    def create_session(
-        self,
-        user_id: str,
-        websocket: WebSocket,
-    ) -> VoiceSession:
-        """Create new voice session"""
-        session_id = str(uuid.uuid4())
+    def create_session(self, user_id: str, websocket: WebSocket, session_id: Optional[str] = None) -> VoiceSession:
+        """Create a new session"""
+        session_id = session_id or str(uuid.uuid4())
         session = VoiceSession(session_id, user_id, websocket)
         self._sessions[session_id] = session
         return session
@@ -409,6 +405,7 @@ async def voice_websocket(
     websocket: WebSocket,
     user_id: str = "anonymous",
     language: str = "hi",
+    session_id: Optional[str] = None,
 ):
     """
     WebSocket endpoint for real-time voice communication.
@@ -423,8 +420,8 @@ async def voice_websocket(
     """
     await websocket.accept()
 
-    session = _session_manager.create_session(user_id, websocket)
-    logger.info(f"WebSocket accepted for user={user_id} lang={language}")
+    session = _session_manager.create_session(user_id, websocket, session_id)
+    logger.info(f"WebSocket accepted for user={user_id} lang={language} session={session.session_id}")
 
     try:
         # Initialize STT + TTS + VAD (non-fatal VAD)
@@ -474,6 +471,7 @@ async def voice_duplex_websocket(
     websocket: WebSocket,
     user_id: str = "anonymous",
     language: str = "hi",
+    session_id: Optional[str] = None,
 ):
     """
     Full-duplex WebSocket endpoint with streaming LLM + TTS.

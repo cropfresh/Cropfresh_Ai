@@ -62,8 +62,14 @@ class VoiceEntityExtractor:
         text: str,
         language: str,
         use_llm: bool = True,
+        context_intent: str = "",
     ) -> ExtractionResult:
-        """Extract intent and entities from text."""
+        """Extract intent and entities from text.
+
+        Args:
+            context_intent: Active pending intent from session (e.g. 'create_listing').
+                           Used to bias extraction for short follow-up answers.
+        """
         if not text:
             return ExtractionResult(
                 intent=VoiceIntent.UNKNOWN, entities={},
@@ -71,7 +77,7 @@ class VoiceEntityExtractor:
             )
 
         text_lower = text.lower().strip()
-        result = self._extract_with_patterns(text_lower, language)
+        result = self._extract_with_patterns(text_lower, language, context_intent=context_intent)
 
         if result.confidence < 0.7 and use_llm and self.llm_provider:
             llm_result = await self._extract_with_llm(text, language)
@@ -90,8 +96,24 @@ class VoiceEntityExtractor:
 
     # ── Pattern-based extraction ──────────────────────────────────────────────
 
-    def _extract_with_patterns(self, text: str, language: str) -> ExtractionResult:
+    def _extract_with_patterns(self, text: str, language: str, context_intent: str = "") -> ExtractionResult:
         intent, intent_confidence = self._detect_intent(text, language)
+
+        # When a pending multi-turn flow is active and the detected intent
+        # is low-confidence or ambiguous, bias towards the pending intent
+        # so that short follow-up answers ("20 kgs", "20 rupees") are
+        # interpreted in the right context.
+        context_vi = None
+        if context_intent:
+            try:
+                context_vi = VoiceIntent(context_intent)
+            except ValueError:
+                pass
+
+        if context_vi and intent_confidence < 0.5:
+            # Low-confidence detection → prefer the pending context intent
+            intent = context_vi
+            intent_confidence = 0.6  # moderate confidence from context
 
         entities: dict = {}
         if intent == VoiceIntent.CREATE_LISTING:
@@ -114,6 +136,21 @@ class VoiceEntityExtractor:
             entities = self._extract_quality_entities(text, language)
         elif intent == VoiceIntent.WEEKLY_DEMAND:
             entities = self._extract_location_entities(text, language)
+
+        # If context intent is active, also try to extract entities for that
+        # intent type to catch values the primary extraction might miss
+        if context_vi and context_vi != intent:
+            context_entities = {}
+            if context_vi == VoiceIntent.CREATE_LISTING:
+                context_entities = self._extract_listing_entities(text, language)
+            elif context_vi == VoiceIntent.FIND_BUYER:
+                context_entities = self._extract_find_buyer_entities(text, language)
+            elif context_vi == VoiceIntent.REGISTER:
+                context_entities = self._extract_register_entities(text, language)
+            # Merge context entities (don't overwrite already-found ones)
+            for k, v in context_entities.items():
+                if k not in entities and v not in [None, ""]:
+                    entities[k] = v
 
         confidence = min(intent_confidence + (0.1 if entities else 0), 0.95)
         return ExtractionResult(
@@ -255,8 +292,11 @@ Respond in JSON:
 Include only entities clearly mentioned. Return only JSON."""
 
         try:
-            response = await self.llm_provider.generate(prompt, max_tokens=200)
-            m = re.search(r'\{[\s\S]*\}', response)
+            from src.orchestrator.llm_provider import LLMMessage
+            messages = [LLMMessage(role="user", content=prompt)]
+            response = await self.llm_provider.generate(messages, max_tokens=200)
+            response_text = response.content if hasattr(response, 'content') else str(response)
+            m = re.search(r'\{[\s\S]*\}', response_text)
             if m:
                 data = json.loads(m.group())
                 try:

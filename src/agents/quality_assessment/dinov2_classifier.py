@@ -91,7 +91,8 @@ def apply_yolo_ensemble(
     raw_grade: str,
     raw_confidence: float,
     detected_defects: list[str],
-) -> tuple[str, float]:
+    confidence_vector: list[float] | None = None,
+) -> tuple[str, float, list[float]]:
     """
     Post-process DINOv2 output with YOLO defect evidence.
 
@@ -105,13 +106,15 @@ def apply_yolo_ensemble(
     defect_set = set(detected_defects)
     critical_found = _CRITICAL_DEFECTS & defect_set
 
+    vec = confidence_vector or []
+
     # Rule 1: critical defect forces downgrade of premium grades
     if critical_found and raw_grade in ("A+", "A"):
         logger.debug(
             "Ensemble override: {} found → downgrade {} → {}",
             critical_found, raw_grade, _CRITICAL_DOWNGRADE_CAP,
         )
-        return _CRITICAL_DOWNGRADE_CAP, min(raw_confidence, _CRITICAL_CONF_CAP)
+        return _CRITICAL_DOWNGRADE_CAP, min(raw_confidence, _CRITICAL_CONF_CAP), vec
 
     # Rule 2: too many defects disqualifies A+
     if len(detected_defects) > _DEFECT_COUNT_A_PLUS_CAP and raw_grade == "A+":
@@ -119,9 +122,9 @@ def apply_yolo_ensemble(
             "Ensemble override: {} defects → downgrade A+ → A",
             len(detected_defects),
         )
-        return _DEFECT_COUNT_A_CAP_GRADE, min(raw_confidence, _DEFECT_COUNT_A_CAP_CONF)
+        return _DEFECT_COUNT_A_CAP_GRADE, min(raw_confidence, _DEFECT_COUNT_A_CAP_CONF), vec
 
-    return raw_grade, raw_confidence
+    return raw_grade, raw_confidence, vec
 
 
 # * ─── main classifier class ──────────────────────────────────────────────────
@@ -172,7 +175,7 @@ class DinoV2GradeClassifier:
         self,
         image_bytes: bytes,
         detected_defects: list[str] | None = None,
-    ) -> tuple[str, float]:
+    ) -> tuple[str, float, list[float]]:
         """
         Classify produce grade from raw image bytes.
 
@@ -182,8 +185,10 @@ class DinoV2GradeClassifier:
                               Used for ensemble override logic.
 
         Returns:
-            (grade, confidence) — e.g. ("A", 0.87).
+            (grade, confidence, confidence_vector) — e.g. ("A", 0.87, [0.05, 0.87, 0.06, 0.02]).
             Grade is one of GRADE_LABELS; confidence ∈ (0.0, 1.0).
+            confidence_vector is the raw DINOv2 softmax output [p_A+, p_A, p_B, p_C].
+            This vector is stored immutably in the Digital Twin for audit purposes (FR9).
         """
         defects = detected_defects or []
 
@@ -194,8 +199,8 @@ class DinoV2GradeClassifier:
             return _grade_from_defect_count(len(defects))
 
         try:
-            raw_grade, raw_confidence = self._run_inference(image_bytes)
-            return apply_yolo_ensemble(raw_grade, raw_confidence, defects)
+            raw_grade, raw_confidence, prob_vector = self._run_inference(image_bytes)
+            return apply_yolo_ensemble(raw_grade, raw_confidence, defects, prob_vector)
         except Exception as err:
             # ! Inference error: fall back to defect-count stub rather than crash.
             logger.warning("DINOv2 inference failed: {}; using defect-count fallback", err)
@@ -203,30 +208,35 @@ class DinoV2GradeClassifier:
 
     # ── private inference helpers ──────────────────────────────────────────
 
-    def _run_inference(self, image_bytes: bytes) -> tuple[str, float]:
-        """Preprocess → forward pass → softmax → (grade, confidence)."""
+    def _run_inference(self, image_bytes: bytes) -> tuple[str, float, list[float]]:
+        """Preprocess → forward pass → softmax → (grade, confidence, confidence_vector)."""
         tensor = _preprocess(image_bytes)
         input_name = self._session.get_inputs()[0].name
         logits: np.ndarray = self._session.run(None, {input_name: tensor})[0][0]
 
         probs = _softmax(logits)
         grade_idx = int(probs.argmax())
-        return GRADE_LABELS[grade_idx], float(probs[grade_idx])
+        # * FR9: return full vector for Digital Twin persistence
+        return GRADE_LABELS[grade_idx], float(probs[grade_idx]), [round(float(p), 6) for p in probs]
 
 
 # * ─── defect-count grade stub (fallback only) ────────────────────────────────
 
 
-def _grade_from_defect_count(defect_count: int) -> tuple[str, float]:
+def _grade_from_defect_count(defect_count: int) -> tuple[str, float, list[float]]:
     """
     Conservative heuristic used ONLY when DINOv2 model is unavailable.
+    Returns a synthetic confidence vector [p_A+, p_A, p_B, p_C] that
+    reflects the heuristic distribution (sums to 1.0).
     Kept inside this module so it can be removed entirely in one place
     once all prod environments have the ONNX model deployed.
     """
+    # * Synthetic vectors: dominant class gets the grade confidence;
+    #   remaining probability spread proportionally across other classes.
     if defect_count == 0:
-        return "A+", 0.86
+        return "A+", 0.86, [0.86, 0.09, 0.03, 0.02]
     if defect_count <= 2:
-        return "A", 0.79
+        return "A", 0.79, [0.04, 0.79, 0.13, 0.04]
     if defect_count <= 4:
-        return "B", 0.68
-    return "C", 0.62
+        return "B", 0.68, [0.02, 0.11, 0.68, 0.19]
+    return "C", 0.62, [0.01, 0.06, 0.31, 0.62]

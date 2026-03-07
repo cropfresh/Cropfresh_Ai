@@ -81,6 +81,7 @@ dependencies = [
     "lxml>=5.3.0,<6.0.0",              # Compatible with crawl4ai
     "apscheduler>=3.11.2",
     "faster-whisper>=1.2.1",
+    "feedparser>=6.0.12",
 ]
 
 [project.optional-dependencies]

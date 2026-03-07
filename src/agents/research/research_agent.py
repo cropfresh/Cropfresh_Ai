@@ -80,6 +80,7 @@ class ResearchAgent(BaseAgent):
         llm=None,
         knowledge_base=None,
         graph_client=None,
+        state_manager=None,
     ):
         """
         Initialize Research Agent.
@@ -88,6 +89,7 @@ class ResearchAgent(BaseAgent):
             llm: LLM provider
             knowledge_base: Knowledge base for retrieval
             graph_client: Neo4j graph client
+            state_manager: State manager for memory
         """
         config = AgentConfig(
             name="research_agent",
@@ -102,6 +104,7 @@ class ResearchAgent(BaseAgent):
             llm=llm,
             knowledge_base=knowledge_base,
         )
+        self.state_manager = state_manager
         
         # Initialize components
         self.planner = ResearchPlanner(llm=llm)

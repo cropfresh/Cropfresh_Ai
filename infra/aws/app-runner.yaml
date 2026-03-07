@@ -1,0 +1,65 @@
+# AWS App Runner — CropFresh AI Backend Service
+# Phase 2-4 compute layer. Migrate to ECS Fargate at Phase 5.
+# Deploy via: aws apprunner create-service --cli-input-yaml file://app-runner.yaml
+
+Service:
+  ServiceName: cropfresh-ai-api
+
+  SourceConfiguration:
+    ImageRepository:
+      ImageIdentifier: "{AWS_ACCOUNT_ID}.dkr.ecr.ap-south-1.amazonaws.com/cropfresh-ai:latest"
+      ImageRepositoryType: ECR
+      ImageConfiguration:
+        Port: "8000"
+        RuntimeEnvironmentSecrets:
+          # All pulled from AWS Secrets Manager at startup
+          DATABASE_URL: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/database_url"
+          REDIS_URL: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/redis_url"
+          GROQ_API_KEY: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/groq_api_key"
+          QDRANT_API_KEY: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/qdrant_api_key"
+          NEO4J_URI: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/neo4j_uri"
+          NEO4J_PASSWORD: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/neo4j_password"
+          JWT_SECRET_KEY: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/jwt_secret"
+          LANGSMITH_API_KEY: "arn:aws:secretsmanager:ap-south-1:{ACCOUNT}:secret:cropfresh/prod/langsmith_api_key"
+        RuntimeEnvironmentVariables:
+          ENVIRONMENT: "production"
+          LOG_LEVEL: "info"
+          AWS_REGION: "ap-south-1"
+          S3_PHOTOS_BUCKET: "cropfresh-photos-prod"
+          S3_MODELS_BUCKET: "cropfresh-models-prod"
+    AutoDeploymentsEnabled: true # auto-redeploy on new ECR push
+
+  InstanceConfiguration:
+    Cpu: "2 vCPU"
+    Memory: "4 GB"
+    InstanceRoleArn: "arn:aws:iam::{ACCOUNT}:role/cropfresh-app-runner-role"
+
+  HealthCheckConfiguration:
+    Protocol: HTTP
+    Path: /health
+    Interval: 10 # seconds between checks
+    Timeout: 5
+    HealthyThreshold: 1
+    UnhealthyThreshold: 3
+
+  AutoScalingConfiguration:
+    # Scale on concurrent requests
+    MinSize: 1
+    MaxSize: 10
+    MaxConcurrency: 100 # requests per instance before scaling out
+    # Pre-warm note: set MinSize: 2 during 04:30–14:30 IST (peak farming hours)
+    # Use EventBridge Scheduler to toggle MinSize via Lambda
+
+  NetworkConfiguration:
+    EgressType: VPC
+    VpcConnectorArn: "arn:aws:apprunner:ap-south-1:{ACCOUNT}:vpcconnector/cropfresh-vpc-connector"
+    # VPC connector gives App Runner access to RDS in private subnet
+
+  # Tags
+  Tags:
+    - Key: Project
+      Value: cropfresh-ai
+    - Key: Environment
+      Value: production
+    - Key: ManagedBy
+      Value: github-actions

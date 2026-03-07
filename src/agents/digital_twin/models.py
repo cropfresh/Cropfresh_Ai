@@ -21,7 +21,7 @@ from typing import Any, Optional
 # * Departure Snapshot
 # * ═══════════════════════════════════════════════════════════════
 
-@dataclass
+@dataclass(frozen=True)
 class DigitalTwin:
     """
     Immutable departure snapshot of produce quality.
@@ -29,6 +29,9 @@ class DigitalTwin:
     Created at the farm gate when produce is handed to the hauler.
     Captures photos, AI grade, GPS coordinates, and defect annotations.
     This snapshot is the ground truth for any future dispute comparison.
+
+    frozen=True enforces immutability in Python (FR9); the DB trigger
+    `trg_digital_twins_immutable` enforces immutability at the storage layer.
     """
 
     twin_id: str
@@ -43,6 +46,8 @@ class DigitalTwin:
     gps_lat: float                  # GPS latitude at farm gate
     gps_lng: float                  # GPS longitude at farm gate
     ai_annotations: dict[str, Any]  # Bounding boxes from YOLO / annotation model
+    # * FR9: DINOv2 ViT-S/14 softmax output [p_A+, p_A, p_B, p_C] — immutable audit trail
+    dinov2_confidence_vector: tuple[float, ...]  = field(default_factory=tuple)  # frozen requires tuple not list
     created_at: datetime = field(default_factory=datetime.now)
 
     def all_photos(self) -> list[str]:
@@ -54,16 +59,18 @@ class DigitalTwin:
         return {
             "twin_id": self.twin_id,
             "listing_id": self.listing_id,
-            "farmer_photos": self.farmer_photos,
-            "agent_photos": self.agent_photos,
+            "farmer_photos": list(self.farmer_photos),
+            "agent_photos": list(self.agent_photos),
             "grade": self.grade,
             "confidence": self.confidence,
-            "defect_types": self.defect_types,
+            "defect_types": list(self.defect_types),
             "defect_count": self.defect_count,
             "shelf_life_days": self.shelf_life_days,
             "gps_lat": self.gps_lat,
             "gps_lng": self.gps_lng,
             "ai_annotations": self.ai_annotations,
+            # * FR9: DINOv2 confidence vector serialised as a plain list
+            "dinov2_confidence_vector": list(self.dinov2_confidence_vector),
             "created_at": self.created_at.isoformat(),
         }
 

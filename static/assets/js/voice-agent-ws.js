@@ -82,7 +82,11 @@ function wsConnect() {
   const userId = document.getElementById('wsUserId')?.value || 'ws-test-user';
   const lang   = document.getElementById('wsLang')?.value || 'hi';
   const proto  = location.protocol === 'https:' ? 'wss' : 'ws';
-  const url    = `${proto}://${location.host}/api/v1/voice/ws?user_id=${encodeURIComponent(userId)}&language=${lang}`;
+  
+  let wsSessionId = sessionStorage.getItem('voice_ws_session_id') || crypto.randomUUID();
+  sessionStorage.setItem('voice_ws_session_id', wsSessionId);
+  
+  const url    = `${proto}://${location.host}/api/v1/voice/ws?user_id=${encodeURIComponent(userId)}&language=${lang}&session_id=${wsSessionId}`;
 
   wsSetStatus('🔄 Connecting…', 'connecting');
   wsSocket = new WebSocket(url);
@@ -132,6 +136,9 @@ function wsHandleMessage(event) {
 
   switch (msg.type) {
     case 'ready':
+      if (msg.session_id) {
+          sessionStorage.setItem('voice_ws_session_id', msg.session_id);
+      }
       wsAddEvent('system', '▶ Voice session ready');
       wsSetStatus('🟢 Ready — hold PTT to speak', 'connected');
       break;

@@ -20,6 +20,7 @@ from src.orchestrator.llm_provider import BaseLLMProvider
 from src.agents.quality_assessment.vision_models import CropVisionPipeline, QualityResult
 from src.agents.digital_twin.engine import DigitalTwinEngine, get_digital_twin_engine
 from src.agents.digital_twin.models import DiffReport, DigitalTwin
+from src.api.services.hitl_service import HITLNotificationService
 
 
 # * ═══════════════════════════════════════════════════════════════
@@ -73,6 +74,7 @@ class QualityAssessmentAgent(BaseAgent):
         self,
         llm: Optional[BaseLLMProvider] = None,
         twin_engine: Optional[DigitalTwinEngine] = None,
+        hitl_service: Optional[HITLNotificationService] = None,
         **kwargs: Any,
     ):
         config = AgentConfig(
@@ -87,6 +89,8 @@ class QualityAssessmentAgent(BaseAgent):
         self.vision_pipeline = CropVisionPipeline()
         # NOTE: twin_engine injected for testability; defaults to in-memory engine
         self.twin_engine: DigitalTwinEngine = twin_engine or get_digital_twin_engine()
+        # * FR9: HITL dispatch service — log-only mode when None
+        self.hitl_service: Optional[HITLNotificationService] = hitl_service
         self._digital_twin_store: dict[str, QualityReport] = {}
 
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
@@ -228,7 +232,42 @@ Grade definitions:
             assessment.hitl_required,
             assessment_id,
         )
+
+        # * FR9: dispatch HITL review notification when flag is set
+        if assessment.hitl_required:
+            await self._dispatch_hitl(
+                listing_id=listing_id,
+                confidence=assessment.confidence,
+                grade=assessment.grade,
+                defect_count=assessment.defect_count,
+            )
+
         return report
+
+    async def _dispatch_hitl(
+        self,
+        listing_id: str,
+        confidence: float,
+        grade: str,
+        defect_count: int,
+    ) -> None:
+        """
+        Dispatch HITL review notification (FR9).
+        Delegates to HITLNotificationService when injected; logs only otherwise.
+        """
+        if self.hitl_service:
+            await self.hitl_service.trigger_review(
+                listing_id=listing_id,
+                confidence=confidence,
+                grade=grade,
+                defect_count=defect_count,
+            )
+        else:
+            logger.debug(
+                "HITL required for listing {} (conf={:.2f} grade={} defects={}) — "
+                "no HITLNotificationService injected; log-only mode",
+                listing_id, confidence, grade, defect_count,
+            )
 
     # ─────────────────────────────────────────────────────────
     # * Digital Twin Integration

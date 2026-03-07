@@ -165,8 +165,11 @@
   function connect() {
     if (ws && ws.readyState === WebSocket.OPEN) return;
 
+    let duplexSessionId = sessionStorage.getItem('voice_duplex_session_id') || crypto.randomUUID();
+    sessionStorage.setItem('voice_duplex_session_id', duplexSessionId);
+
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${location.host}${WS_PATH}?user_id=web_user&language=${language}`;
+    const url = `${protocol}//${location.host}${WS_PATH}?user_id=web_user&language=${language}&session_id=${duplexSessionId}`;
 
     setState("connecting");
     ws = new WebSocket(url);
@@ -214,6 +217,7 @@
     switch (msg.type) {
       case "ready":
         currentSessionId = msg.session_id || "unknown";
+        if (msg.session_id) sessionStorage.setItem('voice_duplex_session_id', msg.session_id);
         setState("idle");
         addChatBubble("system", "Session ready. Say something!");
         break;

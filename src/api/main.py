@@ -14,8 +14,13 @@ Changes from dev baseline:
 """
 
 import os
+import sys
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,7 +54,16 @@ async def lifespan(app: FastAPI):
 
     logger.info("🌾 CropFresh AI Service starting — env={} debug={}", settings.environment, settings.debug)
 
-    # ── 1. Observability ────────────────────────────
+    # ── 1. LangSmith (optional) ──────────────────────
+    if settings.langsmith_api_key:
+        os.environ.setdefault("LANGCHAIN_API_KEY", settings.langsmith_api_key)
+        os.environ.setdefault("LANGCHAIN_PROJECT", settings.langsmith_project)
+        os.environ.setdefault("LANGCHAIN_TRACING_V2", settings.langsmith_tracing.lower())
+        if settings.langsmith_endpoint:
+            os.environ.setdefault("LANGCHAIN_ENDPOINT", settings.langsmith_endpoint)
+        logger.info("🔗 LangSmith tracing enabled (project={})", settings.langsmith_project)
+
+    # ── 2. Observability ────────────────────────────
     try:
         from src.production.observability import setup_observability
         setup_observability(
@@ -58,13 +72,6 @@ async def lifespan(app: FastAPI):
         )
     except Exception as exc:
         logger.warning("Observability setup skipped: {}", exc)
-
-    # ── 2. LangSmith (optional) ──────────────────────
-    if settings.langsmith_api_key:
-        os.environ.setdefault("LANGCHAIN_API_KEY", settings.langsmith_api_key)
-        os.environ.setdefault("LANGCHAIN_PROJECT", settings.langsmith_project)
-        os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
-        logger.info("🔗 LangSmith tracing enabled (project={})", settings.langsmith_project)
 
     # ── 3. Redis cache ───────────────────────────────
     app.state.cache = None
