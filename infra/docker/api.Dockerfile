@@ -19,9 +19,36 @@ WORKDIR /build
 # Copy dependency manifests first (layer cache optimization)
 COPY pyproject.toml uv.lock ./
 
-# Install core + voice extras (adjust extras as needed)
-# Use --no-dev to exclude development tools
-RUN uv sync --extra voice --no-dev --frozen
+# Step 1: Create venv
+RUN uv venv /build/.venv
+
+# Step 2: Install CPU-only PyTorch into the venv (avoids 5GB CUDA)
+RUN /build/.venv/bin/pip install --no-cache-dir --retries 5 --timeout 300 \
+    torch torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Step 3: Install all other deps, skip torch + CUDA (already installed above)
+ENV UV_CONCURRENT_DOWNLOADS=2
+RUN uv sync --extra voice --no-dev \
+    --no-install-package torch \
+    --no-install-package torchvision \
+    --no-install-package torchaudio \
+    --no-install-package nvidia-cublas-cu12 \
+    --no-install-package nvidia-cuda-cupti-cu12 \
+    --no-install-package nvidia-cuda-nvrtc-cu12 \
+    --no-install-package nvidia-cuda-runtime-cu12 \
+    --no-install-package nvidia-cudnn-cu12 \
+    --no-install-package nvidia-cufft-cu12 \
+    --no-install-package nvidia-cufile-cu12 \
+    --no-install-package nvidia-curand-cu12 \
+    --no-install-package nvidia-cusolver-cu12 \
+    --no-install-package nvidia-cusparse-cu12 \
+    --no-install-package nvidia-cusparselt-cu12 \
+    --no-install-package nvidia-nccl-cu12 \
+    --no-install-package nvidia-nvjitlink-cu12 \
+    --no-install-package nvidia-nvshmem-cu12 \
+    --no-install-package nvidia-nvtx-cu12 \
+    --no-install-package triton
 
 
 # ─── Stage 2: Production runtime ─────────────
