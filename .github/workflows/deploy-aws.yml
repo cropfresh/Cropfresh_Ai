@@ -79,74 +79,101 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Create or update App Runner service
+        env:
+          IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
         run: |
-          SERVICE_EXISTS=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='cropfresh-ai'].ServiceArn" --output text 2>/dev/null || echo "")
+          SERVICE_ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='cropfresh-ai'].ServiceArn" \
+            --output text 2>/dev/null || echo "")
 
-          if [ -z "$SERVICE_EXISTS" ]; then
-            echo "Creating new App Runner service..."
+          # ── Environment variables matching src/api/config.py ──
+          ENV_VARS=$(cat <<'ENVJSON'
+          {
+            "ENVIRONMENT": "production",
+            "LLM_PROVIDER": "groq",
+            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
+            "VECTOR_DB_PROVIDER": "qdrant",
+            "QDRANT_HOST": "${{ secrets.QDRANT_HOST }}",
+            "QDRANT_PORT": "6333",
+            "QDRANT_API_KEY": "${{ secrets.QDRANT_API_KEY }}",
+            "QDRANT_COLLECTION": "agri_knowledge",
+            "REDIS_URL": "${{ secrets.REDIS_URL }}",
+            "PG_HOST": "${{ secrets.PG_HOST }}",
+            "PG_PASSWORD": "${{ secrets.PG_PASSWORD }}",
+            "PG_DATABASE": "postgres",
+            "PG_USER": "postgres",
+            "JWT_SECRET": "${{ secrets.JWT_SECRET }}"
+          }
+          ENVJSON
+          )
+
+          if [ -z "$SERVICE_ARN" ] || [ "$SERVICE_ARN" = "None" ]; then
+            echo "🚀 Creating new App Runner service..."
             aws apprunner create-service \
               --service-name cropfresh-ai \
-              --source-configuration '{
-                "ImageRepository": {
-                  "ImageIdentifier": "${{ needs.build-and-push.outputs.image-uri }}",
-                  "ImageRepositoryType": "ECR",
-                  "ImageConfiguration": {
-                    "Port": "8000",
-                    "RuntimeEnvironmentVariables": {
-                      "ENVIRONMENT": "production",
-                      "LLM_PROVIDER": "groq"
-                    }
+              --source-configuration "{
+                \"ImageRepository\": {
+                  \"ImageIdentifier\": \"${IMAGE_URI}\",
+                  \"ImageRepositoryType\": \"ECR\",
+                  \"ImageConfiguration\": {
+                    \"Port\": \"8000\",
+                    \"RuntimeEnvironmentVariables\": ${ENV_VARS}
                   }
                 },
-                "AutoDeploymentsEnabled": true,
-                "AuthenticationConfiguration": {
-                  "AccessRoleArn": "arn:aws:iam::669640509011:role/cropfresh-app-runner-role"
+                \"AutoDeploymentsEnabled\": true,
+                \"AuthenticationConfiguration\": {
+                  \"AccessRoleArn\": \"arn:aws:iam::669640509011:role/cropfresh-apprunner-ecr-access\"
                 }
-              }' \
+              }" \
               --instance-configuration '{
-                "Cpu": "1 vCPU",
-                "Memory": "2 GB",
+                "Cpu": "2 vCPU",
+                "Memory": "4 GB",
                 "InstanceRoleArn": "arn:aws:iam::669640509011:role/cropfresh-app-runner-role"
               }' \
               --health-check-configuration '{
                 "Protocol": "HTTP",
                 "Path": "/health",
-                "Interval": 10,
-                "Timeout": 5,
+                "Interval": 20,
+                "Timeout": 10,
                 "HealthyThreshold": 1,
-                "UnhealthyThreshold": 5
+                "UnhealthyThreshold": 10
               }'
           else
-            echo "Updating existing App Runner service..."
+            echo "🔄 Updating existing App Runner service..."
             aws apprunner update-service \
-              --service-arn $SERVICE_EXISTS \
-              --source-configuration '{
-                "ImageRepository": {
-                  "ImageIdentifier": "${{ needs.build-and-push.outputs.image-uri }}",
-                  "ImageRepositoryType": "ECR",
-                  "ImageConfiguration": {
-                    "Port": "8000"
+              --service-arn "$SERVICE_ARN" \
+              --source-configuration "{
+                \"ImageRepository\": {
+                  \"ImageIdentifier\": \"${IMAGE_URI}\",
+                  \"ImageRepositoryType\": \"ECR\",
+                  \"ImageConfiguration\": {
+                    \"Port\": \"8000\",
+                    \"RuntimeEnvironmentVariables\": ${ENV_VARS}
                   }
                 },
-                "AuthenticationConfiguration": {
-                  "AccessRoleArn": "arn:aws:iam::669640509011:role/cropfresh-app-runner-role"
+                \"AuthenticationConfiguration\": {
+                  \"AccessRoleArn\": \"arn:aws:iam::669640509011:role/cropfresh-apprunner-ecr-access\"
                 }
-              }'
+              }"
           fi
 
       - name: Wait for deployment
         run: |
-          echo "Waiting 60s for App Runner to start deploying..."
-          sleep 60
-          SERVICE_URL=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='cropfresh-ai'].ServiceUrl" --output text)
+          echo "⏳ Waiting 90s for App Runner to deploy..."
+          sleep 90
+          SERVICE_URL=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='cropfresh-ai'].ServiceUrl" \
+            --output text)
           echo "Service URL: https://${SERVICE_URL}"
-          for i in {1..15}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${SERVICE_URL}/health" 2>/dev/null || echo "000")
+
+          for i in {1..20}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://${SERVICE_URL}/health" 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✅ Health check passed (attempt $i)"
               exit 0
             fi
-            echo "⏳ Attempt $i: status=$STATUS, retrying in 20s..."
-            sleep 20
+            echo "⏳ Attempt $i/20: status=$STATUS, retrying in 30s..."
+            sleep 30
           done
-          echo "⚠️ Health check did not pass (service may still be starting)"
+          echo "⚠️ Health check did not pass within 10 min (service may still be starting)"
