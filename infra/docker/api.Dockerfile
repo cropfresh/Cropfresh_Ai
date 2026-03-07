@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir --retries 5 --timeout 300 \
 
 # Step 2: Install everything else via uv, skip torch + all CUDA packages
 ENV UV_CONCURRENT_DOWNLOADS=4
-RUN uv sync --extra voice --no-dev \
+RUN uv sync --extra voice --no-dev --no-install-project \
     --no-install-package torch \
     --no-install-package torchvision \
     --no-install-package torchaudio \
