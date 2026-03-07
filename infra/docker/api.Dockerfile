@@ -9,7 +9,7 @@ FROM python:3.11-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-WORKDIR /build
+WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Step 1: Install CPU-only PyTorch to system site-packages
@@ -42,12 +42,12 @@ RUN uv sync --extra voice --no-dev --no-install-project \
     --no-install-package triton
 
 # Step 3: Copy CPU torch into the venv
-RUN cp -r /usr/local/lib/python3.11/site-packages/torch /build/.venv/lib/python3.11/site-packages/ && \
-    cp -r /usr/local/lib/python3.11/site-packages/torch-* /build/.venv/lib/python3.11/site-packages/ && \
-    cp -r /usr/local/lib/python3.11/site-packages/torchvision /build/.venv/lib/python3.11/site-packages/ && \
-    cp -r /usr/local/lib/python3.11/site-packages/torchvision-* /build/.venv/lib/python3.11/site-packages/ && \
-    cp -r /usr/local/lib/python3.11/site-packages/torchaudio /build/.venv/lib/python3.11/site-packages/ && \
-    cp -r /usr/local/lib/python3.11/site-packages/torchaudio-* /build/.venv/lib/python3.11/site-packages/
+RUN cp -r /usr/local/lib/python3.11/site-packages/torch /app/.venv/lib/python3.11/site-packages/ && \
+    cp -r /usr/local/lib/python3.11/site-packages/torch-* /app/.venv/lib/python3.11/site-packages/ && \
+    cp -r /usr/local/lib/python3.11/site-packages/torchvision /app/.venv/lib/python3.11/site-packages/ && \
+    cp -r /usr/local/lib/python3.11/site-packages/torchvision-* /app/.venv/lib/python3.11/site-packages/ && \
+    cp -r /usr/local/lib/python3.11/site-packages/torchaudio /app/.venv/lib/python3.11/site-packages/ && \
+    cp -r /usr/local/lib/python3.11/site-packages/torchaudio-* /app/.venv/lib/python3.11/site-packages/
 
 
 # ─── Stage 2: Production runtime ─────────────
@@ -58,7 +58,7 @@ RUN groupadd --gid 1001 cropfresh && \
 
 WORKDIR /app
 
-COPY --from=builder /build/.venv /app/.venv
+COPY --from=builder /app/.venv /app/.venv
 COPY src/ ./src/
 COPY ai/ ./ai/
 COPY static/ ./static/
