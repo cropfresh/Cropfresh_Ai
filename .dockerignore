@@ -1,0 +1,29 @@
+.git/
+.github/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.log
+.env
+.idea/
+.vscode/
+
+# Ignore heavy ML models in build context (they should be downloaded or built via dedicated steps if needed, though App Runner will run them)
+# Wait, if the code needs them at runtime, they shouldn't be ignored entirely unless they are downloaded.
+# Actually, let's keep models/ but ignore cache and temp files.
+*.wav
+*.mp3
+*.db
+*.sqlite3
+
+# Ignore temporary artifacts
+build/
+dist/
+*.egg-info/
