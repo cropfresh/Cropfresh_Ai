@@ -1,89 +1,117 @@
 <div align="center">
 
+<br/>
+
 # 🌾 CropFresh AI
 
-### *India's Intelligent Agricultural Marketplace*
+### _India's Intelligent Agricultural Marketplace — Powered by AI Agents_
+
+<br/>
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![AWS Bedrock](https://img.shields.io/badge/AWS_Bedrock-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/bedrock/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 
-*Connecting Karnataka farmers directly with buyers using AI agents, voice-first Kannada interaction, and real-time market intelligence — eliminating middlemen, one crop at a time.*
+<br/>
 
-[**Getting Started**](#-quick-start) · [**Architecture**](#-architecture) · [**Features**](#-features) · [**Documentation**](#-documentation) · [**Contributing**](#-contributing)
+> **Connecting Karnataka's farmers directly with buyers — eliminating middlemen, one crop at a time.**
+>
+> Voice-first Kannada interaction · Real-time APMC market data · AI crop quality grading · Direct farmer-to-buyer marketplace
+
+<br/>
+
+[**Quick Start**](#-quick-start) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**AI Agents**](#-ai-agent-system) &nbsp;·&nbsp; [**API Reference**](#-api-reference) &nbsp;·&nbsp; [**Roadmap**](#-roadmap)
+
+<br/>
 
 </div>
 
 ---
 
-## 🌟 The Problem We Solve
+## 💡 The Problem We Solve
 
-> **Indian farmers lose 30-40% of their crop value to intermediaries.** Most have no access to real-time market data, quality assessment tools, or direct buyer connections — especially in their local language.
+> **Indian farmers lose 30–40% of their crop value to intermediaries.** Most lack access to real-time market data, fair quality assessments, or direct buyer connections — especially in their native language.
 
-**CropFresh AI** changes this with:
+**CropFresh AI** closes this gap with a fully intelligent, voice-first platform:
 
-| Challenge | Our Solution |
-|-----------|-------------|
-| 🏪 Middlemen take huge cuts | Direct farmer-to-buyer marketplace |
-| 📊 No price transparency | Real-time APMC data + AI price prediction |
-| 🎤 Language barriers | Voice-first Kannada interaction |
-| 📋 Manual crop listing | AI-powered auto-listing from photos |
-| ❓ Subjective quality grading | Computer vision quality assessment |
-| 🔍 Finding the right buyer | Graph-based intelligent matching |
+| Challenge                             | Our Solution                                             |
+| :------------------------------------ | :------------------------------------------------------- |
+| 🏪 Middlemen extract huge margins     | Direct farmer-to-buyer marketplace with escrow           |
+| 📊 No price transparency              | Real-time data from 160+ Karnataka APMC mandis           |
+| 🎤 Language & literacy barriers       | Voice-first interaction in Kannada + 10 Indian languages |
+| 📸 Manual, subjective quality grading | AI computer vision grading (YOLOv8 + ViT-B/16)           |
+| 🔍 Difficulty finding the right buyer | Graph-based intelligent matchmaking engine               |
+| 🚚 Inefficient logistics              | DPLE route optimizer with multi-pickup clustering        |
+| ❓ Lack of crop advisory              | RAG-powered agronomy knowledge base                      |
 
 ---
 
-## ✨ Features
+## ✨ Platform Highlights
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-### 🤖 AI Agent System
-Multi-agent architecture powered by **LangGraph** with specialized agents:
-- **Supervisor** — Routes queries to the right specialist
-- **Agronomy** — Agricultural knowledge & crop advisory
-- **Pricing** — Real-time market price analysis
+### 🤖 Multi-Agent AI System
+
+A **LangGraph**-powered supervisor that routes every query to the right specialist:
+
+- **Supervisor** — Intelligent query classification (90%+ accuracy target)
+- **Agronomy** — Crop advisory, pest & disease diagnosis
+- **Pricing (DPLE)** — Real-time AISP pricing with logistics margin
 - **Commerce** — Transaction & marketplace operations
-- **Voice** — Kannada voice interaction
+- **Voice** — Kannada/Hindi/English voice interaction
+- **Quality Assessment** — CV-based quality grading
+- **Buyer Matching** — 5-factor graph-based matchmaking
+- **ADCL** — Weekly assured demand crop list generator
 - **Knowledge** — RAG-based information retrieval
-- **Browser** — Web scraping & data collection
+- **Browser/Scraping** — APMC, eNAM & weather data
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
-### 🎤 Voice-First Design
-Built for farmers who prefer speaking over typing:
-- **Kannada STT** — Whisper-powered speech recognition
-- **Kannada TTS** — Edge-TTS natural voice synthesis
-- **WebRTC** — Real-time audio streaming
-- **11 Indian languages** — Hindi, Telugu, Tamil, Malayalam, and more
-- **WhatsApp Bot** — Coming soon
+### 🎤 Voice-First for Every Farmer
+
+Built from the ground up for farmers who prefer speaking over typing:
+
+- **Kannada STT** — IndicWhisper + Groq Whisper fallback
+- **Natural TTS** — Edge-TTS voice synthesis in 10+ languages
+- **Live Streaming** — WebSocket + Pipecat real-time voice pipeline
+- **Silero VAD** — Intelligent voice activity detection
+- **Language Support** — Kannada, Hindi, Tamil, Telugu, Malayalam + 6 more
+- **WhatsApp Bot** — Planned: text, voice, image & location handling
 
 </td>
 </tr>
 <tr>
-<td>
+<td valign="top">
 
-### 🔍 Intelligent RAG Pipeline
-Advanced retrieval-augmented generation:
-- **Qdrant** vector search with hybrid retrieval
-- **RAPTOR** hierarchical document summaries
-- **Graph RAG** with Neo4j knowledge graph
-- **Contextual chunking** & advanced re-ranking
-- **Agricultural knowledge base** (FSSAI, AGMARK, govt. schemes)
+### 🧠 Intelligent RAG Pipeline
+
+Advanced retrieval-augmented generation for farm knowledge:
+
+- **pgvector** — PostgreSQL semantic vector search
+- **RAPTOR** — Hierarchical multi-level document summaries
+- **Graph RAG** — Neo4j knowledge graph for buyer-seller relationships
+- **BGE-M3** — Multilingual cross-lingual embeddings
+- **Knowledge Base** — FSSAI, AGMARK, PM-KISAN, govt. schemes
+- **Cohere Re-ranking** — Precision result ordering
 
 </td>
-<td>
+<td valign="top">
 
-### 📊 Market Intelligence
-Real-time agricultural data pipeline:
-- **160+ Karnataka APMC mandis** price tracking
+### 📊 Real-Time Market Intelligence
+
+Agricultural data pipeline that never sleeps:
+
+- **160+ Karnataka APMC mandis** live price tracking
 - **eNAM** national market integration
-- **IMD weather** data for crop forecasting
-- **Historical price analysis** & trend prediction
-- **Seasonal pattern** recognition
+- **IMD Weather** integration for crop forecasting
+- **Seasonal pattern** recognition & trend prediction
+- **Digital Twin Engine** — Departure vs. arrival quality comparison
+- **Dispute Diff Engine** — SSIM-based quality degradation detection
 
 </td>
 </tr>
@@ -94,118 +122,141 @@ Real-time agricultural data pipeline:
 ## 🏗 Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                         Clients                               │
-│   📱 Flutter App    💬 WhatsApp Bot    🖥️ Web Dashboard       │
-└───────────┬──────────────┬──────────────┬────────────────────┘
-            │              │              │
-            ▼              ▼              ▼
-┌──────────────────────────────────────────────────────────────┐
-│                  FastAPI Gateway (src/api/)                    │
-│   REST Routers  ·  WebSocket  ·  Auth  ·  Rate Limiting       │
-└───────────┬──────────────────────────────────────────────────┘
-            │
-            ▼
-┌──────────────────────────────────────────────────────────────┐
-│              LangGraph Multi-Agent System                      │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │                  Supervisor Agent                         │ │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────────┐  │ │
-│  │  │Agronomy │ │ Pricing │ │Commerce │ │    Voice      │  │ │
-│  │  ├─────────┤ ├─────────┤ ├─────────┤ ├───────────────┤  │ │
-│  │  │Browser  │ │Research │ │Knowledge│ │   General     │  │ │
-│  │  └─────────┘ └─────────┘ └─────────┘ └───────────────┘  │ │
-│  └──────────────────────────────────────────────────────────┘ │
-└───────────┬──────────────┬──────────────┬────────────────────┘
-            │              │              │
-            ▼              ▼              ▼
-┌──────────────────────────────────────────────────────────────┐
-│                       Data Layer                              │
-│   🐘 RDS PostgreSQL  🔮 pgvector        🕸️ Neo4j             │
-│   + pgvector         (Semantic Search)  (Graph)              │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                            Clients                                   │
+│      📱 Flutter App      💬 WhatsApp Bot      🖥 Web Dashboard       │
+└──────────┬────────────────────┬───────────────────┬─────────────────┘
+           │                    │                   │
+           ▼                    ▼                   ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              FastAPI Gateway  (src/api/)                             │
+│       REST Endpoints  ·  WebSocket  ·  JWT Auth  ·  Rate Limiting   │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                   LangGraph Multi-Agent Supervisor                   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │Agronomy  │ │ Pricing  │ │Commerce  │ │  Voice   │ │ Quality  │  │
+│  ├──────────┤ ├──────────┤ ├──────────┤ ├──────────┤ ├──────────┤  │
+│  │ Matching │ │ Research │ │Knowledge │ │  ADCL   │ │Logistics │  │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
+└────────────────┬─────────────────┬───────────────────┬──────────────┘
+                 │                 │                   │
+                 ▼                 ▼                   ▼
+┌────────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
+│  PostgreSQL + pgvector│  │ Neo4j Graph DB  │  │   Redis Cache        │
+│  Users · Listings  │  │  Buyer-Seller    │  │   Sessions · Match   │
+│  Orders · Prices   │  │  Relationships   │  │   Results · Pricing  │
+└────────────────────┘  └──────────────────┘  └──────────────────────┘
 ```
 
-### Tech Stack
+### ⚙️ Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **API** | FastAPI + Uvicorn | Async REST + WebSocket server |
-| **AI Framework** | LangGraph + LangChain | Multi-agent orchestration |
-| **LLM (Production)** | AWS Bedrock — Claude Sonnet 4 | High-quality inference |
-| **LLM (Router/Dev)** | Groq — Llama-3.1-8B (~80ms) | Fast, cost-effective routing |
-| **Primary DB + Vectors** | RDS PostgreSQL + pgvector | Users, listings, orders, prices + semantic search |
-| **Graph DB** | Neo4j | Buyer-seller relationships |
-| **Cache** | Redis | Match results, chat sessions |
-| **Voice** | Pipecat + IndicWhisper + Edge-TTS | Kannada/Hindi/English STT & TTS |
-| **Vision** | YOLOv8 + ViT-B/16 + ONNX Runtime | Crop quality grading |
-| **Scraping** | Scrapling + Camoufox | APMC, eNAM, weather data collection |
-| **Package Manager** | uv | 10-100x faster than pip |
+| Layer                | Technology                                     | Purpose                             |
+| :------------------- | :--------------------------------------------- | :---------------------------------- |
+| **API**              | FastAPI 0.115+ · Uvicorn                       | Async REST + WebSocket server       |
+| **AI Orchestration** | LangGraph · LangChain                          | Multi-agent supervisor graph        |
+| **LLM — Production** | AWS Bedrock · Claude Sonnet                    | High-quality inference              |
+| **LLM — Fast/Dev**   | Groq · Llama-3.1 / Mixtral                     | ~80ms routing & lightweight tasks   |
+| **Primary DB**       | PostgreSQL (RDS / Supabase) + pgvector         | All business data + semantic search |
+| **Graph DB**         | Neo4j                                          | Buyer-seller relationship graphs    |
+| **Cache**            | Redis                                          | Sessions, match results, price data |
+| **Voice**            | Pipecat · IndicWhisper · Edge-TTS · Silero VAD | Kannada/Hindi/English STT & TTS     |
+| **Computer Vision**  | YOLOv8 · ViT-B/16 · ONNX Runtime               | Real-time crop quality grading      |
+| **Scraping**         | Scrapling · Camoufox · Playwright              | APMC, eNAM, weather data            |
+| **Logistics**        | OR-Tools CVRP · HDBSCAN                        | Route optimization, multi-pickup    |
+| **Monitoring**       | LangSmith · Prometheus · Grafana               | Tracing, metrics, dashboards        |
+| **Package Manager**  | `uv`                                           | 10–100× faster than pip             |
+
+---
+
+## 🧠 AI Agent System
+
+| Agent                  | Role              | Key Capabilities                                                 |
+| :--------------------- | :---------------- | :--------------------------------------------------------------- |
+| **Supervisor**         | Query router      | Classifies & routes with 90%+ accuracy                           |
+| **Agronomy**           | Farm advisor      | Crop health, pest/disease diagnosis, irrigation advice           |
+| **Pricing (DPLE)**     | Market pricing    | AISP = Farmer Ask + Logistics + Margin (4–8%) + Risk Buffer (2%) |
+| **Commerce**           | Marketplace       | Listings, orders, escrow, APMC mandi prices                      |
+| **Voice**              | Accessibility     | 10+ Indian languages, all farmer flows voice-driven              |
+| **Quality Assessment** | CV grading        | A+/A/B/C grading, HITL trigger, digital twin linkage             |
+| **Buyer Matching**     | Demand-supply     | 5-factor scoring, GPS clustering, reverse matching               |
+| **Digital Twin**       | Quality assurance | Departure/arrival quality diff, dispute resolution               |
+| **Logistics Router**   | Routing           | Multi-pickup CVRP, deadhead cost calculation                     |
+| **ADCL**               | Crop planning     | Weekly assured demand crop list from order data                  |
+| **Knowledge**          | RAG retrieval     | Government schemes, agronomy docs, FSSAI/AGMARK                  |
+| **Browser/Scraper**    | Data collection   | Stealth APMC + eNAM scraping, weather APIs                       |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) package manager
 
-### 1. Clone & Setup
+- **Python 3.11+**
+- **[uv](https://docs.astral.sh/uv/)** — the fast Python package manager
+
+### 1. Clone & Install `uv`
 
 ```bash
 git clone https://github.com/cropfresh/Cropfresh_Ai.git
 cd Cropfresh_Ai
 
-# Install uv (if not already installed)
-# Windows PowerShell:
+# Install uv — Windows PowerShell:
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-# macOS/Linux:
+
+# macOS / Linux:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-# Create virtual environment & install
+# Create virtual environment
 uv venv --python 3.11
-.\.venv\Scripts\Activate.ps1    # Windows
-# source .venv/bin/activate     # macOS/Linux
 
-uv sync --extra voice           # Core + Voice features
+# Activate — Windows:
+.\.venv\Scripts\Activate.ps1
+# Activate — macOS/Linux:
+source .venv/bin/activate
+
+# Install core + voice support
+uv sync --extra voice
 ```
 
-| Install Option | Command | What You Get |
-|---------------|---------|-------------|
-| 🎯 Core only | `uv sync` | FastAPI, LangGraph, Groq |
-| 🎤 + Voice | `uv sync --extra voice` | + STT/TTS (Kannada) |
-| 🧠 + ML | `uv sync --extra ml` | + PyTorch, Transformers |
-| 👁️ + Vision | `uv sync --extra vision` | + YOLOv11, OpenCV |
-| 🌐 + Web | `uv sync --extra web` | + Playwright, Crawl4AI |
-| 🔭 + Observability | `uv sync --extra observability` | + OpenTelemetry |
-| 🎯 Everything | `uv sync --all-extras` | All of the above |
+| Option             | Command                         | Includes                          |
+| :----------------- | :------------------------------ | :-------------------------------- |
+| 🎯 Core only       | `uv sync`                       | FastAPI, LangGraph, Groq          |
+| 🎤 + Voice         | `uv sync --extra voice`         | + IndicWhisper, Edge-TTS, Pipecat |
+| 🧠 + ML            | `uv sync --extra ml`            | + PyTorch, Transformers           |
+| 👁️ + Vision        | `uv sync --extra vision`        | + YOLOv8, OpenCV, ONNX            |
+| 🌐 + Web Scraping  | `uv sync --extra web`           | + Playwright, Scrapling, MCP      |
+| 🔭 + Observability | `uv sync --extra observability` | + OpenTelemetry, Prometheus       |
+| 🎯 Everything      | `uv sync --all-extras`          | All of the above                  |
 
 ### 3. Configure Environment
 
 ```bash
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your credentials
 ```
 
 ```env
-# LLM providers (at least one required)
+# ── LLM Providers (at least one required) ──────────────────
 GROQ_API_KEY=gsk_xxxxx
 AWS_ACCESS_KEY_ID=xxxxx
 AWS_SECRET_ACCESS_KEY=xxxxx
 AWS_REGION=ap-south-1
 
-# Database (required for full features)
+# ── Database ────────────────────────────────────────────────
 DATABASE_URL=postgresql://user:pass@host:5432/cropfresh
 
-# Cache
+# ── Cache ───────────────────────────────────────────────────
 REDIS_URL=redis://localhost:6379
 
-# Optional — Neo4j knowledge graph
-NEO4J_URI=neo4j+s://xxx
+# ── Graph DB (optional but recommended) ─────────────────────
+NEO4J_URI=neo4j+s://xxxxx.databases.neo4j.io
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=xxxxx
 ```
@@ -216,56 +267,62 @@ NEO4J_PASSWORD=xxxxx
 uv run uvicorn src.api.main:app --reload
 ```
 
-🎉 **Visit** [http://localhost:8000/docs](http://localhost:8000/docs) — Interactive API documentation
+🎉 Open **[http://localhost:8000/docs](http://localhost:8000/docs)** for the interactive API playground.
 
 ---
 
-## 🎤 API Endpoints
+## 🔌 API Reference
 
-### Voice API
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/voice/process` | POST | Voice-in → AI → Voice-out |
-| `/api/v1/voice/transcribe` | POST | Audio → Text (Kannada/Hindi/English) |
-| `/api/v1/voice/synthesize` | POST | Text → Natural speech |
-| `/ws/voice/{user_id}` | WebSocket | Real-time voice streaming |
+### Voice
 
-### Chat & RAG API
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/chat` | POST | Multi-agent chat (text) |
-| `/api/v1/chat/stream` | POST | Streaming chat (SSE token events) |
-| `/api/v1/rag/query` | POST | Knowledge base query |
-| `/api/v1/rag/search` | POST | Semantic search |
+| Endpoint                   | Method      | Description                                 |
+| :------------------------- | :---------- | :------------------------------------------ |
+| `/api/v1/voice/process`    | `POST`      | Voice audio → AI response → voice audio     |
+| `/api/v1/voice/transcribe` | `POST`      | Audio → text (Kannada / Hindi / English)    |
+| `/api/v1/voice/synthesize` | `POST`      | Text → natural Kannada/Hindi/English speech |
+| `/ws/voice/{user_id}`      | `WebSocket` | Real-time duplex voice streaming            |
 
-### Listings API
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/listings` | POST | Create a new produce listing |
-| `/api/v1/listings` | GET | Search listings with filters |
-| `/api/v1/listings/farmer/{id}` | GET | All listings for a farmer |
-| `/api/v1/listings/{id}` | GET | Get listing by ID |
-| `/api/v1/listings/{id}` | PATCH | Update price / quantity / status |
-| `/api/v1/listings/{id}` | DELETE | Soft-cancel a listing |
-| `/api/v1/listings/{id}/grade` | POST | Attach quality grade |
+### Chat & RAG
 
-### Orders API
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/orders` | POST | Create order from matched listing |
-| `/api/v1/orders` | GET | List orders (filter by farmer_id or buyer_id) |
-| `/api/v1/orders/{id}` | GET | Get order details with AISP breakdown |
-| `/api/v1/orders/{id}/status` | PATCH | Advance through state machine |
-| `/api/v1/orders/{id}/dispute` | POST | Raise dispute with arrival evidence |
-| `/api/v1/orders/{id}/settle` | POST | Settle order and release escrow |
-| `/api/v1/orders/{id}/aisp` | GET | Get AISP price breakdown |
+| Endpoint              | Method | Description                       |
+| :-------------------- | :----- | :-------------------------------- |
+| `/api/v1/chat`        | `POST` | Multi-agent text chat             |
+| `/api/v1/chat/stream` | `POST` | Streaming chat (SSE token events) |
+| `/api/v1/rag/query`   | `POST` | Agricultural knowledge base query |
+| `/api/v1/rag/search`  | `POST` | Semantic vector search            |
 
-### Health
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Liveness probe |
-| `/health/ready` | GET | Readiness probe (checks Qdrant, Redis, LLM) |
-| `/metrics` | GET | Prometheus metrics scrape |
+### Marketplace — Listings
+
+| Endpoint                       | Method                     | Description                        |
+| :----------------------------- | :------------------------- | :--------------------------------- |
+| `/api/v1/listings`             | `POST`                     | Create a produce listing           |
+| `/api/v1/listings`             | `GET`                      | Search/filter listings             |
+| `/api/v1/listings/farmer/{id}` | `GET`                      | All listings for a farmer          |
+| `/api/v1/listings/{id}`        | `GET` · `PATCH` · `DELETE` | Get / update / soft-cancel listing |
+| `/api/v1/listings/{id}/grade`  | `POST`                     | Attach AI quality grade            |
+
+### Marketplace — Orders
+
+| Endpoint                      | Method  | Description                          |
+| :---------------------------- | :------ | :----------------------------------- |
+| `/api/v1/orders`              | `POST`  | Create order from matched listing    |
+| `/api/v1/orders`              | `GET`   | List orders (filter by farmer/buyer) |
+| `/api/v1/orders/{id}`         | `GET`   | Order details + AISP breakdown       |
+| `/api/v1/orders/{id}/status`  | `PATCH` | Advance through 11-state machine     |
+| `/api/v1/orders/{id}/dispute` | `POST`  | Raise dispute with arrival evidence  |
+| `/api/v1/orders/{id}/settle`  | `POST`  | Settle order & release escrow        |
+| `/api/v1/orders/{id}/aisp`    | `GET`   | Full AISP price breakdown            |
+
+### Authentication & Health
+
+| Endpoint                | Method          | Description                      |
+| :---------------------- | :-------------- | :------------------------------- |
+| `/api/v1/auth/register` | `POST`          | Farmer/buyer OTP registration    |
+| `/api/v1/auth/login`    | `POST`          | JWT token issuance               |
+| `/api/v1/auth/profile`  | `GET` · `PATCH` | User profile CRUD                |
+| `/health`               | `GET`           | Liveness probe                   |
+| `/health/ready`         | `GET`           | Readiness check (DB, Redis, LLM) |
+| `/metrics`              | `GET`           | Prometheus metrics               |
 
 ---
 
@@ -274,74 +331,49 @@ uv run uvicorn src.api.main:app --reload
 ```
 cropfresh-ai/
 │
-├── 📄 Root Files
-│   ├── AGENTS.md              # AI agent instructions
-│   ├── PLAN.md                # Master living plan
-│   ├── CHANGELOG.md           # Version history
-│   ├── Makefile               # Quick commands (make dev, make test)
-│   ├── docker-compose.yml     # Local: API + Qdrant + Neo4j + n8n
-│   └── pyproject.toml         # Python config (uv)
+├── 📄 Root
+│   ├── pyproject.toml         # uv project config & all extras
+│   ├── docker-compose.yml     # API + Neo4j + Redis local stack
+│   ├── Makefile               # make dev / make test / make lint …
+│   ├── PLAN.md                # Master living plan (start here)
+│   ├── ROADMAP.md             # 6-phase milestone roadmap
+│   └── CHANGELOG.md           # Version history
 │
-├── 📚 docs/                   # All Documentation
-│   ├── planning/              #   PRD, personas, roadmap, market analysis
-│   ├── architecture/          #   System design, tech stack, data flow
-│   ├── decisions/             #   Architecture Decision Records (ADRs)
-│   ├── features/              #   Feature specs (F001-F009)
-│   ├── agents/                #   Per-agent specs, prompts, evals
-│   └── api/                   #   API docs, endpoint specs, JSON schemas
+├── src/                       # Application Source
+│   ├── api/                   # FastAPI routers, middleware, schemas
+│   ├── agents/                # All AI agents
+│   │   ├── supervisor_agent.py
+│   │   ├── agronomy_agent.py
+│   │   ├── pricing_agent.py   # DPLE engine
+│   │   ├── commerce_agent.py
+│   │   ├── voice_agent.py
+│   │   ├── quality_assessment/
+│   │   ├── buyer_matching/
+│   │   ├── digital_twin/
+│   │   ├── logistics_router/
+│   │   ├── price_prediction/
+│   │   ├── crop_listing/
+│   │   ├── adcl/              # Assured Demand Crop List
+│   │   └── whatsapp_bot/
+│   ├── rag/                   # RAG pipeline + vector search
+│   ├── voice/                 # STT · TTS · VAD · WebSocket
+│   ├── scrapers/              # APMC · eNAM · IMD weather
+│   ├── db/                    # PostgreSQL models + migrations
+│   ├── tools/                 # Agent tools (search, calculator, APIs)
+│   ├── pipelines/             # Data processing pipelines
+│   ├── resilience/            # Retry · circuit breaker · health checks
+│   └── shared/                # Logging · constants · Kannada utils
 │
-├── 📊 tracking/               # Development Progress
-│   ├── GOALS.md               #   OKRs & milestones
-│   ├── sprints/               #   Sprint planning & review
-│   ├── daily/ & weekly/       #   Development logs
-│   ├── agent-performance/     #   Per-agent metrics over time
-│   └── retros/                #   Sprint retrospectives
+├── ai/                        # AI & ML Infrastructure
+│   ├── evals/                 # RAGAS evaluation framework
+│   ├── rag/                   # Knowledge base + RAPTOR
+│   └── models/                # Model registry
 │
-├── 🐍 src/                    # Application Source Code
-│   ├── api/                   #   FastAPI (routers, models, services, middleware)
-│   ├── agents/                #   AI agents (supervisor + 10 specialists)
-│   │   ├── crop_listing/      #     Crop Listing Agent (photos → listing)
-│   │   ├── price_prediction/  #     Price Prediction Agent
-│   │   ├── quality_assessment/#     Quality Grading Agent (CV)
-│   │   ├── buyer_matching/    #     Buyer-Seller Matching Agent
-│   │   └── whatsapp_bot/      #     WhatsApp Conversation Agent
-│   ├── scrapers/              #   APMC, eNAM, weather data collectors
-│   ├── pipelines/             #   Data processing pipelines
-│   ├── voice/                 #   Voice processing (STT/TTS/VAD/WebRTC)
-│   ├── tools/                 #   Agent tools (search, calculator, APIs)
-│   ├── workflows/             #   n8n workflow definitions
-│   └── shared/                #   Logging, exceptions, constants, Kannada utils
-│
-├── 🧠 ai/                    # AI & ML Infrastructure
-│   ├── data/                  #   Training data (raw/processed/eval)
-│   ├── models/                #   Trained models + registry
-│   ├── notebooks/             #   Jupyter experiments
-│   ├── evals/                 #   Agent evaluation framework
-│   │   ├── judges/            #     LLM-as-Judge evaluators
-│   │   ├── metrics/           #     Accuracy, latency, cost metrics
-│   │   └── regression/        #     Regression detection
-│   └── rag/                   #   RAG pipeline + knowledge base
-│
-├── 🧪 tests/                  # Test Infrastructure
-│   ├── e2e/                   #   End-to-end flow tests
-│   ├── integration/           #   Service integration tests
-│   └── load/                  #   Performance & load tests (Locust)
-│
-├── 🐳 infra/                  # Deployment & Monitoring
-│   ├── docker/                #   Dockerfiles (API, scraper, n8n)
-│   ├── gcp/                   #   Cloud Run configs
-│   └── monitoring/            #   Dashboards & alert rules
-│
-├── ⚙️ config/                 # Database & Service Configs
-│   ├── migrations/            #   SQL migrations + seed data (PostgreSQL)
-│   ├── pgvector/              #   Vector index configurations
-│   ├── neo4j/                 #   Graph constraints + seed
-│   ├── firebase/              #   Auth & storage rules
-│   └── n8n/                   #   Workflow credentials
-│
-├── 📱 mobile/                 # Flutter App (Sprint 4)
-├── 🔧 scripts/                # Automation Utilities
-└── 🔄 .github/                # CI/CD Workflows & Templates
+├── config/                    # DB migrations, Neo4j schemas, seeds
+├── infra/                     # Docker · Cloud Run · Monitoring
+├── tests/                     # Unit · Integration · E2E · Load
+├── scripts/                   # Automation utilities
+└── docs/                      # Architecture · ADRs · API specs · PRD
 ```
 
 ---
@@ -349,7 +381,7 @@ cropfresh-ai/
 ## 🧪 Development
 
 ```bash
-# Development server (hot reload)
+# Start development server (hot reload)
 make dev
 
 # Run all tests
@@ -365,7 +397,7 @@ make typecheck
 # Run agent evaluations
 make eval
 
-# Docker (API + Qdrant + Neo4j + n8n)
+# Start local stack (API + Neo4j + Redis)
 make docker-up
 ```
 
@@ -373,56 +405,58 @@ See the [Makefile](Makefile) for all available commands.
 
 ---
 
+## 📊 Key Metrics
+
+| Metric                    | Target              | Status                 |
+| :------------------------ | :------------------ | :--------------------- |
+| 🎯 Agent Routing Accuracy | > 90%               | 🟡 ~87% (mock data)    |
+| ⚡ Voice P95 Latency      | < 2s                | 🔴 ~4.5s (in progress) |
+| 💰 API Cost per Query     | < ₹0.25             | 🔴 ~₹0.44 (optimizing) |
+| 🧪 Test Coverage          | > 60% (Phase 5)     | ✅ ~57% (340 tests)    |
+| 🏪 REST Endpoints         | —                   | ✅ 21 endpoints live   |
+| 👩‍🌾 Farmer Pilot           | 50 active (Phase 6) | 🔲 Planned             |
+| 📈 Price Improvement      | > 20% vs. middlemen | 🔲 Phase 6             |
+
+---
+
 ## 🗺️ Roadmap
 
-| Phase | Timeline | Focus | Status |
-|-------|----------|-------|--------|
-| **1. Foundation & Core Agents** | Feb–Mar 2026 | Multi-agent system, voice, pricing, matching, quality | ✅ Complete — Tasks 1–5 done |
-| **2. Business Services** | Mar–Apr 2026 | DB schema, Crop Listing API, Order Management | 🟢 Active — Tasks 6–8 done |
-| **3. Intelligence & Digital Twin** | Apr–May 2026 | Digital Twin, DPLE routing, ADCL agent, APMC scraper | 🔲 Planned |
-| **4. Mobile & WhatsApp** | Apr–Jun 2026 | Flutter app, WhatsApp bot, 10+ language voice | 🔲 Planned |
-| **5. Testing & Evaluation** | Jun–Jul 2026 | RAGAS framework, E2E tests, 60% coverage | 🔲 Planned |
-| **6. Beta Launch** | Jul–Aug 2026 | 50 farmers in Karnataka pilot | 🔲 Planned |
+| Phase                               | Period       | Focus                                                         | Status      |
+| :---------------------------------- | :----------- | :------------------------------------------------------------ | :---------- |
+| **1 — Foundation & Core Agents**    | Feb–Mar 2026 | Multi-agent system, voice, pricing, matching, quality grading | ✅ Complete |
+| **2 — Business Services**           | Mar–Apr 2026 | PostgreSQL schema, Listings API, Order lifecycle, Auth        | 🟢 Active   |
+| **3 — Intelligence & Digital Twin** | Apr–May 2026 | Digital Twin, DPLE logistics, ADCL agent, APMC scraper        | 🔲 Planned  |
+| **4 — Mobile & WhatsApp**           | Apr–Jun 2026 | Flutter app, WhatsApp bot, 10+ language voice                 | 🔲 Planned  |
+| **5 — Testing & Evaluation**        | Jun–Jul 2026 | RAGAS framework, E2E tests, 60%+ coverage                     | 🔲 Planned  |
+| **6 — Beta Launch**                 | Jul–Aug 2026 | 50-farmer Karnataka pilot, < 2s P95 latency                   | 🔲 Planned  |
 
-See [ROADMAP.md](ROADMAP.md) for the detailed phase breakdown with deliverables and success criteria.
+See [ROADMAP.md](ROADMAP.md) for full deliverables and success criteria per phase.
 
 ---
 
 ## 📖 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [PLAN.md](PLAN.md) | Master living plan — **start here** |
-| [Architecture](docs/architecture/ARCHITECTURE.md) | System design overview |
-| [Tech Stack](docs/architecture/tech-stack.md) | Every technology + why chosen |
-| [API Design](docs/architecture/api-design.md) | API conventions & auth |
-| [Database Schema](docs/architecture/database-schema.md) | RDS PostgreSQL + pgvector + Neo4j schemas |
-| [Agent Registry](docs/agents/REGISTRY.md) | All AI agents listed |
-| [PRD](docs/planning/PRD.md) | Product Requirements Document |
-| [Coding Standards](docs/architecture/coding-standards.md) | Python style guide |
-| [Security](docs/architecture/security.md) | Auth, encryption, DPDP compliance |
-
----
-
-## 🎯 Key Metrics
-
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| 🎯 Agent Routing Accuracy | >90% | ~87% (mock) | 🟡 Near |
-| ⚡ Voice P95 Latency | <2s | ~4.5s (est.) | 🔴 Behind |
-| 💰 API Cost per Query | <₹0.25 | ~₹0.44 | 🔴 Behind |
-| 🧪 Test Coverage | >80% (Phase 6) | **~56%** (276 tests) | ✅ Sprint target met |
-| 🏪 REST Endpoints | — | **15** (7 listings + 8 orders) | ✅ Active |
-| 👨‍🌾 Farmer Adoption | 50+ (Beta) | 0 (pre-pilot) | 🔲 Phase 6 |
-| 📈 Price Improvement | >20% vs. middlemen | — | 🔲 Phase 6 |
+| Document                                                  | Description                           |
+| :-------------------------------------------------------- | :------------------------------------ |
+| [PLAN.md](PLAN.md)                                        | Master living plan — **start here**   |
+| [ROADMAP.md](ROADMAP.md)                                  | 6-phase milestone roadmap             |
+| [Architecture](docs/architecture/ARCHITECTURE.md)         | System design overview                |
+| [Tech Stack](docs/architecture/tech-stack.md)             | Every technology + why chosen         |
+| [API Design](docs/architecture/api-design.md)             | API conventions & auth                |
+| [Database Schema](docs/architecture/database-schema.md)   | PostgreSQL + pgvector + Neo4j schemas |
+| [Agent Registry](docs/agents/REGISTRY.md)                 | All AI agents — specs & prompts       |
+| [PRD](docs/planning/PRD.md)                               | Product Requirements Document         |
+| [Coding Standards](docs/architecture/coding-standards.md) | Python style guide                    |
+| [Security](docs/architecture/security.md)                 | Auth, encryption, DPDP compliance     |
+| [DEPLOYMENT.md](DEPLOYMENT.md)                            | Production deployment guide           |
 
 ---
 
 ## 🤝 Contributing
 
-1. Check [PLAN.md](PLAN.md) for current priorities
-2. Pick an issue or create one from [templates](.github/ISSUE_TEMPLATE/)
-3. Follow [coding standards](docs/architecture/coding-standards.md)
+1. Read [PLAN.md](PLAN.md) to understand current priorities
+2. Pick an open issue or create one from the [templates](.github/ISSUE_TEMPLATE/)
+3. Follow the [coding standards](docs/architecture/coding-standards.md) — enforced by `ruff` + `mypy`
 4. Submit a PR using the [PR template](.github/pull_request_template.md)
 
 ---
@@ -435,10 +469,14 @@ MIT — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
+<br/>
+
 **Built with ❤️ for Indian farmers**
 
-*Empowering Karnataka's agricultural community through AI*
+_Empowering Karnataka's agricultural community through the power of AI_
 
-🌾 🤖 🇮🇳
+🌾 &nbsp; 🤖 &nbsp; 🇮🇳
+
+<br/>
 
 </div>
