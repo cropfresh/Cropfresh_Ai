@@ -270,7 +270,7 @@ class ScraplingBaseScraper(ABC):
         else:
             # Basic Fetcher does not have async_fetch, we use fetch inside an executor or just fetch
             # Since Scrapling's Fetcher is built on httpx, we can use it directly
-            return Fetcher.fetch(url, **kwargs)
+            return Fetcher(auto_match=False).get(url, **kwargs)
 
     # ── Rate Limiting ─────────────────────────────────────────────────────
 

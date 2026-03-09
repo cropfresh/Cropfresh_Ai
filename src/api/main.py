@@ -21,6 +21,9 @@ from pathlib import Path
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    # Override SelectorEventLoop to force Uvicorn to use Proactor on Windows,
+    # because Playwright requires ProactorEventLoop for subprocesses.
+    asyncio.SelectorEventLoop = asyncio.ProactorEventLoop
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,6 +36,7 @@ from src.api.config import get_settings
 # ─────────────────────────────────────────────────
 # Lifespan: startup + shutdown
 # ─────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,20 +56,30 @@ async def lifespan(app: FastAPI):
     """
     settings = get_settings()
 
-    logger.info("🌾 CropFresh AI Service starting — env={} debug={}", settings.environment, settings.debug)
+    logger.info(
+        "🌾 CropFresh AI Service starting — env={} debug={}",
+        settings.environment,
+        settings.debug,
+    )
 
     # ── 1. LangSmith (optional) ──────────────────────
+    logger.info(f"DEBUG: Active Event Loop Type is: {type(asyncio.get_running_loop())}")
     if settings.langsmith_api_key:
         os.environ.setdefault("LANGCHAIN_API_KEY", settings.langsmith_api_key)
         os.environ.setdefault("LANGCHAIN_PROJECT", settings.langsmith_project)
-        os.environ.setdefault("LANGCHAIN_TRACING_V2", settings.langsmith_tracing.lower())
+        os.environ.setdefault(
+            "LANGCHAIN_TRACING_V2", settings.langsmith_tracing.lower()
+        )
         if settings.langsmith_endpoint:
             os.environ.setdefault("LANGCHAIN_ENDPOINT", settings.langsmith_endpoint)
-        logger.info("🔗 LangSmith tracing enabled (project={})", settings.langsmith_project)
+        logger.info(
+            "🔗 LangSmith tracing enabled (project={})", settings.langsmith_project
+        )
 
     # ── 2. Observability ────────────────────────────
     try:
         from src.production.observability import setup_observability
+
         setup_observability(
             service_name="cropfresh-ai",
             endpoint=settings.otel_endpoint or None,
@@ -78,12 +92,15 @@ async def lifespan(app: FastAPI):
     if settings.use_redis_cache:
         try:
             import redis.asyncio as aioredis  # type: ignore
+
             redis_client = aioredis.from_url(settings.redis_url, decode_responses=False)
             await redis_client.ping()
             app.state.redis = redis_client
             logger.info("✅ Redis connected: {}", settings.redis_url)
         except Exception as exc:
-            logger.warning("Redis unavailable ({}), falling back to in-memory cache", exc)
+            logger.warning(
+                "Redis unavailable ({}), falling back to in-memory cache", exc
+            )
             app.state.redis = None
     else:
         app.state.redis = None
@@ -108,7 +125,9 @@ async def lifespan(app: FastAPI):
                 settings.llm_model,
             )
         else:
-            logger.warning("⚠️  No LLM provider configured — agents will use rule-based fallbacks")
+            logger.warning(
+                "⚠️  No LLM provider configured — agents will use rule-based fallbacks"
+            )
     except Exception as exc:
         logger.warning("LLM provider initialization failed: {} — using fallbacks", exc)
 
@@ -126,11 +145,19 @@ async def lifespan(app: FastAPI):
         ok = await agent.initialize()
         if ok:
             app.state.knowledge_agent = agent
-            logger.info("✅ KnowledgeAgent initialized (Qdrant={}:{})", settings.qdrant_host, settings.qdrant_port)
+            logger.info(
+                "✅ KnowledgeAgent initialized (Qdrant={}:{})",
+                settings.qdrant_host,
+                settings.qdrant_port,
+            )
         else:
-            logger.warning("⚠️  KnowledgeAgent initialization returned False — RAG queries will fail")
+            logger.warning(
+                "⚠️  KnowledgeAgent initialization returned False — RAG queries will fail"
+            )
     except Exception as exc:
-        logger.warning("KnowledgeAgent initialization failed: {} — RAG unavailable", exc)
+        logger.warning(
+            "KnowledgeAgent initialization failed: {} — RAG unavailable", exc
+        )
 
     # ── 6. Full Agent System ──────────────────────────
     #! Critical: Previously created a bare SupervisorAgent with zero agents.
@@ -162,6 +189,7 @@ async def lifespan(app: FastAPI):
         # * Fallback: create bare supervisor so health checks pass
         try:
             from src.agents.supervisor_agent import SupervisorAgent
+
             supervisor = SupervisorAgent(llm=app.state.llm)
             await supervisor.initialize()
             app.state.supervisor = supervisor
@@ -169,16 +197,23 @@ async def lifespan(app: FastAPI):
         except Exception:
             pass
 
-    logger.info("🚀 CropFresh AI Service ready — http://{}:{}/docs", settings.api_host, settings.api_port)
+    logger.info(
+        "🚀 CropFresh AI Service ready — http://{}:{}/docs",
+        settings.api_host,
+        settings.api_port,
+    )
 
     # ── 7. Silero VAD pre-download ───────────────────
     try:
         from src.voice.vad import SileroVAD
+
         vad = SileroVAD()
         await vad.initialize()
         logger.info("✅ Silero VAD ready")
     except Exception as exc:
-        logger.warning("⚠️ Silero VAD unavailable: {} — WebSocket VAD will be skipped", exc)
+        logger.warning(
+            "⚠️ Silero VAD unavailable: {} — WebSocket VAD will be skipped", exc
+        )
 
     yield  # ─── App is running ───
 
@@ -213,7 +248,7 @@ app = FastAPI(
 # ─── CORS ──────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_settings.allowed_origins_list,   # Env-driven — NOT allow_origins=["*"] in prod
+    allow_origins=_settings.allowed_origins_list,  # Env-driven — NOT allow_origins=["*"] in prod
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -221,12 +256,14 @@ app.add_middleware(
 
 # ─── API Key auth ──────────────────────────────────
 from src.api.middleware.auth import APIKeyMiddleware  # noqa: E402
+
 app.add_middleware(APIKeyMiddleware, api_key=_settings.api_key or None)
 
 
 # ─────────────────────────────────────────────────
 # Health endpoints
 # ─────────────────────────────────────────────────
+
 
 @app.get("/", tags=["meta"], include_in_schema=False)
 async def root():
@@ -238,6 +275,7 @@ async def root():
             "environment": _settings.environment,
         }
     from fastapi.responses import RedirectResponse
+
     return RedirectResponse(url="/static/index.html")
 
 
@@ -259,7 +297,8 @@ async def readiness(request: Request):
         "llm_configured": _settings.has_llm_configured,
         "llm_initialized": getattr(request.app.state, "llm", None) is not None,
         "qdrant_configured": bool(_settings.qdrant_host),
-        "knowledge_agent": getattr(request.app.state, "knowledge_agent", None) is not None,
+        "knowledge_agent": getattr(request.app.state, "knowledge_agent", None)
+        is not None,
         "supervisor": getattr(request.app.state, "supervisor", None) is not None,
         "redis": getattr(request.app.state, "redis", None) is not None,
     }
@@ -278,6 +317,7 @@ async def readiness(request: Request):
 # Prometheus metrics endpoint
 # ─────────────────────────────────────────────────
 
+
 @app.get("/metrics", tags=["observability"], include_in_schema=False)
 async def prometheus_metrics():
     """
@@ -291,17 +331,21 @@ async def prometheus_metrics():
     """
     try:
         from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+
         return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
     except ImportError:
         # Prometheus client not installed (observability extra not used)
         from src.production.observability import get_all_metrics
+
         metrics = get_all_metrics()
         lines = [
             "# HELP cropfresh_agent_requests_total Total requests per agent",
             "# TYPE cropfresh_agent_requests_total counter",
         ]
         for agent, m in metrics.get("by_agent", {}).items():
-            lines.append(f'cropfresh_agent_requests_total{{agent="{agent}"}} {m["total_requests"]}')
+            lines.append(
+                f'cropfresh_agent_requests_total{{agent="{agent}"}} {m["total_requests"]}'
+            )
         lines.append("")
         return Response(content="\n".join(lines), media_type="text/plain")
 
@@ -310,28 +354,40 @@ async def prometheus_metrics():
 # API Routers
 # ─────────────────────────────────────────────────
 
-from src.api.routes import rag                      # noqa: E402
+from src.api.routes import rag  # noqa: E402
+
 app.include_router(rag.router, prefix="/api/v1", tags=["rag"])
 
-from src.api.routes import chat                     # noqa: E402
+from src.api.routes import chat  # noqa: E402
+
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 
-from src.api.routes import data as data_routes      # noqa: E402
+from src.api.routes import prices  # noqa: E402
+
+app.include_router(prices.router, prefix="/api/v1", tags=["prices"])
+
+from src.api.routes import data as data_routes  # noqa: E402
+
 app.include_router(data_routes.router, prefix="/api/v1", tags=["data"])
 
 from src.api.routers import listings as listings_router  # noqa: E402
+
 app.include_router(listings_router.router, prefix="/api/v1", tags=["listings"])
 
-from src.api.routers import orders as orders_router      # noqa: E402
+from src.api.routers import orders as orders_router  # noqa: E402
+
 app.include_router(orders_router.router, prefix="/api/v1", tags=["orders"])
 
-from src.api.routers import auth as auth_router          # noqa: E402
+from src.api.routers import auth as auth_router  # noqa: E402
+
 app.include_router(auth_router.router, prefix="/api/v1", tags=["auth"])
 
-from src.api.rest import voice as voice_rest        # noqa: E402
+from src.api.rest import voice as voice_rest  # noqa: E402
+
 app.include_router(voice_rest.router, tags=["voice"])
 
-from src.api import websocket as voice_ws           # noqa: E402
+from src.api import websocket as voice_ws  # noqa: E402
+
 app.include_router(voice_ws.router, tags=["websocket"])
 
 

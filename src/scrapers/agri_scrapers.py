@@ -30,6 +30,9 @@ from src.scrapers.base_scraper import (
     ScrapeResult,
     ScraplingBaseScraper,
 )
+from src.agents.web_scraping_agent import WebScrapingAgent
+from src.scrapers.state_portals import StatePortalScraper
+from src.scrapers.agmarknet.client import AgmarknetScraper
 
 
 # ============================================================================
@@ -51,6 +54,11 @@ class MandiPrice(BaseModel):
     unit: str = "Rs/Quintal"
     date: date
     source: str = "unknown"
+
+
+class MandiPriceList(BaseModel):
+    """Wrapper for array of Mandi prices returned by LLM extraction."""
+    prices: list[MandiPrice]
 
 
 class WeatherData(BaseModel):
@@ -125,198 +133,6 @@ SOURCE_URLS = {
 # ============================================================================
 
 
-class AgmarknetScraper(ScraplingBaseScraper):
-    """
-    Scraper for Agmarknet portal — Daily commodity prices.
-
-    URL: https://agmarknet.gov.in/SearchCmmMkt.aspx
-    Data: Daily arrivals and prices from 7000+ mandis
-
-    Uses Scrapling's adaptive parsing to survive HTML changes.
-    """
-
-    name = "agmarknet"
-    base_url = "https://agmarknet.gov.in"
-    fetcher_type = FetcherType.BASIC
-    cache_ttl_seconds = 600  # 10 min — prices don't change every second
-    rate_limit_delay = 2.0  # Be gentle with govt servers
-
-    SEARCH_URL = "https://agmarknet.gov.in/SearchCmmMkt.aspx"
-
-    async def scrape(
-        self,
-        commodity: str = "Tomato",
-        state: Optional[str] = None,
-        market: Optional[str] = None,
-        date_from: Optional[date] = None,
-        **kwargs,
-    ) -> ScrapeResult:
-        """
-        Get commodity prices from Agmarknet.
-
-        Args:
-            commodity: Commodity name (e.g., "Tomato", "Onion", "Rice")
-            state: Optional state filter
-            market: Optional market/mandi name
-            date_from: Start date for price data
-
-        Returns:
-            ScrapeResult with MandiPrice records
-        """
-        start_time = time.time()
-
-        try:
-            # Fetch the search page using Scrapling
-            page = await self.fetch(self.SEARCH_URL)
-
-            # Parse price data using Scrapling's CSS/XPath selectors
-            prices = self._parse_price_data(page, commodity, state, market)
-
-            duration_ms = (time.time() - start_time) * 1000
-            return self.build_result(
-                url=self.SEARCH_URL,
-                data=[p.model_dump() for p in prices],
-                duration_ms=duration_ms,
-            )
-
-        except Exception as e:
-            duration_ms = (time.time() - start_time) * 1000
-            logger.error(f"Agmarknet scraping failed: {e}")
-            return self.build_result(
-                url=self.SEARCH_URL,
-                data=[],
-                error=str(e),
-                duration_ms=duration_ms,
-            )
-
-    def _parse_price_data(
-        self,
-        page: Any,
-        commodity: str,
-        state: Optional[str],
-        market: Optional[str] = None,
-    ) -> list[MandiPrice]:
-        """
-        Parse price data from Agmarknet page using Scrapling selectors.
-
-        Uses CSS selectors for table rows and adaptive tracking
-        to survive layout changes.
-        """
-        prices: list[MandiPrice] = []
-
-        try:
-            # Agmarknet displays data in a table with id 'cphBody_GridPriceData'
-            # Using Scrapling adaptive selectors
-            rows = page.css("table tr")
-
-            for row in rows:
-                cells = row.css("td::text").getall()
-                if len(cells) >= 7:
-                    try:
-                        row_commodity = cells[0].strip()
-                        # Filter by commodity if specified
-                        if commodity.lower() not in row_commodity.lower():
-                            continue
-
-                        row_state = cells[1].strip() if len(cells) > 1 else ""
-                        if state and state.lower() not in row_state.lower():
-                            continue
-
-                        row_market = cells[2].strip() if len(cells) > 2 else ""
-                        if market and market.lower() not in row_market.lower():
-                            continue
-
-                        prices.append(
-                            MandiPrice(
-                                commodity=row_commodity,
-                                variety=cells[3].strip() if len(cells) > 3 else None,
-                                mandi=row_market,
-                                district=cells[4].strip() if len(cells) > 4 else None,
-                                state=row_state,
-                                min_price=self._safe_float(cells[5]) if len(cells) > 5 else None,
-                                max_price=self._safe_float(cells[6]) if len(cells) > 6 else None,
-                                modal_price=self._safe_float(cells[7]) or 0.0 if len(cells) > 7 else 0.0,
-                                date=date.today(),
-                                source="agmarknet",
-                            )
-                        )
-                    except (ValueError, IndexError) as e:
-                        logger.debug(f"Skipped row due to parse error: {e}")
-                        continue
-
-        except Exception as e:
-            logger.warning(f"Price table parsing failed: {e}")
-
-        # If no data parsed from HTML, return mock data for development
-        if not prices:
-            logger.info(f"No live data parsed — returning development data for '{commodity}'")
-            prices = self._get_development_data(commodity, state)
-
-        return prices
-
-    def _safe_float(self, value: str) -> Optional[float]:
-        """Safely convert string to float."""
-        try:
-            cleaned = re.sub(r"[^\d.]", "", value.strip())
-            return float(cleaned) if cleaned else None
-        except (ValueError, AttributeError):
-            return None
-
-    def _get_development_data(
-        self, commodity: str, state: Optional[str]
-    ) -> list[MandiPrice]:
-        """Return realistic development data when live scraping isn't available."""
-        dev_data = {
-            "tomato": [
-                MandiPrice(
-                    commodity="Tomato", variety="Local", mandi="Yeshwanthpur",
-                    district="Bangalore Urban", state="Karnataka",
-                    min_price=1200.0, max_price=2800.0, modal_price=2000.0,
-                    date=date.today(), source="agmarknet",
-                ),
-                MandiPrice(
-                    commodity="Tomato", variety="Hybrid", mandi="KR Market",
-                    district="Bangalore Urban", state="Karnataka",
-                    min_price=1500.0, max_price=3000.0, modal_price=2200.0,
-                    date=date.today(), source="agmarknet",
-                ),
-            ],
-            "onion": [
-                MandiPrice(
-                    commodity="Onion", variety="Red", mandi="Hubli",
-                    district="Dharwad", state="Karnataka",
-                    min_price=800.0, max_price=1600.0, modal_price=1200.0,
-                    date=date.today(), source="agmarknet",
-                ),
-            ],
-            "rice": [
-                MandiPrice(
-                    commodity="Rice", variety="Sona Masuri", mandi="Raichur",
-                    district="Raichur", state="Karnataka",
-                    min_price=3500.0, max_price=4500.0, modal_price=4000.0,
-                    date=date.today(), source="agmarknet",
-                ),
-            ],
-        }
-
-        key = commodity.lower()
-        for k, v in dev_data.items():
-            if k in key:
-                if state:
-                    return [p for p in v if state.lower() in p.state.lower()] or v
-                return v
-
-        # Generic fallback
-        return [
-            MandiPrice(
-                commodity=commodity, variety="Standard", mandi="Azadpur",
-                district="Delhi", state="Delhi",
-                min_price=1000.0, max_price=2500.0, modal_price=1800.0,
-                date=date.today(), source="agmarknet",
-            ),
-        ]
-
-
 class ENAMScraper(ScraplingBaseScraper):
     """
     Scraper for eNAM portal — Live trading data.
@@ -334,6 +150,10 @@ class ENAMScraper(ScraplingBaseScraper):
     rate_limit_delay = 3.0  # eNAM has stricter rate limits
 
     DASHBOARD_URL = "https://enam.gov.in/web/dashboard/trade-data"
+
+    def __init__(self, llm_provider: Optional[Any] = None):
+        super().__init__()
+        self.web_agent = WebScrapingAgent(llm_provider=llm_provider) if llm_provider else None
 
     async def scrape(
         self,
@@ -359,6 +179,10 @@ class ENAMScraper(ScraplingBaseScraper):
 
             # Parse live trading data
             prices = self._parse_enam_data(page, commodity, state)
+
+            if not prices and self.web_agent:
+                logger.info("eNAM CSS extraction failed — falling back to LLM WebScrapingAgent")
+                prices = await self._fallback_llm_extract(page, commodity, state)
 
             duration_ms = (time.time() - start_time) * 1000
             return self.build_result(
@@ -425,12 +249,50 @@ class ENAMScraper(ScraplingBaseScraper):
         except Exception as e:
             logger.warning(f"eNAM table parsing failed: {e}")
 
-        # Development fallback
         if not prices:
-            logger.info("No live eNAM data — returning development data")
-            prices = self._get_development_data(commodity, state)
+            logger.warning("No live eNAM data parsed")
 
         return prices
+
+    async def _fallback_llm_extract(
+        self, page: Any, commodity: Optional[str], state: Optional[str]
+    ) -> list[MandiPrice]:
+        if not self.web_agent:
+            return []
+            
+        html_content = ""
+        if hasattr(page, "body"):
+            html_content = page.body.decode("utf-8", "ignore")
+        elif hasattr(page, "html"):
+            html_content = page.html
+            
+        if not html_content:
+            return []
+            
+        instruction = "Extract all live trade prices from the eNAM dashboard table."
+        result = await self.web_agent.extract_with_schema(
+            html_content=html_content,
+            url=self.DASHBOARD_URL,
+            schema=MandiPriceList,
+            instruction=instruction
+        )
+        
+        fallback_prices = []
+        if result.success and isinstance(result.extracted_data, dict):
+            for item in result.extracted_data.get("prices", []):
+                try:
+                    c = item.get("commodity", "")
+                    s = item.get("state", "")
+                    
+                    if commodity and commodity.lower() not in c.lower(): continue
+                    if state and state.lower() not in s.lower(): continue
+                    
+                    item["source"] = "enam_llm"
+                    fallback_prices.append(MandiPrice(**item))
+                except Exception as e:
+                    logger.debug(f"LLM item parse error: {e}")
+                    
+        return fallback_prices
 
     def _safe_float(self, value: str) -> Optional[float]:
         """Safely convert string to float."""
@@ -440,24 +302,7 @@ class ENAMScraper(ScraplingBaseScraper):
         except (ValueError, AttributeError):
             return None
 
-    def _get_development_data(
-        self, commodity: Optional[str], state: Optional[str]
-    ) -> list[MandiPrice]:
-        """Development data for testing."""
-        return [
-            MandiPrice(
-                commodity=commodity or "Tomato",
-                variety="Local",
-                mandi="Hubli APMC",
-                district="Dharwad",
-                state=state or "Karnataka",
-                min_price=1400.0,
-                max_price=2600.0,
-                modal_price=2100.0,
-                date=date.today(),
-                source="enam",
-            ),
-        ]
+
 
 
 class IMDWeatherScraper(ScraplingBaseScraper):
@@ -562,20 +407,8 @@ class IMDWeatherScraper(ScraplingBaseScraper):
         except Exception as e:
             logger.debug(f"Weather element extraction failed: {e}")
 
-        # Development fallback
         if not weather:
-            weather.append(
-                WeatherData(
-                    location=district or state,
-                    district=district or "State-wide",
-                    state=state,
-                    temperature_celsius=28.0,
-                    humidity_percent=65.0,
-                    rainfall_mm=0.0,
-                    weather_condition="Partly Cloudy",
-                    forecast_date=date.today(),
-                )
-            )
+            logger.warning("No weather data parsed")
 
         return weather
 
@@ -702,9 +535,10 @@ class AgriculturalDataAPI:
         health = api.get_all_health()
     """
 
-    def __init__(self):
-        self.agmarknet = AgmarknetScraper()
-        self.enam = ENAMScraper()
+    def __init__(self, llm_provider: Optional[Any] = None):
+        self.agmarknet = AgmarknetScraper(llm_provider=llm_provider)
+        self.enam = ENAMScraper(llm_provider=llm_provider)
+        self.state_portals = StatePortalScraper(llm_provider=llm_provider)
         self.imd = IMDWeatherScraper()
         self.news = RSSNewsScraper()
 
@@ -712,6 +546,7 @@ class AgriculturalDataAPI:
         self,
         commodity: str,
         state: Optional[str] = None,
+        district: Optional[str] = None,
         source: str = "agmarknet",
     ) -> ScrapeResult:
         """
@@ -720,16 +555,16 @@ class AgriculturalDataAPI:
         Fallback chain: agmarknet -> enam
         """
         if source == "agmarknet":
-            result = await self.agmarknet.scrape(commodity=commodity, state=state)
+            result = await self.agmarknet.scrape(commodity=commodity, state=state, district=district)
             if not result.success:
                 logger.warning("Agmarknet failed — falling back to eNAM")
-                result = await self.enam.scrape(commodity=commodity, state=state)
+                result = await self.enam.scrape(commodity=commodity, state=state, district=district)
             return result
         elif source == "enam":
-            result = await self.enam.scrape(commodity=commodity, state=state)
+            result = await self.enam.scrape(commodity=commodity, state=state, district=district)
             if not result.success:
                 logger.warning("eNAM failed — falling back to Agmarknet")
-                result = await self.agmarknet.scrape(commodity=commodity, state=state)
+                result = await self.agmarknet.scrape(commodity=commodity, state=state, district=district)
             return result
         else:
             logger.warning(f"Unknown price source: {source}")
@@ -754,11 +589,16 @@ class AgriculturalDataAPI:
         """Get agricultural news."""
         return await self.news.get_news(source, limit)
 
+    async def get_state_data(self, state: str = "UP", **kwargs) -> ScrapeResult:
+        """Get agricultural alerts and schemes for a state."""
+        return await self.state_portals.scrape(state=state, **kwargs)
+
     def get_all_health(self) -> dict[str, dict]:
         """Get health status of all scrapers."""
         return {
             "agmarknet": self.agmarknet.get_health().model_dump(),
             "enam": self.enam.get_health().model_dump(),
+            "state_portals": self.state_portals.get_health().model_dump(),
             "imd_weather": self.imd.get_health().model_dump(),
         }
 
@@ -766,4 +606,5 @@ class AgriculturalDataAPI:
         """Clean up all scrapers."""
         await self.agmarknet.close()
         await self.enam.close()
+        await self.state_portals.close()
         await self.imd.close()

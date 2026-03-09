@@ -25,9 +25,12 @@ from pathlib import Path
 from loguru import logger
 from pydantic import BaseModel, Field
 from playwright.async_api import async_playwright, Browser, Page, BrowserContext
+from readability import Document
+from markdownify import markdownify as md
 
 # Local imports
 from src.tools.browser_stealth import apply_stealth, get_random_user_agent, StealthConfig
+from src.tools.web_search import WebSearchTool
 
 
 class ScrapingResult(BaseModel):
@@ -36,7 +39,7 @@ class ScrapingResult(BaseModel):
     success: bool
     markdown: str = ""
     html: str = ""
-    extracted_data: dict = Field(default_factory=dict)
+    extracted_data: Any = Field(default_factory=dict)
     error: Optional[str] = None
     cached: bool = False
     scrape_time_ms: float = 0.0
@@ -289,6 +292,7 @@ class WebScrapingAgent:
         schema: Type[BaseModel],
         instruction: str,
         config: Optional[ScrapingConfig] = None,
+        fallback_query: Optional[str] = None,
     ) -> ScrapingResult:
         """
         Extract structured data using LLM and Pydantic schema.
@@ -298,6 +302,7 @@ class WebScrapingAgent:
             schema: Pydantic model class for extraction
             instruction: Extraction instruction for LLM
             config: Scraping configuration
+            fallback_query: Search query to use if the URL fails (e.g. 404/Timeout)
             
         Returns:
             ScrapingResult with extracted data matching schema
@@ -311,7 +316,8 @@ class WebScrapingAgent:
             result = await agent.scrape_with_schema(
                 url="https://agmarknet.gov.in/...",
                 schema=MandiPrice,
-                instruction="Extract all commodity prices from the table"
+                instruction="Extract all commodity prices from the table",
+                fallback_query="Agmarknet official portal live prices"
             )
         """
         if not self.llm_provider:
@@ -324,32 +330,27 @@ class WebScrapingAgent:
         # First scrape the page content
         markdown_result = await self.scrape_to_markdown(url, config)
         
+        # Implement Search Fallback if the URL fails
+        if not markdown_result.success and fallback_query:
+            logger.warning(f"URL {url} failed. Initiating search fallback for: {fallback_query}")
+            search_tool = WebSearchTool()
+            search_results = await search_tool.search(fallback_query, max_results=1)
+            
+            if search_results and search_results.results:
+                new_url = search_results.results[0].url
+                logger.info(f"Fallback Search found new URL: {new_url}. Retrying scrape...")
+                url = new_url # Update URL for result reporting
+                markdown_result = await self.scrape_to_markdown(new_url, config)
+        
         if not markdown_result.success:
             return markdown_result
         
         try:
-            # Use LLM to extract structured data
-            extraction_prompt = f"""Extract data from the following web page content according to the schema.
-
-INSTRUCTION: {instruction}
-
-SCHEMA:
-{json.dumps(schema.model_json_schema(), indent=2)}
-
-PAGE CONTENT:
-{markdown_result.markdown[:15000]}  # Limit content to avoid token limits
-
-Return a valid JSON object or array matching the schema. Only output JSON, no explanation."""
-
-            # Call LLM (using the provider's interface)
-            llm_response = await self.llm_provider.agenerate(extraction_prompt)
-            
-            # Parse JSON response
-            json_match = re.search(r'[\[\{].*[\]\}]', llm_response, re.DOTALL)
-            if json_match:
-                extracted = json.loads(json_match.group())
-            else:
-                extracted = {}
+            extracted = await self._extract_chunks_with_llm(
+                markdown=markdown_result.markdown,
+                schema=schema,
+                instruction=instruction
+            )
             
             return ScrapingResult(
                 url=url,
@@ -368,57 +369,164 @@ Return a valid JSON object or array matching the schema. Only output JSON, no ex
                 error=f"LLM extraction failed: {str(e)}",
                 scrape_time_ms=markdown_result.scrape_time_ms,
             )
+            
+    async def extract_with_schema(
+        self,
+        html_content: str,
+        url: str,
+        schema: Type[BaseModel],
+        instruction: str,
+    ) -> ScrapingResult:
+        """
+        Extract structured data using LLM and Pydantic schema from raw HTML.
+        
+        Args:
+            html_content: Raw HTML content
+            url: URL the content was fetched from (for tracking)
+            schema: Pydantic model class for extraction
+            instruction: Extraction instruction for LLM
+            
+        Returns:
+            ScrapingResult with extracted data matching schema
+        """
+        if not self.llm_provider:
+            return ScrapingResult(
+                url=url,
+                success=False,
+                error="LLM provider not configured for schema extraction",
+            )
+            
+        start_time = datetime.now()
+        markdown = self._html_to_markdown(html_content)
+        
+        try:
+            extracted = await self._extract_chunks_with_llm(
+                markdown=markdown,
+                schema=schema,
+                instruction=instruction
+            )
+            
+            return ScrapingResult(
+                url=url,
+                success=True,
+                markdown=markdown,
+                extracted_data=extracted,
+                scrape_time_ms=(datetime.now() - start_time).total_seconds() * 1000,
+            )
+            
+        except Exception as e:
+            logger.error("Schema extraction failed for {}: {}", url, str(e))
+            return ScrapingResult(
+                url=url,
+                success=False,
+                markdown=markdown,
+                error=f"LLM extraction failed: {str(e)}",
+                scrape_time_ms=(datetime.now() - start_time).total_seconds() * 1000,
+            )
+
+    async def _extract_chunks_with_llm(
+        self,
+        markdown: str,
+        schema: Type[BaseModel],
+        instruction: str,
+        chunk_size: int = 15000,
+    ) -> Any:
+        """Helper to chunk markdown and extract data safely across all chunks."""
+        chunks = []
+        current_chunk = ""
+        
+        # Semantic chunking by paragraphs (double newlines)
+        paragraphs = markdown.split("\n\n")
+        
+        for p in paragraphs:
+            if len(current_chunk) + len(p) < chunk_size:
+                current_chunk += p + "\n\n"
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = p + "\n\n"
+                
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+            
+        if not chunks:
+            return []
+            
+        all_results = []
+        is_list_expected = False
+        
+        for chunk in chunks:
+            extraction_prompt = f"""Extract data from the following web page content according to the schema.
+
+INSTRUCTION: {instruction}
+
+SCHEMA:
+{json.dumps(schema.model_json_schema(), indent=2)}
+
+PAGE CONTENT:
+{chunk}
+
+Return a valid JSON object or array matching the schema. Only output JSON, no explanation."""
+
+            # Call LLM
+            llm_response = await self.llm_provider.agenerate(extraction_prompt)
+            
+            # Parse JSON safely
+            json_match = re.search(r'[\[\{].*[\]\}]', llm_response, re.DOTALL)
+            if json_match:
+                extracted = json.loads(json_match.group())
+                if isinstance(extracted, list):
+                    is_list_expected = True
+                    all_results.extend(extracted)
+                elif isinstance(extracted, dict) and extracted:
+                    # Ignore empty dict extrations from irrelevant chunks
+                    all_results.append(extracted)
+                    
+        if is_list_expected:
+            return all_results
+            
+        if all_results:
+            return all_results[0]
+            
+        return {}
     
     def _html_to_markdown(self, html: str) -> str:
-        """Convert HTML to clean markdown."""
-        # Simple conversion - remove scripts, styles, and convert basic elements
-        # For production, use a library like html2text or markdownify
-        
-        # Remove script and style tags
-        html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-        html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
-        
-        # Remove HTML comments
-        html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
-        
-        # Convert headers
-        for i in range(1, 7):
-            html = re.sub(f'<h{i}[^>]*>(.*?)</h{i}>', f'\n{"#" * i} \\1\n', html, flags=re.DOTALL | re.IGNORECASE)
-        
-        # Convert paragraphs and divs
-        html = re.sub(r'<p[^>]*>(.*?)</p>', r'\n\1\n', html, flags=re.DOTALL | re.IGNORECASE)
-        html = re.sub(r'<div[^>]*>(.*?)</div>', r'\n\1\n', html, flags=re.DOTALL | re.IGNORECASE)
-        
-        # Convert links
-        html = re.sub(r'<a[^>]*href=["\']([^"\']*)["\'][^>]*>(.*?)</a>', r'[\2](\1)', html, flags=re.DOTALL | re.IGNORECASE)
-        
-        # Convert bold and italic
-        html = re.sub(r'<(strong|b)[^>]*>(.*?)</\1>', r'**\2**', html, flags=re.DOTALL | re.IGNORECASE)
-        html = re.sub(r'<(em|i)[^>]*>(.*?)</\1>', r'*\2*', html, flags=re.DOTALL | re.IGNORECASE)
-        
-        # Convert lists
-        html = re.sub(r'<li[^>]*>(.*?)</li>', r'- \1\n', html, flags=re.DOTALL | re.IGNORECASE)
-        
-        # Convert table cells (basic)
-        html = re.sub(r'<td[^>]*>(.*?)</td>', r'| \1 ', html, flags=re.DOTALL | re.IGNORECASE)
-        html = re.sub(r'<th[^>]*>(.*?)</th>', r'| **\1** ', html, flags=re.DOTALL | re.IGNORECASE)
-        html = re.sub(r'<tr[^>]*>(.*?)</tr>', r'\1|\n', html, flags=re.DOTALL | re.IGNORECASE)
-        
-        # Remove remaining HTML tags
-        html = re.sub(r'<[^>]+>', '', html)
-        
-        # Clean up whitespace
-        html = re.sub(r'\n\s*\n', '\n\n', html)
-        html = re.sub(r' +', ' ', html)
-        
-        # Decode HTML entities
-        html = html.replace('&nbsp;', ' ')
-        html = html.replace('&amp;', '&')
-        html = html.replace('&lt;', '<')
-        html = html.replace('&gt;', '>')
-        html = html.replace('&quot;', '"')
-        
-        return html.strip()
+        """Convert HTML to clean markdown using Readability and Markdownify."""
+        if not html or len(html.strip()) == 0:
+            return ""
+
+        try:
+            # 1. Boilerplate Removal: Use Readability to extract the main content
+            # This strips navbars, footers, sidebars, and ads
+            doc = Document(html)
+            main_html = doc.summary()
+            
+            # (Optional) We can also get the title if needed: title = doc.short_title()
+
+            # 2. Convert to Markdown: Use markdownify on the clean HTML
+            # We strip out images and links if we only care about text/tables, 
+            # but for our schema extraction, tables are essential.
+            markdown = md(
+                main_html, 
+                strip=['a', 'img', 'script', 'style'], 
+                heading_style="ATX",
+                bullets="-",
+            )
+            
+            # Clean up excessive newlines
+            markdown = re.sub(r'\n{3,}', '\n\n', markdown)
+            
+            return markdown.strip()
+            
+        except Exception as e:
+            logger.warning(f"Readability/Markdownify failed, falling back to basic extraction: {e}")
+            # Fallback to simple regex if readability completely chokes on the DOM
+            html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+            html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+            html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+            html = re.sub(r'<[^>]+>', ' ', html)
+            html = re.sub(r'\s+', ' ', html)
+            return html.strip()
     
     def _url_hash(self, url: str) -> str:
         """Generate hash for URL (for caching)."""

@@ -1,4 +1,5 @@
 # Agent Data Flow — CropFresh AI
+
 > **Last Updated:** 2026-02-28
 > **Aligns with:** Business Model PDF Sections 5–11
 
@@ -39,6 +40,23 @@ QualityAssessmentAgent (src/agents/quality_assessment/agent.py)
 
 ---
 
+```mermaid
+graph TD
+    A[Farmer Voice/App] -->|Audio / Text| B[VoiceAgent <br/>src/agents/voice_agent.py]
+    B -->|Intent: CREATE_LISTING<br>Entities: {crop, quantity, price, language}| C[Supervisor Agent]
+    C -->|route| D[QualityAssessmentAgent <br/>src/agents/quality_assessment/agent.py]
+    D -->|Triggers CV-QG via ai/vision/quality_grader.py| E{Confidence &ge; 95%?}
+    E -->|Yes| F[Grade = A/B/C <br/> Auto Digital Twin]
+    E -->|No| G[HITL_required = True]
+    G --> H[Agent App Notification]
+    H --> I[Agent Photos + Override]
+    I --> J[Digital Twin Created]
+    F --> K[listing.status = 'active'<br/>listing.batch_qr_code generated<br/>Supabase: listings table written]
+    J --> K
+```
+
+---
+
 ## 2. AISP Pricing + Matchmaking Flow
 
 ```
@@ -71,6 +89,16 @@ Buyer App: Verified listing with AISP displayed
 
 ---
 
+```mermaid
+graph TD
+    A[New Active Listing] --> B[Matchmaking Engine <br/>src/agents/matchmaking_agent.py]
+    B -->|Cluster nearby farms < 5 km radius<br/>Score against buyer demand profiles<br/>Rank by platform margin| C[DPLE Pricing Agent <br/>src/agents/pricing_agent.py]
+    C -->|AISP = Farmer_Ask<br/>+ Logistics Cost DPLE routing &times; deadhead 10%<br/>+ Platform Margin 4–8% dynamic<br/>+ Risk Buffer 2%<br/>cap check: AISP &le; Mandi_Landed_Price| D[DPLE Logistics Routing <br/>src/agents/logistics_routing_agent.py]
+    D -->|Assign vehicle type 2W/3W/Tempo/Cold Chain<br/>Sequence multi-pickup stops<br/>Output: route + cost_per_kg| E[Buyer App: Verified listing with AISP displayed]
+```
+
+---
+
 ## 3. Order to Settlement Flow
 
 ```
@@ -95,6 +123,19 @@ Hauler Assignment (from logistics routing)
               │                  Hauler UPI: instant (< 5 sec)
               │
               └─ Dispute raised ──→ Dispute Flow (see §4)
+```
+
+---
+
+```mermaid
+graph TD
+    A[Buyer Places Order] --> B[Supabase: orders.escrow_status = 'pending']
+    B -->|Buyer UPI payment &rarr; Escrow Vault| C[Hauler Assignment <br/>from logistics routing]
+    C --> D[Pickup Confirmed &rarr; QR scan at farm door]
+    C --> E[In Transit &rarr; GPS tracking active]
+    C --> F[Delivered &rarr; Buyer confirms or 2-hour dispute window]
+    F -->|No dispute| G[escrow_status = 'released'<br/>Farmer UPI: instant < 5 sec<br/>Hauler UPI: instant < 5 sec]
+    F -->|Dispute raised| H[Dispute Flow see &sect;4]
 ```
 
 ---
@@ -130,6 +171,20 @@ DifferenceReport
 
 ---
 
+```mermaid
+graph TD
+    A[Buyer Raises Dispute] -->|arrival_photos, reason| B[Digital Twin Diff Engine <br/>src/agents/digital_twin/engine.py]
+    B -->|Compare: departure_twin.photos vs arrival_photos<br/>Detect: color changes, shape deformations, qty loss| C["DifferenceReport<br/>liability: farmer | hauler | buyer | shared<br/>claim_percent: 0–100%<br/>evidence: annotated images"]
+    C -->|Liability = Hauler| D[Deduct from hauler wallet]
+    C -->|Liability = Farmer| E[Deduct from farmer payout]
+    C -->|Liability = Buyer| F[Full release to farmer + hauler]
+    C -->|< &#8377;500 claim| G[Risk buffer pool covers it]
+    D --> H[PostgreSQL: disputes.status = 'resolved'<br/>orders.escrow_status = 'released']
+    E --> H
+    F --> H
+    G --> H
+```
+
 ## 5. RAG Advisory Flow
 
 ```
@@ -157,6 +212,27 @@ Response → TTS (Edge-TTS in farmer's language) → Audio to farmer
 ```
 
 ---
+
+```mermaid
+graph TD
+    A[Farmer / Buyer Query voice or text] --> B[Voice Agent STT + intent detection]
+    B -->|Intent: CROP_ADVISORY / PEST_ALERT / PRICE_QUERY| C[Supervisor &rarr; Agronomy Agent / RAG Advisory Agent]
+    C --> D[Adaptive Query Router <br/>ai/rag/query_analyzer.py]
+    D -->|Route options based on cost and complexity| E{Routing Options}
+    E -->|DIRECT_LLM| F[fast, cheap, general]
+    E -->|VECTOR_RAG| G[Qdrant knowledge base]
+    E -->|GRAPH_RAG| H[Neo4j entity relationships]
+    E -->|LIVE_PRICE_API| I[Agmarknet / eNAM]
+    E -->|BROWSER_RAG| J[Scrapling live gov sources]
+    E -->|HYBRID| K[multiple sources merged]
+
+    F --> L[Response &rarr; TTS Edge-TTS in farmer's language &rarr; Audio to farmer]
+    G --> L
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+```
 
 ## 6. ADCL Weekly Crop Demand List
 
@@ -186,6 +262,18 @@ Buyer App: "ADCL Green Label" badge on listings
 
 ---
 
+```mermaid
+graph TD
+    A[Every Monday 6 AM APScheduler] --> B[ADCL Agent <br/>src/agents/adcl_agent.py]
+    B -->|Inputs:<br/>- Buyer order trends last 4 weeks<br/>- Mandi price trends price_history table<br/>- IMD weather forecast src/scrapers/imd_weather.py<br/>- RAG knowledge base seasonal patterns| C["ADCLReport<br/>crop: Tomato, demand_score: 0.92, predicted_price: 18, green_label: true"]
+    C --> D[Supabase: adcl_reports table]
+    C --> E[Voice Advisory: farmers notified via app their language]
+    C --> F[Listings: adcl_tagged = TRUE for matching crops]
+    C --> G["Buyer App: ADCL Green Label badge on listings"]
+```
+
+---
+
 ## 7. Data Flywheel
 
 ```
@@ -204,4 +292,21 @@ More Transactions
        └─→ More buyer data
                   └─→ Better Matchmaking personalization
                              └─→ Faster matches → lower GMV drag
+```
+
+```mermaid
+graph TD
+    A[More Transactions] --> B[More Digital Twin photos]
+    B --> C[Better CV-QG training data]
+    C --> D[Higher confidence &rarr; fewer HITL calls]
+    D --> E[Lower ops cost &rarr; more margin]
+
+    A --> F[More price history]
+    F --> G[Better ADCL predictions]
+    G --> H[Better farmer crop decisions]
+    H --> I[Less oversupply &rarr; stable prices]
+
+    A --> J[More buyer data]
+    J --> K[Better Matchmaking personalization]
+    K --> L[Faster matches &rarr; lower GMV drag]
 ```
