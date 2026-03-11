@@ -1,0 +1,164 @@
+# CropFresh AI — Agent Index
+# Structured metadata for all agents.
+# Used by documentation workflows and the agent registry.
+
+agents:
+  # === Supervisor (Orchestrator) ===
+  - name: supervisor_agent
+    display_name: SupervisorAgent
+    module: src/agents/supervisor_agent.py
+    inherits_base: true
+    group: orchestrator
+    status: stable
+    description: Central orchestrator — routes queries to specialized agents
+    keywords: []
+    tools: []
+    doc: docs/agents/REGISTRY.md
+
+  # === Core Agents ===
+  - name: agronomy_agent
+    display_name: AgronomyAgent
+    module: src/agents/agronomy_agent.py
+    inherits_base: true
+    group: core
+    status: stable
+    description: Crop cultivation, pest management, soil health, irrigation
+    keywords: [grow, plant, cultivate, harvest, pest, disease, fertilizer, soil, seed]
+    tools: [get_weather, imd_weather]
+    kb_categories: [agronomy, crops]
+
+  - name: commerce_agent
+    display_name: CommerceAgent
+    module: src/agents/commerce_agent.py
+    inherits_base: true
+    group: core
+    status: stable
+    description: Market prices, AISP calculations, sell/hold recommendations
+    keywords: [price, sell, buy, mandi, market, rate, cost, profit, AISP]
+    tools: [agmarknet, ml_forecaster, news_sentiment]
+    kb_categories: [commerce, prices]
+
+  - name: platform_agent
+    display_name: PlatformAgent
+    module: src/agents/platform_agent.py
+    inherits_base: true
+    group: core
+    status: stable
+    description: CropFresh app features, registration, account support
+    keywords: [register, login, app, feature, account, order, payment]
+
+  - name: general_agent
+    display_name: GeneralAgent
+    module: src/agents/general_agent.py
+    inherits_base: true
+    group: core
+    status: stable
+    description: Greetings, general questions, unclear intents (fallback)
+    keywords: [hello, hi, thanks, help, who are you]
+    is_fallback: true
+
+  # === Pricing Agents ===
+  - name: pricing_agent
+    display_name: PricingAgent
+    module: src/agents/pricing_agent.py
+    inherits_base: false
+    group: pricing
+    status: partial
+    description: AISP calculation, mandi price aggregation
+    related: [src/agents/aisp_calculator.py]
+
+  - name: price_prediction_agent
+    display_name: PricePredictionAgent
+    module: src/agents/price_prediction/agent.py
+    inherits_base: false
+    group: pricing
+    status: partial
+    description: Price forecasting, trend analysis, sell/hold timing
+    keywords: [predict, forecast, trend, future price]
+
+  # === Marketplace Agents ===
+  - name: buyer_matching_agent
+    display_name: BuyerMatchingAgent
+    module: src/agents/buyer_matching/agent.py
+    inherits_base: false
+    group: marketplace
+    status: partial
+    description: Match farmers with buyers (grade, price, distance)
+    keywords: [find buyer, match buyer, sell my produce]
+
+  - name: quality_assessment_agent
+    display_name: QualityAssessmentAgent
+    module: src/agents/quality_assessment/agent.py
+    inherits_base: false
+    group: marketplace
+    status: partial
+    description: Produce grading (A+/A/B/C), defect detection, shelf life
+    keywords: [quality check, grade produce, defects, shelf life]
+
+  - name: crop_listing_agent
+    display_name: CropListingAgent
+    module: src/agents/crop_listing/agent.py
+    inherits_base: false
+    group: marketplace
+    status: partial
+    description: Creating/managing produce listings for sale
+    keywords: [list my crop, create listing, my listings]
+
+  # === Web Agents ===
+  - name: web_scraping_agent
+    display_name: WebScrapingAgent
+    module: src/agents/web_scraping_agent.py
+    inherits_base: false
+    group: web
+    status: stable
+    description: Fetch LIVE data from websites
+    keywords: [live, current, today, real-time, fetch, scrape]
+
+  - name: browser_agent
+    display_name: BrowserAgent
+    module: src/agents/browser_agent.py
+    inherits_base: false
+    group: web
+    status: stable
+    description: Interactive web tasks (login, forms, navigation)
+    keywords: [login to, submit, navigate, download, dashboard]
+
+  - name: research_agent
+    display_name: ResearchAgent
+    module: src/agents/research/research_agent.py
+    inherits_base: true
+    group: web
+    status: stable
+    description: Deep research with multiple sources and citations
+    keywords: [research, investigate, comprehensive, compare, analysis]
+    tools: [deep_research, web_search]
+
+  # === Wrapper Agents ===
+  - name: adcl_agent
+    display_name: ADCLWrapperAgent
+    module: src/agents/adcl_wrapper_agent.py
+    inherits_base: true
+    group: wrapper
+    status: todo
+    description: Assured Demand Crop List — weekly crop recommendations
+    keywords: [recommend, sow, what to grow, demand]
+
+  - name: logistics_agent
+    display_name: LogisticsWrapperAgent
+    module: src/agents/logistics_wrapper_agent.py
+    inherits_base: false
+    group: wrapper
+    status: todo
+    description: Delivery routing, transport cost, vehicle assignment
+    keywords: [delivery, transport, route, vehicle, logistics cost]
+
+  # === Knowledge Agent ===
+  - name: knowledge_agent
+    display_name: KnowledgeAgent
+    module: src/agents/knowledge_agent.py
+    inherits_base: false
+    group: knowledge
+    status: stable
+    description: Deep knowledge retrieval from agricultural KB
+    keywords: [explain, tell me about, information, what is]
+    backend: qdrant

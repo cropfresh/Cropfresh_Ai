@@ -1,1 +1,0 @@
-﻿{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"farmer_id":{"type":"string"},"crop_id":{"type":"string"},"quantity_kg":{"type":"number"},"price_per_kg":{"type":"number"},"grade":{"type":"string","enum":["A","B","C"]}}}

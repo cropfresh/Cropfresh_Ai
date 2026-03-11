@@ -1,312 +1,288 @@
-# Agent Data Flow — CropFresh AI
+# CropFresh AI — Data Flow Diagrams
 
-> **Last Updated:** 2026-02-28
-> **Aligns with:** Business Model PDF Sections 5–11
-
----
-
-## 1. Farmer Listing Flow
-
-```
-Farmer (Voice/App)
-       │  Audio / Text
-       ▼
-VoiceAgent (src/agents/voice_agent.py)
-       │  Intent: CREATE_LISTING
-       │  Entities: {crop, quantity, price, language}
-       ▼
-Supervisor Agent  (route → QualityAssessmentAgent)
-       │
-       ▼
-QualityAssessmentAgent (src/agents/quality_assessment/agent.py)
-       │  Triggers CV-QG via ai/vision/quality_grader.py
-       │
-       ├─ Confidence ≥ 95% ──→ Grade = A/B/C  ──→  Auto Digital Twin
-       │
-       └─ Confidence < 95% ──→ HITL_required = True
-                                      │
-                                      ▼
-                             Agent App Notification
-                                      │
-                             Agent Photos + Override
-                                      │
-                             Digital Twin Created
-                                      │
-                                      ▼
-                          listing.status = 'active'
-                          listing.batch_qr_code generated
-                          Supabase: listings table written
-```
+> **Last Updated:** 2026-03-11
+> All diagrams reflect the **actual codebase** as of this date.
 
 ---
+
+## 1. Agent Routing Flow
+
+Every user query (text or voice) flows through the `SupervisorAgent` which decides which specialized agent handles it.
 
 ```mermaid
-graph TD
-    A[Farmer Voice/App] -->|Audio / Text| B[VoiceAgent <br/>src/agents/voice_agent.py]
-    B -->|Intent: CREATE_LISTING<br>Entities: {crop, quantity, price, language}| C[Supervisor Agent]
-    C -->|route| D[QualityAssessmentAgent <br/>src/agents/quality_assessment/agent.py]
-    D -->|Triggers CV-QG via ai/vision/quality_grader.py| E{Confidence &ge; 95%?}
-    E -->|Yes| F[Grade = A/B/C <br/> Auto Digital Twin]
-    E -->|No| G[HITL_required = True]
-    G --> H[Agent App Notification]
-    H --> I[Agent Photos + Override]
-    I --> J[Digital Twin Created]
-    F --> K[listing.status = 'active'<br/>listing.batch_qr_code generated<br/>Supabase: listings table written]
-    J --> K
+flowchart TD
+    U["👤 User Query<br/>(text / voice / WhatsApp)"] --> API["FastAPI Endpoint<br/>/api/v1/chat or /ws/voice"]
+    API --> SM["StateManager<br/>Load/create session"]
+    SM --> SUP["SupervisorAgent.process()"]
+
+    SUP --> R{"Has LLM?"}
+    R -->|Yes| LLM["LLM Routing<br/>(temp=0.1, max_tokens=200)<br/>Returns JSON with agent_name + confidence"]
+    R -->|No| RB["Rule-Based Routing<br/>Keyword matching<br/>across 14 agent categories"]
+
+    LLM --> D{"Parse JSON?"}
+    D -->|Success| SEL
+    D -->|Fail| RB
+
+    RB --> SEL["Select Target Agent"]
+    SEL --> AGENT["Target Agent.process()<br/>(query, context, execution)"]
+    AGENT --> MULTI{"Multi-agent<br/>needed?"}
+    MULTI -->|Yes| SEC["Secondary Agents<br/>merge_responses()"]
+    MULTI -->|No| RESP["AgentResponse"]
+    SEC --> RESP
+    RESP --> SAVE["Save to session<br/>Extract entities<br/>Update current_agent"]
+    SAVE --> U2["👤 Response to User"]
 ```
+
+### Routing Decision Table
+
+| Agent | Primary Keywords | Confidence Threshold |
+|-------|-----------------|---------------------|
+| `agronomy_agent` | grow, plant, pest, disease, soil, seed, irrigation | 0.3–0.9 (score-based) |
+| `commerce_agent` | price, sell, buy, mandi, market, rate, profit | 0.3–0.9 |
+| `platform_agent` | register, login, app, account, order, payment | 0.3–0.9 |
+| `web_scraping_agent` | live, current, today, real-time, fetch, scrape | 0.3–0.9 |
+| `browser_agent` | login to, submit, navigate, download, dashboard | 0.3–0.9 |
+| `research_agent` | research, investigate, comprehensive, compare | 0.3–0.9 |
+| `buyer_matching_agent` | find buyer, match buyer, sell my produce | 0.85 (exact match) |
+| `quality_assessment_agent` | quality check, grade, defect, shelf life | 0.84 (exact match) |
+| `adcl_agent` | recommend, sow, what to grow, demand | 0.83 (exact match) |
+| `crop_listing_agent` | list my crop, create listing, my listings | 0.83 (exact match) |
+| `logistics_agent` | delivery, transport, route, vehicle, shipping | 0.82 (exact match) |
+| `price_prediction_agent` | predict, forecast, trend, future price | 0.3–0.9 |
+| `knowledge_agent` | explain, tell me about, information, what is | 0.3–0.9 |
+| `general_agent` | hello, hi, thanks, help, who are you | 0.3–0.9 (fallback) |
 
 ---
 
-## 2. AISP Pricing + Matchmaking Flow
+## 2. Voice Pipeline Flow
 
-```
-New Active Listing
-       │
-       ▼
-Matchmaking Engine (src/agents/matchmaking_agent.py)
-       │  Cluster nearby farms (< 5 km radius)
-       │  Score against buyer demand profiles
-       │  Rank by platform margin
-       │
-       ▼
-DPLE Pricing Agent (src/agents/pricing_agent.py)
-       │
-       │  AISP = Farmer_Ask
-       │        + Logistics Cost (DPLE routing × deadhead 10%)
-       │        + Platform Margin (4–8% dynamic)
-       │        + Risk Buffer (2%)
-       │        [cap check: AISP ≤ Mandi_Landed_Price]
-       │
-       ▼
-DPLE Logistics Routing (src/agents/logistics_routing_agent.py)
-       │  Assign vehicle type (2W/3W/Tempo/Cold Chain)
-       │  Sequence multi-pickup stops
-       │  Output: route + cost_per_kg
-       │
-       ▼
-Buyer App: Verified listing with AISP displayed
-```
-
----
+The voice pipeline supports **10 Indian languages** and handles both STT and TTS with multi-turn conversation flows.
 
 ```mermaid
-graph TD
-    A[New Active Listing] --> B[Matchmaking Engine <br/>src/agents/matchmaking_agent.py]
-    B -->|Cluster nearby farms < 5 km radius<br/>Score against buyer demand profiles<br/>Rank by platform margin| C[DPLE Pricing Agent <br/>src/agents/pricing_agent.py]
-    C -->|AISP = Farmer_Ask<br/>+ Logistics Cost DPLE routing &times; deadhead 10%<br/>+ Platform Margin 4–8% dynamic<br/>+ Risk Buffer 2%<br/>cap check: AISP &le; Mandi_Landed_Price| D[DPLE Logistics Routing <br/>src/agents/logistics_routing_agent.py]
-    D -->|Assign vehicle type 2W/3W/Tempo/Cold Chain<br/>Sequence multi-pickup stops<br/>Output: route + cost_per_kg| E[Buyer App: Verified listing with AISP displayed]
+flowchart LR
+    A["🎤 Farmer speaks<br/>(audio bytes)"] --> STT
+
+    subgraph "Speech-to-Text"
+        STT["MultiProviderSTT<br/>src/voice/stt.py"]
+        STT --> W1["Faster Whisper<br/>(local, CPU)"]
+        STT --> W2["Groq Whisper<br/>(cloud fallback)"]
+        STT --> W3["IndicWhisper<br/>(Indian languages)"]
+    end
+
+    STT --> TR["TranscriptionResult<br/>text + language + confidence"]
+    TR --> EE["VoiceEntityExtractor<br/>src/voice/entity_extractor/"]
+
+    EE --> EX["ExtractionResult<br/>intent (VoiceIntent enum)<br/>entities (crop, quantity, price, location)"]
+
+    EX --> VA["VoiceAgent._generate_response()<br/>src/agents/voice_agent.py"]
+
+    VA --> MT{"Multi-turn<br/>flow?"}
+    MT -->|Yes| PEND["Check pending_intent<br/>Collect missing fields<br/>(crop → quantity → price)"]
+    MT -->|No| HANDLER["Intent Handler<br/>(12 handlers)"]
+
+    PEND --> ASK["Ask follow-up question<br/>in user's language"]
+    HANDLER --> RESP["Response text<br/>(template-based or LLM)"]
+
+    RESP --> TTS
+
+    subgraph "Text-to-Speech"
+        TTS["TTS Provider"]
+        TTS --> E1["Edge-TTS<br/>(10 languages)"]
+        TTS --> E2["IndicTTS<br/>(fallback)"]
+    end
+
+    TTS --> OUT["🔊 Audio response<br/>to farmer"]
 ```
+
+### Supported Languages
+
+| Code | Language | STT Provider | TTS Voice |
+|------|----------|-------------|-----------|
+| `kn` | Kannada | IndicWhisper | Edge-TTS `kn-IN-SapnaNeural` |
+| `hi` | Hindi | Whisper/Groq | Edge-TTS `hi-IN-SwaraNeural` |
+| `en` | English | Whisper/Groq | Edge-TTS `en-IN-NeerjaNeural` |
+| `ta` | Tamil | IndicWhisper | Edge-TTS `ta-IN-PallaviNeural` |
+| `te` | Telugu | IndicWhisper | Edge-TTS `te-IN-ShrutiNeural` |
+| `mr` | Marathi | IndicWhisper | Edge-TTS `mr-IN-AarohiNeural` |
+| `bn` | Bengali | IndicWhisper | Edge-TTS `bn-IN-TanishaaNeural` |
+| `gu` | Gujarati | IndicWhisper | Edge-TTS `gu-IN-DhwaniNeural` |
+| `pa` | Punjabi | IndicWhisper | Edge-TTS `pa-IN-VaaniNeural` |
+| `ml` | Malayalam | IndicWhisper | Edge-TTS `ml-IN-SobhanaNeural` |
+
+### Voice Intents
+
+| Intent | Required Fields | Multi-Turn |
+|--------|----------------|-----------|
+| `CREATE_LISTING` | crop, quantity, asking_price | ✅ Yes |
+| `CHECK_PRICE` | crop | No |
+| `TRACK_ORDER` | order_id (optional) | No |
+| `MY_LISTINGS` | — | No |
+| `FIND_BUYER` | commodity, quantity_kg | ✅ Yes |
+| `REGISTER` | name, phone, district | ✅ Yes |
+| `CHECK_WEATHER` | location | No |
+| `GET_ADVISORY` | crop | No |
+| `QUALITY_CHECK` | commodity | No |
+| `WEEKLY_DEMAND` | location | No |
+| `DISPUTE_STATUS` | dispute_id | No |
+| `GREETING` | — | No |
+| `HELP` | — | No |
 
 ---
 
-## 3. Order to Settlement Flow
-
-```
-Buyer Places Order
-       │
-       ▼
-Supabase: orders.escrow_status = 'pending'
-       │
-       │  Buyer UPI payment → Escrow Vault
-       │
-       ▼
-Hauler Assignment (from logistics routing)
-       │
-       ├─ Pickup Confirmed → QR scan at farm door
-       │
-       ├─ In Transit → GPS tracking active
-       │
-       └─ Delivered → Buyer confirms (or 2-hour dispute window)
-              │
-              ├─ No dispute ──→ escrow_status = 'released'
-              │                  Farmer UPI: instant (< 5 sec)
-              │                  Hauler UPI: instant (< 5 sec)
-              │
-              └─ Dispute raised ──→ Dispute Flow (see §4)
-```
-
----
+## 3. Price Discovery Flow
 
 ```mermaid
-graph TD
-    A[Buyer Places Order] --> B[Supabase: orders.escrow_status = 'pending']
-    B -->|Buyer UPI payment &rarr; Escrow Vault| C[Hauler Assignment <br/>from logistics routing]
-    C --> D[Pickup Confirmed &rarr; QR scan at farm door]
-    C --> E[In Transit &rarr; GPS tracking active]
-    C --> F[Delivered &rarr; Buyer confirms or 2-hour dispute window]
-    F -->|No dispute| G[escrow_status = 'released'<br/>Farmer UPI: instant < 5 sec<br/>Hauler UPI: instant < 5 sec]
-    F -->|Dispute raised| H[Dispute Flow see &sect;4]
+flowchart TD
+    Q["👤 'What is the price of tomato in Mysore?'"] --> SUP["SupervisorAgent routes to<br/>commerce_agent (keyword: price, mandi)"]
+    SUP --> CA["CommerceAgent.process()"]
+    CA --> RAG["Retrieve from KnowledgeBase<br/>(Qdrant: agri_knowledge collection)"]
+    CA --> TOOL["Use tool: agmarknet<br/>Scrape live APMC prices"]
+
+    RAG --> CTX["Context: historical price data<br/>+ farming guides"]
+    TOOL --> LIVE["Live data: today's mandi prices<br/>from Agmarknet/eNAM"]
+
+    CTX & LIVE --> LLM["LLM generates response<br/>(Groq Llama-3.3-70B or Bedrock Claude)"]
+    LLM --> RESP["💬 'Tomato price in Mysore mandi<br/>today is ₹25/kg.<br/>Recommendation: Hold for 2 days.'"]
 ```
 
 ---
 
-## 4. Dispute Resolution Flow
-
-```
-Buyer Raises Dispute
-       │  arrival_photos[], reason
-       ▼
-Digital Twin Diff Engine (src/agents/digital_twin/engine.py)
-       │
-       │  Compare: departure_twin.photos vs arrival_photos
-       │  Detect: color changes, shape deformations, qty loss
-       │
-       ▼
-DifferenceReport
-  {
-    liability: "farmer" | "hauler" | "buyer" | "shared",
-    claim_percent: 0–100%,
-    evidence: [annotated images]
-  }
-       │
-       ├─ Liability = Hauler ──→ Deduct from hauler wallet
-       ├─ Liability = Farmer  ──→ Deduct from farmer payout
-       ├─ Liability = Buyer   ──→ Full release to farmer + hauler
-       └─ < ₹500 claim        ──→ Risk buffer pool covers it
-              │
-              ▼
-       PostgreSQL: disputes.status = 'resolved'
-       orders.escrow_status = 'released'
-```
-
----
+## 4. Crop Listing Flow
 
 ```mermaid
-graph TD
-    A[Buyer Raises Dispute] -->|arrival_photos, reason| B[Digital Twin Diff Engine <br/>src/agents/digital_twin/engine.py]
-    B -->|Compare: departure_twin.photos vs arrival_photos<br/>Detect: color changes, shape deformations, qty loss| C["DifferenceReport<br/>liability: farmer | hauler | buyer | shared<br/>claim_percent: 0–100%<br/>evidence: annotated images"]
-    C -->|Liability = Hauler| D[Deduct from hauler wallet]
-    C -->|Liability = Farmer| E[Deduct from farmer payout]
-    C -->|Liability = Buyer| F[Full release to farmer + hauler]
-    C -->|< &#8377;500 claim| G[Risk buffer pool covers it]
-    D --> H[PostgreSQL: disputes.status = 'resolved'<br/>orders.escrow_status = 'released']
-    E --> H
-    F --> H
-    G --> H
-```
+flowchart TD
+    F["🧑‍🌾 Farmer: 'I have 100 kg tomato at ₹25/kg'"] --> VA["VoiceAgent / Chat API"]
+    VA --> EE["Entity Extraction<br/>crop=tomato, quantity=100, price=25"]
+    EE --> CL["CropListingAgent.process()"]
 
-## 5. RAG Advisory Flow
+    CL --> DB["Create listing in PostgreSQL<br/>src/db/postgres_client.py"]
+    DB --> LISTING["Listing {id, farmer_id, commodity,<br/>quantity_kg, asking_price}"]
 
-```
-Farmer / Buyer Query (voice or text)
-       │
-       ▼
-Voice Agent (STT + intent detection)
-       │  Intent: CROP_ADVISORY / PEST_ALERT / PRICE_QUERY
-       ▼
-Supervisor → Agronomy Agent / RAG Advisory Agent
-       │
-       ▼
-Adaptive Query Router (ai/rag/query_analyzer.py)
-       │
-       │  Route options based on cost and complexity:
-       │  ├─ DIRECT_LLM          (fast, cheap, general)
-       │  ├─ VECTOR_RAG           (Qdrant knowledge base)
-       │  ├─ GRAPH_RAG            (Neo4j entity relationships)
-       │  ├─ LIVE_PRICE_API       (Agmarknet / eNAM)
-       │  ├─ BROWSER_RAG          (Scrapling live gov sources)
-       │  └─ HYBRID               (multiple sources merged)
-       │
-       ▼
-Response → TTS (Edge-TTS in farmer's language) → Audio to farmer
+    LISTING --> BM["BuyerMatchingAgent<br/>GPS clustering + preference matrix"]
+    BM --> MATCH["Matched buyers<br/>(grade-fit, price-fit, distance)"]
+
+    MATCH --> NOTIFY["Buyer notifications<br/>workflows/buyer-notification.json"]
+    NOTIFY --> BUYER["📩 Buyer receives alert"]
+
+    LISTING --> RESP["✅ 'Listing created.<br/>ID: LST-001. 3 buyers matched.'"]
+    RESP --> F
 ```
 
 ---
 
+## 5. RAG Pipeline Flow
+
+The RAG system uses 21 modules for production-grade retrieval.
+
 ```mermaid
-graph TD
-    A[Farmer / Buyer Query voice or text] --> B[Voice Agent STT + intent detection]
-    B -->|Intent: CROP_ADVISORY / PEST_ALERT / PRICE_QUERY| C[Supervisor &rarr; Agronomy Agent / RAG Advisory Agent]
-    C --> D[Adaptive Query Router <br/>ai/rag/query_analyzer.py]
-    D -->|Route options based on cost and complexity| E{Routing Options}
-    E -->|DIRECT_LLM| F[fast, cheap, general]
-    E -->|VECTOR_RAG| G[Qdrant knowledge base]
-    E -->|GRAPH_RAG| H[Neo4j entity relationships]
-    E -->|LIVE_PRICE_API| I[Agmarknet / eNAM]
-    E -->|BROWSER_RAG| J[Scrapling live gov sources]
-    E -->|HYBRID| K[multiple sources merged]
+flowchart TD
+    Q["User Query"] --> QP["QueryProcessor<br/>src/rag/query_processor.py"]
 
-    F --> L[Response &rarr; TTS Edge-TTS in farmer's language &rarr; Audio to farmer]
-    G --> L
-    H --> L
-    I --> L
-    J --> L
-    K --> L
-```
+    QP --> HYDE["HyDE<br/>(Hypothetical<br/>Document)"]
+    QP --> MQ["Multi-Query<br/>(3 perspectives)"]
+    QP --> SB["Step-Back<br/>(abstract concepts)"]
+    QP --> DEC["Decomposition<br/>(sub-questions)"]
 
-## 6. ADCL Weekly Crop Demand List
+    HYDE & MQ & SB & DEC --> HS["HybridSearch<br/>src/rag/hybrid_search.py"]
 
-```
-Every Monday 6 AM (APScheduler)
-       │
-       ▼
-ADCL Agent (src/agents/adcl_agent.py)
-       │  Inputs:
-       │  ├─ Buyer order trends (last 4 weeks)
-       │  ├─ Mandi price trends (price_history table)
-       │  ├─ IMD weather forecast (src/scrapers/imd_weather.py)
-       │  └─ RAG knowledge base (seasonal patterns)
-       │
-       ▼
-ADCLReport:
-  [{crop: "Tomato", demand_score: 0.92, predicted_price: 18, green_label: true},
-   {crop: "Beans",  demand_score: 0.87, ...},
-   ...]
-       │
-       ▼
-Supabase: adcl_reports table
-Voice Advisory: farmers notified via app (their language)
-Listings: adcl_tagged = TRUE for matching crops
-Buyer App: "ADCL Green Label" badge on listings
+    HS --> BM25["BM25 Sparse Search"]
+    HS --> DENSE["Dense Vector Search<br/>(BGE-M3 / MiniLM embeddings)"]
+    BM25 & DENSE --> RRF["Reciprocal Rank Fusion<br/>(combine sparse + dense)"]
+
+    RRF --> GR["GraphRetriever<br/>src/rag/graph_retriever.py<br/>(Neo4j entity relationships)"]
+
+    GR --> RR["Reranker<br/>src/rag/reranker.py<br/>(Cross-Encoder)"]
+
+    RR --> GRADE["Grader<br/>src/rag/grader.py<br/>(relevance scoring)"]
+
+    GRADE --> LLM["LLM Generation<br/>(Groq / Bedrock)"]
+
+    LLM --> OBS["Observability<br/>src/rag/observability.py<br/>(LangSmith traces)"]
+
+    OBS --> RESP["📋 Grounded Response<br/>+ Sources + Confidence"]
+
+    subgraph "Indexing (Offline)"
+        DOC["Documents"] --> CHUNK["ContextualChunker<br/>src/rag/contextual_chunker.py"]
+        CHUNK --> RAP["RAPTOR<br/>src/rag/raptor.py<br/>(GMM hierarchical tree)"]
+        RAP --> EMB["Embeddings<br/>src/rag/embeddings.py<br/>(BGE-M3)"]
+        EMB --> QDB[("Qdrant<br/>agri_knowledge<br/>collection")]
+    end
 ```
 
 ---
 
+## 6. Session & Memory Flow
+
 ```mermaid
-graph TD
-    A[Every Monday 6 AM APScheduler] --> B[ADCL Agent <br/>src/agents/adcl_agent.py]
-    B -->|Inputs:<br/>- Buyer order trends last 4 weeks<br/>- Mandi price trends price_history table<br/>- IMD weather forecast src/scrapers/imd_weather.py<br/>- RAG knowledge base seasonal patterns| C["ADCLReport<br/>crop: Tomato, demand_score: 0.92, predicted_price: 18, green_label: true"]
-    C --> D[Supabase: adcl_reports table]
-    C --> E[Voice Advisory: farmers notified via app their language]
-    C --> F[Listings: adcl_tagged = TRUE for matching crops]
-    C --> G["Buyer App: ADCL Green Label badge on listings"]
+flowchart TD
+    Q["User Query"] --> SM["AgentStateManager<br/>src/memory/state_manager.py"]
+
+    SM --> GET{"Session exists?"}
+    GET -->|Yes| LOAD["Load ConversationContext<br/>from Redis / in-memory"]
+    GET -->|No| CREATE["Create new session<br/>(UUID, 24h TTL)"]
+
+    LOAD & CREATE --> MSG["Add user message to history<br/>(windowed: max 50)"]
+    MSG --> EXT["Extract entities<br/>(commodity, quantity, district, price)<br/>Regex-based, no LLM call"]
+    EXT --> CTX["Build context dict:<br/>• user_profile<br/>• entities<br/>• current_agent<br/>• conversation_summary"]
+    CTX --> AGENT["Agent processes with context"]
+    AGENT --> SAVE["Save assistant message<br/>Extract entities from response<br/>Update current_agent"]
+    SAVE --> REDIS[("Redis / In-Memory<br/>session:{uuid}")]
+```
+
+### Entity Extraction Patterns
+
+| Entity | Regex Pattern | Example Match |
+|--------|--------------|---------------|
+| `commodity` | tomato, potato, onion, carrot, okra... (+ Hindi/Kannada) | "tamatar" → "Tomato" |
+| `quantity_kg` | `\d+\.?\d* (kg|kilo)` | "100 kg" → 100.0 |
+| `quantity_quintal` | `\d+\.?\d* (quintal|q)` | "2 quintal" → 200 kg |
+| `district` | Kolar, Mysuru, Belagavi, Bangalore... | "mysore" → "Mysore" |
+| `price_per_kg` | `₹\d+\.?\d*/kg` | "₹25/kg" → 25.0 |
+
+---
+
+## 7. WebSocket Voice Streaming Flow
+
+```mermaid
+sequenceDiagram
+    participant Client as 📱 Client (WebRTC)
+    participant WS as WebSocket Handler<br/>/ws/voice/{user_id}
+    participant VAD as Silero VAD
+    participant STT as STT Provider
+    participant Agent as SupervisorAgent
+    participant TTS as TTS Provider
+
+    Client->>WS: Connect (user_id, language, session_id)
+    WS->>WS: Accept + create session
+
+    loop Real-time streaming
+        Client->>WS: Audio frame (binary)
+        WS->>VAD: Voice Activity Detection
+        VAD-->>WS: speech_start / speech_end
+
+        alt Speech complete
+            WS->>STT: Transcribe audio buffer
+            STT-->>WS: TranscriptionResult
+            WS->>Agent: process_with_session(text, session_id)
+            Agent-->>WS: AgentResponse
+            WS->>TTS: Synthesize response
+            TTS-->>WS: Audio bytes
+            WS->>Client: Audio response (binary)
+            WS->>Client: JSON metadata (transcript, intent, entities)
+        end
+    end
+
+    Client->>WS: Disconnect
+    WS->>WS: Cleanup session
 ```
 
 ---
 
-## 7. Data Flywheel
+## Related Documentation
 
-```
-More Transactions
-       │
-       ├─→ More Digital Twin photos
-       │          └─→ Better CV-QG training data
-       │                     └─→ Higher confidence → fewer HITL calls
-       │                                └─→ Lower ops cost → more margin
-       │
-       ├─→ More price history
-       │          └─→ Better ADCL predictions
-       │                     └─→ Better farmer crop decisions
-       │                                └─→ Less oversupply → stable prices
-       │
-       └─→ More buyer data
-                  └─→ Better Matchmaking personalization
-                             └─→ Faster matches → lower GMV drag
-```
-
-```mermaid
-graph TD
-    A[More Transactions] --> B[More Digital Twin photos]
-    B --> C[Better CV-QG training data]
-    C --> D[Higher confidence &rarr; fewer HITL calls]
-    D --> E[Lower ops cost &rarr; more margin]
-
-    A --> F[More price history]
-    F --> G[Better ADCL predictions]
-    G --> H[Better farmer crop decisions]
-    H --> I[Less oversupply &rarr; stable prices]
-
-    A --> J[More buyer data]
-    J --> K[Better Matchmaking personalization]
-    K --> L[Faster matches &rarr; lower GMV drag]
-```
+| Document | Path |
+|----------|------|
+| System Architecture | [`docs/architecture/system-architecture.md`](system-architecture.md) |
+| Agent Registry | [`docs/agents/REGISTRY.md`](../agents/REGISTRY.md) |
+| Voice Pipeline | [`docs/features/voice-pipeline.md`](../features/voice-pipeline.md) |
+| RAG Pipeline | [`docs/features/rag-pipeline.md`](../features/rag-pipeline.md) |

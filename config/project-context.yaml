@@ -1,0 +1,139 @@
+# CropFresh AI — Master Project Context
+# Give this file to any AI agent to understand the entire project.
+# Last Updated: 2026-03-11
+
+project:
+  name: CropFresh AI
+  tagline: "India's intelligent agricultural marketplace AI service"
+  stage: "Phase 1 — Foundation & Data Pipeline"
+  python: "3.11+"
+  package_manager: uv
+  primary_stack: "FastAPI + LangGraph + Qdrant + Neo4j + Redis"
+
+# ── Documentation Map ──────────────────────────────────────────
+documentation:
+  # Start here
+  vision: PLAN.md
+  roadmap: ROADMAP.md
+  agent_rules: AGENTS.md
+  workflow_guide: WORKFLOW_STATUS.md
+  changelog: CHANGELOG.md
+
+  architecture:
+    system: docs/architecture/system-architecture.md
+    data_flows: docs/architecture/data-flow.md
+    module_map: docs/diagrams/module-map.md
+    agentic_rag: docs/architecture/agentic_rag_system.md
+    adaptive_router: docs/architecture/adaptive_query_router.md
+    agri_embeddings: docs/architecture/agri_embeddings.md
+    browser_scraping: docs/architecture/browser_scraping_rag.md
+
+  agents:
+    registry: docs/agents/REGISTRY.md
+    design_guide: docs/agents/agent-design-guide.md
+    index_yaml: docs/agents-index.yaml
+
+  api:
+    overview: docs/api/overview.md
+    endpoints: docs/api/endpoints-reference.md
+    websocket: docs/api/websocket-voice.md
+
+  features:
+    voice: docs/features/voice-pipeline.md
+    rag: docs/features/rag-pipeline.md
+    scraping: docs/features/scraping-system.md
+    pricing: docs/features/pricing-engine.md
+
+  guides:
+    getting_started: docs/guides/getting-started.md
+    dev_workflow: docs/guides/development-workflow.md
+    env_vars: docs/guides/environment-variables.md
+    local_setup: docs/runbooks/local-dev-setup.md
+
+  decisions:
+    template: docs/decisions/_template.md
+    adr_007: docs/decisions/ADR-007-agentic-rag-orchestrator.md
+    adr_008: docs/decisions/ADR-008-adaptive-query-router.md
+    adr_009: docs/decisions/ADR-009-agri-embeddings.md
+    adr_010: docs/decisions/ADR-010-browser-scraping-rag.md
+
+# ── Tracking ───────────────────────────────────────────────────
+tracking:
+  project_status: tracking/PROJECT_STATUS.md
+  current_sprint: tracking/sprints/sprint-05-advanced-rag.md
+  backlog: tracking/tasks/backlog.md
+  milestones: tracking/milestones/phase-1-foundation.md
+  okrs: tracking/okrs/Q1-2026.md
+  agent_perf: tracking/agent-performance/baseline.md
+  retros: tracking/retros/sprint-04-retro.md
+
+# ── Source Code Map ────────────────────────────────────────────
+source_code:
+  agents:
+    supervisor: src/agents/supervisor_agent.py
+    base_class: src/agents/base_agent.py
+    registry: src/agents/agent_registry.py
+    voice: src/agents/voice_agent.py
+    total: 15
+
+  api:
+    main: src/api/main.py
+    config: src/api/config.py
+    routes: src/api/routes/
+    routers: src/api/routers/
+    websocket: src/api/websocket/voice_ws.py
+    total_routers: 9
+
+  voice:
+    stt: src/voice/stt.py
+    tts: src/voice/tts.py
+    vad: src/voice/vad.py
+    entity_extractor: src/voice/entity_extractor/
+
+  rag:
+    knowledge_base: src/rag/knowledge_base.py
+    raptor: src/rag/raptor.py
+    hybrid_search: src/rag/hybrid_search.py
+    reranker: src/rag/reranker.py
+    total_modules: 21
+
+  tools:
+    registry: src/tools/registry.py
+    total: 16
+
+  scrapers:
+    base: src/scrapers/base_scraper.py
+    agmarknet: src/scrapers/agmarknet.py
+    total: 13
+
+  memory: src/memory/state_manager.py
+  databases: [src/db/postgres_client.py, src/db/neo4j_client.py, src/db/supabase_client.py]
+
+# ── Infrastructure ─────────────────────────────────────────────
+infrastructure:
+  docker_compose: docker-compose.yml
+  services: [api, redis, qdrant, neo4j, prometheus, grafana, n8n]
+  monitoring: infra/monitoring/
+  tests: tests/
+  scripts: scripts/
+
+# ── Agent Config ───────────────────────────────────────────────
+antigravity:
+  config: config/antigravity-docs.yaml
+  rules:
+    - .agent/rules/cropfresh-docs-and-artifacts.md
+    - .agent/rules/safety-and-integrity.md
+  workflows:
+    - .agent/workflows/setup-and-run.md
+    - .agent/workflows/implement-feature-with-docs.md
+    - .agent/workflows/agent-design-doc.md
+    - .agent/workflows/workflow-doc-from-json.md
+    - .agent/workflows/update-docs.md
+
+# ── Testing ────────────────────────────────────────────────────
+testing:
+  strategy: TESTING/STRATEGY.md
+  checklists: TESTING/CHECKLISTS.md
+  test_dir: tests/
+  scripts_dir: scripts/
+  total_test_scripts: 58

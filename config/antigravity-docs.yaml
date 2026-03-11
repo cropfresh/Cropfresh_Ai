@@ -1,0 +1,71 @@
+# CropFresh AI — Antigravity Documentation Configuration
+# This YAML drives agent behavior for documentation tasks.
+# Read by agents when they invoke /update-docs or /implement-feature-with-docs workflows.
+
+project:
+  name: CropFresh AI
+  description: "India's intelligent agricultural marketplace AI service"
+  python_version: "3.11+"
+  package_manager: uv
+  stack: "FastAPI + LangGraph + Qdrant + Neo4j + Redis"
+
+# Documentation paths
+docs:
+  root: docs/
+  architecture: docs/architecture/
+  agents: docs/agents/
+  api: docs/api/
+  features: docs/features/
+  guides: docs/guides/
+  decisions: docs/decisions/
+  diagrams: docs/diagrams/
+  runbooks: docs/runbooks/
+
+# Tracking paths
+tracking:
+  root: tracking/
+  project_status: tracking/PROJECT_STATUS.md
+  sprints: tracking/sprints/
+  daily_logs: tracking/daily/
+  milestones: tracking/milestones/
+  retros: tracking/retros/
+  tasks: tracking/tasks/
+  okrs: tracking/okrs/
+  agent_performance: tracking/agent-performance/
+
+# Agent rules
+rules:
+  # Never overwrite markdown files without user approval
+  no_overwrite: true
+  # Every architecture/feature doc must include a Mermaid diagram
+  require_mermaid: true
+  # Always update WORKFLOW_STATUS.md when changing files
+  require_changelog: true
+  # Always generate tests alongside code
+  require_tests: true
+
+# Naming conventions
+naming:
+  docs: kebab-case     # e.g., voice-pipeline.md
+  agents: snake_case   # e.g., voice_agent.py
+  adrs: "ADR-NNN-kebab-case"   # e.g., ADR-007-agentic-rag.md
+  sprints: "sprint-NN-theme"   # e.g., sprint-05-advanced-rag.md
+  daily: "YYYY-MM-DD"          # e.g., 2026-03-11.md
+
+# Protected files (require explicit user approval to modify)
+protected_files:
+  - PLAN.md
+  - AGENTS.md
+  - ai/rag/*
+  - src/agents/base_agent.py
+  - docker-compose.yml
+  - .env
+  - pyproject.toml
+
+# Key entry points for agents to read on startup
+context_files:
+  - PLAN.md
+  - AGENTS.md
+  - tracking/PROJECT_STATUS.md
+  - WORKFLOW_STATUS.md
+  - config/project-context.yaml
