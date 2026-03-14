@@ -11,7 +11,7 @@ Tests the _route_rule_based() fallback method and routing logic:
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from src.agents.supervisor_agent import SupervisorAgent, RoutingDecision
+from src.agents.supervisor import SupervisorAgent, RoutingDecision
 from src.agents.base_agent import AgentResponse
 
 

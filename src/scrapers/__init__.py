@@ -1,4 +1,4 @@
-﻿"""CropFresh AI Scrapers — Production-grade data collection."""
+"""CropFresh AI Scrapers — Production-grade data collection."""
 
 from src.scrapers.base_scraper import (
     FetcherType,
@@ -8,7 +8,6 @@ from src.scrapers.base_scraper import (
 )
 from src.scrapers.agri_scrapers import (
     AgriculturalDataAPI,
-    AgmarknetScraper as AgmarknetWebScraper,  # Scrapling-based (agri_scrapers.py)
     DataSource,
     ENAMScraper,
     GovScheme,
@@ -39,8 +38,7 @@ __all__ = [
     "FetcherType",
     "ScrapeResult",
     "ScraperHealth",
-    # Scrapers (agri_scrapers.py — Scrapling-based)
-    "AgmarknetWebScraper",
+    # Scrapers (agri_scrapers — modular package)
     "ENAMScraper",
     "IMDWeatherScraper",
     "RSSNewsScraper",

@@ -22,6 +22,7 @@ from typing import AsyncIterator, Callable, Optional
 
 import numpy as np
 from loguru import logger
+from src.voice.tts import normalize_edge_rate
 
 
 class StreamingTTSProvider(str, Enum):
@@ -281,10 +282,13 @@ class StreamingTTS:
         """Stream using Edge TTS"""
         import edge_tts
         
-        # Calculate rate adjustment
-        rate = f"+{int((speed - 1) * 100)}%" if speed > 1 else f"{int((speed - 1) * 100)}%"
+        if not text or not text.strip():
+            return
+            
+        # Calculate rate adjustment safely using helper
+        rate_str = normalize_edge_rate(speed)
         
-        communicate = edge_tts.Communicate(text, voice, rate=rate if speed != 1.0 else None)
+        communicate = edge_tts.Communicate(text, voice, rate=rate_str)
         
         chunk_index = 0
         audio_buffer = io.BytesIO()

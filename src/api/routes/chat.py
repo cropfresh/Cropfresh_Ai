@@ -82,7 +82,7 @@ async def get_supervisor_agent():
     global _supervisor_agent
     
     if _supervisor_agent is None:
-        from src.agents.supervisor_agent import SupervisorAgent
+        from src.agents.supervisor import SupervisorAgent
         from src.agents.agronomy_agent import AgronomyAgent
         from src.agents.commerce_agent import CommerceAgent
         from src.agents.buyer_matching.agent import BuyerMatchingAgent

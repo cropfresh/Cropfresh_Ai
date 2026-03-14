@@ -3,190 +3,23 @@ Buyer Matching Agent
 ====================
 Matches active farmer listings to suitable buyers using
 grade compatibility, location proximity, and demand signals.
-
-Business Logic (from ARCHITECTURE.md):
-  - Cluster farmers by GPS pickup location
-  - Match buyers by grade preference, demand volume, route feasibility
-  - Score and rank matches; return top-N candidates per listing
-
-Author: CropFresh AI Team
-Version: 2.0.0
 """
 
-from __future__ import annotations
-
-import json
-import math
 from datetime import datetime, timedelta
 from typing import Any, Optional
-
-from loguru import logger
-from pydantic import BaseModel, Field
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.memory.state_manager import AgentExecutionState
 from src.orchestrator.llm_provider import BaseLLMProvider
 
-
-# * ═══════════════════════════════════════════════════════════════
-# * DATA MODELS
-# * ═══════════════════════════════════════════════════════════════
-
-class ListingProfile(BaseModel):
-    """Farmer listing available for matching."""
-    listing_id: str
-    farmer_id: str
-    commodity: str
-    variety: str = ""
-    quantity_kg: float
-    asking_price_per_kg: float
-    grade: str = "Unverified"
-    pickup_lat: float = 0.0
-    pickup_lon: float = 0.0
-    district: str = ""
-    reliability_score: float = 0.7
-
-class BuyerProfile(BaseModel):
-    """Buyer with demand preferences."""
-    buyer_id: str
-    name: str = ""
-    type: str = "retailer"
-    district: str = ""
-    delivery_lat: float = 0.0
-    delivery_lon: float = 0.0
-    preferred_grades: list[str] = Field(default_factory=lambda: ["A", "B"])
-    min_grade: Optional[str] = None
-    max_price_per_kg: float = 0.0
-    demand_commodities: list[str] = Field(default_factory=list)
-    demand_quantity_kg: float = 0.0
-    order_history: list[dict[str, Any]] = Field(default_factory=list)
-
-class MatchCandidate(BaseModel):
-    """A scored buyer match for a listing."""
-    listing_id: str
-    farmer_id: str
-    buyer_id: str
-    buyer_name: str
-    buyer_type: str
-    match_score: float
-    score: float
-    proximity_km: float
-    distance_km: float
-    quality_match: float
-    grade_compatible: bool
-    price_fit: float
-    price_compatible: bool
-    demand_signal: float
-    reliability: float
-    quantity_fillable: float
-    estimated_delivery_hours: float
-    estimated_logistics_cost: float
-    reasoning: str
-
-class MatchResult(BaseModel):
-    """Complete matching result for a listing."""
-    listing_id: str
-    commodity: str
-    matches: list[MatchCandidate] = Field(default_factory=list)
-    total_candidates_evaluated: int = 0
-    cache_hit: bool = False
-    timestamp: datetime = Field(default_factory=datetime.now)
+from .constants import CACHE_TTL_SECONDS, GRADE_ORDER, MAX_MATCH_DISTANCE_KM
+from .models import BuyerProfile, ListingProfile, MatchCandidate, MatchResult
+from .engine import MatchingEngine
+from .cache import BuyerMatchingCacheMixin
+from .mock_data import BuyerMatchingMockDataMixin
 
 
-MAX_MATCH_DISTANCE_KM = 150.0
-CACHE_TTL_SECONDS = 300
-GRADE_ORDER = {"A+": 4, "A": 3, "B": 2, "C": 1}
-
-
-class MatchingEngine:
-    """
-    Multi-factor matching engine for CropFresh marketplace.
-    """
-
-    WEIGHTS = {
-        "proximity": 0.30,
-        "quality": 0.25,
-        "price_fit": 0.20,
-        "demand_signal": 0.15,
-        "reliability": 0.10,
-    }
-
-    def calculate_proximity_score(
-        self,
-        farmer_lat: float,
-        farmer_lon: float,
-        buyer_lat: float,
-        buyer_lon: float,
-        max_distance_km: float = 100.0,
-    ) -> float:
-        """
-        Haversine proximity with exponential decay.
-        """
-        distance = BuyerMatchingAgent._haversine(farmer_lat, farmer_lon, buyer_lat, buyer_lon)
-        if distance >= max_distance_km:
-            return 0.0
-        return math.exp(-distance / (max_distance_km * 0.3))
-
-    def calculate_quality_match(self, listing_grade: str, buyer_min_grade: str) -> float:
-        """
-        Grade alignment scoring.
-        """
-        listing_val = GRADE_ORDER.get(listing_grade, 1)
-        buyer_min_val = GRADE_ORDER.get(buyer_min_grade, 1)
-        if listing_val < buyer_min_val:
-            return 0.0
-        if listing_val == buyer_min_val:
-            return 1.0
-        return 0.9
-
-    def calculate_price_fit(self, asking_price: float, buyer_budget: float) -> float:
-        """
-        Price alignment scoring with overshoot penalty.
-        """
-        if buyer_budget <= 0:
-            return 0.5
-        if asking_price <= buyer_budget:
-            return 1.0
-        overshoot = (asking_price - buyer_budget) / buyer_budget
-        if overshoot > 0.15:
-            return 0.0
-        return max(0.0, 1.0 - (overshoot * 5))
-
-    def calculate_demand_signal(self, commodity: str, buyer_order_history: list[dict[str, Any]]) -> float:
-        """
-        Frequency + recency demand signal score.
-        """
-        relevant_orders = [order for order in buyer_order_history if str(order.get("commodity", "")).lower() == commodity.lower()]
-        if not relevant_orders:
-            return 0.1
-        frequency_score = min(1.0, len(relevant_orders) / 10.0)
-        latest_date = self._extract_latest_order_date(relevant_orders)
-        if latest_date is None:
-            return frequency_score
-        recency_days = (datetime.now() - latest_date).days
-        recency_score = max(0.0, 1.0 - recency_days / 90.0)
-        return 0.6 * frequency_score + 0.4 * recency_score
-
-    def calculate_reliability(self, reliability_score: float) -> float:
-        return min(max(reliability_score, 0.0), 1.0)
-
-    def _extract_latest_order_date(self, orders: list[dict[str, Any]]) -> Optional[datetime]:
-        extracted: list[datetime] = []
-        for order in orders:
-            date_value = order.get("date")
-            if isinstance(date_value, datetime):
-                extracted.append(date_value)
-            elif isinstance(date_value, str):
-                try:
-                    extracted.append(datetime.fromisoformat(date_value))
-                except ValueError:
-                    continue
-        if not extracted:
-            return None
-        return max(extracted)
-
-
-class BuyerMatchingAgent(BaseAgent):
+class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDataMixin):
     """
     Matches farmer listings to buyers via multi-factor scoring.
 
@@ -267,7 +100,6 @@ class BuyerMatchingAgent(BaseAgent):
     ) -> MatchResult:
         """
         Score and rank buyers against a single listing.
-
         Returns the top-N matches sorted by descending score.
         """
         cache_key = self._build_cache_key(
@@ -294,8 +126,10 @@ class BuyerMatchingAgent(BaseAgent):
             quality_match = self.engine.calculate_quality_match(listing.grade, buyer_min_grade)
             price_fit = self.engine.calculate_price_fit(listing.asking_price_per_kg, buyer.max_price_per_kg)
             demand_signal = self.engine.calculate_demand_signal(listing.commodity, buyer.order_history)
-            if listing.commodity.lower() in [commodity.lower() for commodity in buyer.demand_commodities]:
+            
+            if listing.commodity.lower() in [c.lower() for c in buyer.demand_commodities]:
                 demand_signal = min(1.0, demand_signal + 0.2)
+                
             reliability = self.engine.calculate_reliability(listing.reliability_score)
 
             match_score = (
@@ -308,7 +142,7 @@ class BuyerMatchingAgent(BaseAgent):
             if match_score < min_score:
                 continue
 
-            distance = self._haversine(
+            distance = self.engine.haversine(
                 listing.pickup_lat, listing.pickup_lon,
                 buyer.delivery_lat, buyer.delivery_lon,
             )
@@ -317,8 +151,10 @@ class BuyerMatchingAgent(BaseAgent):
             fillable = min(listing.quantity_kg, buyer.demand_quantity_kg)
             if buyer.demand_quantity_kg <= 0:
                 fillable = listing.quantity_kg
+                
             estimated_delivery_hours = max(1.0, distance / 35.0)
             estimated_logistics_cost = round(distance * 0.8, 2)
+            
             reasons = [
                 f"proximity={proximity:.2f}",
                 f"quality={quality_match:.2f}",
@@ -366,9 +202,7 @@ class BuyerMatchingAgent(BaseAgent):
         max_results: int = 10,
         min_score: float = 0.3,
     ) -> list[MatchCandidate]:
-        """
-        Find top buyers for a listing.
-        """
+        """Find top buyers for a listing."""
         listing, buyers = self._get_mock_listing_and_buyers(listing_id)
         result = await self.match(listing=listing, buyers=buyers, top_n=max_results, min_score=min_score)
         return result.matches
@@ -381,9 +215,7 @@ class BuyerMatchingAgent(BaseAgent):
         max_price_per_kg: float,
         max_results: int = 10,
     ) -> list[MatchCandidate]:
-        """
-        Reverse matching: buyer specifies needs, find matching listings.
-        """
+        """Reverse matching: buyer specifies needs, find matching listings."""
         buyer = BuyerProfile(
             buyer_id=buyer_id,
             name="Requested Buyer",
@@ -411,7 +243,7 @@ class BuyerMatchingAgent(BaseAgent):
             )
             if matched.matches:
                 candidates.extend(matched.matches)
-        candidates.sort(key=lambda candidate: candidate.match_score, reverse=True)
+        candidates.sort(key=lambda c: c.match_score, reverse=True)
         return candidates[:max_results]
 
     def _resolve_buyer_min_grade(self, buyer: BuyerProfile) -> str:
@@ -427,143 +259,3 @@ class BuyerMatchingAgent(BaseAgent):
             if value == preferred_min:
                 return grade
         return "C"
-
-    def _build_cache_key(self, listing_id: str, buyer_ids: list[str], suffix: str = "") -> str:
-        buyers = ",".join(sorted(buyer_ids))
-        return f"match:{listing_id}:{buyers}:{suffix}"
-
-    async def _get_redis(self):
-        if self._redis_client is None and self.redis_url:
-            try:
-                import redis.asyncio as redis
-                self._redis_client = redis.from_url(self.redis_url, decode_responses=True)
-                await self._redis_client.ping()
-            except Exception as err:
-                logger.warning(f"Redis cache unavailable for buyer matching: {err}")
-                self._redis_client = None
-        return self._redis_client
-
-    async def _cache_get(self, key: str) -> Optional[MatchResult]:
-        redis = await self._get_redis()
-        if redis:
-            try:
-                raw = await redis.get(key)
-                if raw:
-                    return MatchResult.model_validate_json(raw)
-            except Exception as err:
-                logger.debug(f"Redis cache read failed ({key}): {err}")
-
-        cached = self._local_cache.get(key)
-        if not cached:
-            return None
-        expiry, value = cached
-        if expiry <= datetime.now():
-            self._local_cache.pop(key, None)
-            return None
-        return value.model_copy(deep=True)
-
-    async def _cache_set(self, key: str, value: MatchResult) -> None:
-        redis = await self._get_redis()
-        if redis:
-            try:
-                await redis.setex(key, self.cache_ttl_seconds, value.model_dump_json())
-            except Exception as err:
-                logger.debug(f"Redis cache write failed ({key}): {err}")
-        expiry = datetime.now() + timedelta(seconds=self.cache_ttl_seconds)
-        self._local_cache[key] = (expiry, value.model_copy(deep=True))
-
-    def _get_mock_listing_and_buyers(self, listing_id: str) -> tuple[ListingProfile, list[BuyerProfile]]:
-        listing = ListingProfile(
-            listing_id=listing_id,
-            farmer_id="farmer-test-001",
-            commodity="Tomato",
-            variety="Hybrid",
-            quantity_kg=200,
-            asking_price_per_kg=24.0,
-            grade="A",
-            pickup_lat=13.13,
-            pickup_lon=78.15,
-            district="Kolar",
-            reliability_score=0.86,
-        )
-        buyers = [
-            BuyerProfile(
-                buyer_id="buyer-near",
-                name="Kolar Retail Hub",
-                type="retailer",
-                district="Kolar",
-                delivery_lat=13.14,
-                delivery_lon=78.16,
-                preferred_grades=["A", "B"],
-                max_price_per_kg=30.0,
-                demand_commodities=["Tomato", "Onion"],
-                demand_quantity_kg=300,
-                order_history=[
-                    {"commodity": "Tomato", "date": datetime.now().isoformat()},
-                    {"commodity": "Tomato", "date": (datetime.now() - timedelta(days=14)).isoformat()},
-                ],
-            ),
-            BuyerProfile(
-                buyer_id="buyer-mid",
-                name="Bangalore Fresh Stores",
-                type="wholesaler",
-                district="Bangalore",
-                delivery_lat=12.98,
-                delivery_lon=77.60,
-                preferred_grades=["A"],
-                max_price_per_kg=25.0,
-                demand_commodities=["Tomato"],
-                demand_quantity_kg=120,
-                order_history=[{"commodity": "Tomato", "date": (datetime.now() - timedelta(days=21)).isoformat()}],
-            ),
-        ]
-        return listing, buyers
-
-    def _get_mock_listings_for_commodity(self, commodity: str) -> list[ListingProfile]:
-        return [
-            ListingProfile(
-                listing_id="listing-a",
-                farmer_id="farmer-a",
-                commodity=commodity,
-                variety="Hybrid",
-                quantity_kg=180,
-                asking_price_per_kg=23.0,
-                grade="A",
-                pickup_lat=13.13,
-                pickup_lon=78.15,
-                district="Kolar",
-                reliability_score=0.9,
-            ),
-            ListingProfile(
-                listing_id="listing-b",
-                farmer_id="farmer-b",
-                commodity=commodity,
-                variety="Local",
-                quantity_kg=240,
-                asking_price_per_kg=27.0,
-                grade="B",
-                pickup_lat=13.05,
-                pickup_lon=77.95,
-                district="Bangalore Rural",
-                reliability_score=0.75,
-            ),
-        ]
-
-    @staticmethod
-    def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Haversine distance in km between two GPS points."""
-        if lat1 == 0 and lon1 == 0:
-            return 0.0
-        if lat2 == 0 and lon2 == 0:
-            return 0.0
-
-        R = 6371.0
-        d_lat = math.radians(lat2 - lat1)
-        d_lon = math.radians(lon2 - lon1)
-        a = (
-            math.sin(d_lat / 2) ** 2
-            + math.cos(math.radians(lat1))
-            * math.cos(math.radians(lat2))
-            * math.sin(d_lon / 2) ** 2
-        )
-        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))

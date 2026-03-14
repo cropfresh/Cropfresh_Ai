@@ -1,4 +1,16 @@
-# src/agents/price_prediction
-from .agent import PricePrediction, PricePredictionAgent
+"""
+Price Prediction Package
+========================
+Hybrid price forecasting for CropFresh AI.
+"""
 
-__all__ = ["PricePredictionAgent", "PricePrediction"]
+from .models import PricePrediction
+from .constants import SEASONAL_CALENDAR, SEASONAL_LABEL_MAP
+from .agent import PricePredictionAgent
+
+__all__ = [
+    "PricePrediction",
+    "SEASONAL_CALENDAR",
+    "SEASONAL_LABEL_MAP",
+    "PricePredictionAgent",
+]

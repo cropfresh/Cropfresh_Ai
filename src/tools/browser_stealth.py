@@ -15,18 +15,28 @@ Version: 1.0.0
 """
 
 import random
-from typing import Optional
-
-from loguru import logger
-from playwright.async_api import Page
+from typing import Optional, Any
 
 try:
-    from fake_useragent import UserAgent
+    from loguru import logger  # type: ignore[import-untyped]
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)  # type: ignore[assignment]
+
+try:
+    from playwright.async_api import BrowserContext, Page  # type: ignore[import-untyped]
+except ImportError:
+    # Stubs for type checking when playwright is not installed
+    BrowserContext = Any  # type: ignore[misc,assignment]
+    Page = Any  # type: ignore[misc,assignment]
+
+try:
+    from fake_useragent import UserAgent  # type: ignore[import-untyped]
     _ua = UserAgent()
     HAS_FAKE_UA = True
 except ImportError:
+    _ua = None
     HAS_FAKE_UA = False
-    logger.warning("fake_useragent not installed, using fallback user agents")
 
 
 class StealthConfig:
@@ -65,9 +75,11 @@ class StealthConfig:
 
 def get_random_user_agent() -> str:
     """Get a random realistic user agent."""
-    if HAS_FAKE_UA:
+    if HAS_FAKE_UA and _ua is not None:
         try:
-            return _ua.random
+            ua_str = _ua.random
+            if isinstance(ua_str, str):
+                return ua_str
         except Exception:
             pass
     return random.choice(StealthConfig.USER_AGENTS)
@@ -214,7 +226,7 @@ async def create_stealth_context(
         ignore_https_errors=True,
     )
     
-    logger.debug("Stealth context created (UA: {}...)", ua[:50])
+    logger.debug("Stealth context created (UA: %s...)", ua[:50])
     return context
 
 

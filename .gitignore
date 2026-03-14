@@ -68,6 +68,7 @@ venv.bak/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+notebooks/
 
 # mypy
 .mypy_cache/
@@ -83,6 +84,7 @@ models/*.bin
 models/*.onnx
 models/*.safetensors
 !models/.gitkeep
+*.pt
 
 # Data
 data/
@@ -95,3 +97,48 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Antigravity / Gemini
+.antigravity/
+.gemini/
+
+# Temp/debug files (root level)
+*.html
+*.png
+*.wav
+*.tmp
+*.json
+!package.json
+!pyproject.toml
+!config/**/*.json
+
+# Debug/test output files
+test_output.txt
+test_failures.txt
+test_full_output.txt
+pytest_output.txt
+out2.txt
+endpoints.txt
+district_options.txt
+apprunner_logs.txt
+download_trace.txt
+project_tree.txt
+pyproject_check.tmp
+
+# Temp scripts at root level
+dump_react.py
+dump_table_html.py
+fetch_logs.py
+diagnostic_grid.py
+test_agmark_react.py
+test_duplex_pipeline.py
+test_groq_stt.py
+test_scraper_live.py
+test_web_agent.py
+test_ws_client.py
+tmp_test.py
+
+# Temp markdown files at root
+"Agmarknet Complete Extraction Plan"
+"Price Intelligence Pipeline Walkthrough.md"
+perplexity_architecture_research.md.resolved

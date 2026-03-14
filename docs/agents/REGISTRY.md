@@ -64,15 +64,26 @@ All agents are wired at startup by `agent_registry.create_agent_system()`, which
 - `process_with_session(query, session_id)` → `AgentResponse`
 - `register_agent(name, agent)` / `set_fallback_agent(agent)`
 
-### 1. AgronomyAgent
+### 1. AgronomyAgent (v3.0 — Deep Reasoning)
 
 | Property | Value |
 |----------|-------|
-| **File** | `src/agents/agronomy_agent.py` (9,733 bytes) |
+| **File** | `src/agents/agronomy_agent.py` |
+| **Version** | 3.0.0 — CoT reasoning, strict RAG grounding, multilingual |
 | **Purpose** | Crop cultivation, pest management, soil health, irrigation advice |
-| **KB Categories** | `agronomy`, `crops` |
-| **Tools** | `get_weather`, `imd_weather` |
+| **Temperature** | 0.3 (lowered for factual accuracy) |
+| **Max Tokens** | 1200 (expanded for structured CoT output) |
+| **KB Categories** | `agronomy`, `general` |
+| **Tools** | `get_weather` (multilingual keyword detection: EN/KN/HI/TE/TA) |
 | **Keywords** | grow, plant, cultivate, harvest, pest, disease, fertilizer, soil, seed |
+
+**v3.0 Accuracy Features:**
+- **Chain-of-Thought:** Identifies crop + region + stage → retrieves → analyses → recommends → warns
+- **Strict Grounding:** Dosages and chemical names ONLY from retrieved docs; flags general advice with ⚠️
+- **Structured Output:** Every response follows Analysis → Actions → Organic Alternative → Cautions → Follow-ups
+- **Dynamic Follow-ups:** Parsed from LLM output in the user's language (replaces hardcoded English)
+- **Confidence Scoring:** Based on actual RAG relevance scores (0.4 base → up to 0.95)
+- **Multilingual:** Detects query language (Kannada, Hindi, English, Tamil, Telugu, Marathi) and responds entirely in that language
 
 ### 2. CommerceAgent
 

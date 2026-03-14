@@ -112,7 +112,7 @@ async def test_agent_routing():
     print("=" * 60)
     
     try:
-        from src.agents.supervisor_agent import SupervisorAgent
+        from src.agents.supervisor import SupervisorAgent
         
         supervisor = SupervisorAgent()  # No LLM for rule-based
         
@@ -209,7 +209,7 @@ async def test_full_multi_agent_pipeline():
     print("=" * 60)
     
     try:
-        from src.agents.supervisor_agent import SupervisorAgent
+        from src.agents.supervisor import SupervisorAgent
         from src.agents.agronomy_agent import AgronomyAgent
         from src.agents.commerce_agent import CommerceAgent
         from src.agents.platform_agent import PlatformAgent
@@ -289,7 +289,7 @@ async def test_with_llm():
     try:
         from src.config import get_settings
         from src.orchestrator.llm_provider import create_llm_provider
-        from src.agents.supervisor_agent import SupervisorAgent
+        from src.agents.supervisor import SupervisorAgent
         from src.agents.agronomy_agent import AgronomyAgent
         from src.agents.commerce_agent import CommerceAgent
         from src.agents.platform_agent import PlatformAgent

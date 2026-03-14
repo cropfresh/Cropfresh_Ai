@@ -15,7 +15,7 @@ from typing import Any, Optional
 
 from loguru import logger
 
-from src.agents.supervisor_agent import SupervisorAgent
+from src.agents.supervisor import SupervisorAgent
 from src.memory.state_manager import AgentStateManager
 from src.tools.registry import ToolRegistry
 

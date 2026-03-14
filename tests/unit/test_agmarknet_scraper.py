@@ -23,11 +23,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.scrapers.agmarknet import (
-    AgmarknetScraper,
-    MandiPrice,
-    get_agmarknet_scraper,
-)
+from src.scrapers.agmarknet.client import AgmarknetScraper
+from src.scrapers.agmarknet import get_agmarknet_scraper
+from src.scrapers.agri_scrapers import MandiPrice
 from src.scrapers.scraper_scheduler import ScraperScheduler, get_scraper_scheduler
 
 

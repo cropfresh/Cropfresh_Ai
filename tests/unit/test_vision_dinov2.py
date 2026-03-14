@@ -108,7 +108,7 @@ class TestGradeFromDefectCount:
 
     def test_confidence_is_in_range(self):
         for n in range(6):
-            _, conf = _grade_from_defect_count(n)
+            _, conf, _ = _grade_from_defect_count(n)
             assert 0.0 < conf <= 1.0
 
 
@@ -116,35 +116,35 @@ class TestGradeFromDefectCount:
 
 class TestApplyYoloEnsemble:
     def test_critical_defect_downgrades_a_plus(self):
-        grade, _ = apply_yolo_ensemble("A+", 0.91, ["rot_spot"])
+        grade, _, _ = apply_yolo_ensemble("A+", 0.91, ["rot_spot"])
         assert grade == "B"
 
     def test_critical_defect_downgrades_a(self):
-        grade, _ = apply_yolo_ensemble("A", 0.85, ["fungal_growth"])
+        grade, _, _ = apply_yolo_ensemble("A", 0.85, ["fungal_growth"])
         assert grade == "B"
 
     def test_critical_defect_caps_confidence(self):
-        _, conf = apply_yolo_ensemble("A+", 0.95, ["overripe"])
+        _, conf, _ = apply_yolo_ensemble("A+", 0.95, ["overripe"])
         assert conf <= 0.72
 
     def test_critical_defect_does_not_downgrade_b(self):
         # B is already below the premium tier — no further forced downgrade
-        grade, conf = apply_yolo_ensemble("B", 0.75, ["rot_spot"])
+        grade, conf, _ = apply_yolo_ensemble("B", 0.75, ["rot_spot"])
         assert grade == "B"
         assert conf == pytest.approx(0.75)
 
     def test_too_many_defects_downgrades_a_plus(self):
-        grade, _ = apply_yolo_ensemble("A+", 0.88, ["bruise", "bruise", "colour_off", "surface_crack"])
+        grade, _, _ = apply_yolo_ensemble("A+", 0.88, ["bruise", "bruise", "colour_off", "surface_crack"])
         assert grade == "A"
 
     def test_many_defects_do_not_affect_a(self):
         # Rule 2 only targets A+; A should be untouched
-        grade, conf = apply_yolo_ensemble("A", 0.78, ["bruise"] * 5)
+        grade, conf, _ = apply_yolo_ensemble("A", 0.78, ["bruise"] * 5)
         assert grade == "A"
         assert conf == pytest.approx(0.78)
 
     def test_no_defects_no_change(self):
-        grade, conf = apply_yolo_ensemble("A+", 0.92, [])
+        grade, conf, _ = apply_yolo_ensemble("A+", 0.92, [])
         assert grade == "A+"
         assert conf == pytest.approx(0.92)
 
@@ -159,26 +159,26 @@ class TestDinoV2GradeClassifier:
 
     def test_classify_falls_back_when_model_missing(self):
         clf = DinoV2GradeClassifier(model_dir="non-existent-dir")
-        grade, conf = clf.classify(_make_fake_image(), detected_defects=[])
+        grade, conf, _ = clf.classify(_make_fake_image(), detected_defects=[])
         assert grade in GRADE_LABELS
         assert 0.0 < conf <= 1.0
 
     def test_classify_a_plus_with_mocked_session(self):
         """High A+ logit → should return A+."""
         clf = _mocked_classifier(_make_logits(0))   # index 0 = "A+"
-        grade, conf = clf.classify(_make_fake_image(), detected_defects=[])
+        grade, conf, _ = clf.classify(_make_fake_image(), detected_defects=[])
         assert grade == "A+"
         assert conf > 0.7
 
     def test_classify_c_with_mocked_session(self):
         clf = _mocked_classifier(_make_logits(3))   # index 3 = "C"
-        grade, conf = clf.classify(_make_fake_image(), detected_defects=[])
+        grade, conf, _ = clf.classify(_make_fake_image(), detected_defects=[])
         assert grade == "C"
 
     def test_ensemble_applied_on_mocked_inference(self):
         """A+ logit + rot_spot → ensemble should downgrade to B."""
         clf = _mocked_classifier(_make_logits(0))   # "A+" logit
-        grade, conf = clf.classify(_make_fake_image(), detected_defects=["rot_spot"])
+        grade, conf, _ = clf.classify(_make_fake_image(), detected_defects=["rot_spot"])
         assert grade == "B"
         assert conf <= 0.72
 
@@ -191,7 +191,7 @@ class TestDinoV2GradeClassifier:
         clf = DinoV2GradeClassifier.__new__(DinoV2GradeClassifier)
         clf._session = mock_session
 
-        grade, conf = clf.classify(_make_fake_image(), detected_defects=["bruise", "colour_off"])
+        grade, conf, _ = clf.classify(_make_fake_image(), detected_defects=["bruise", "colour_off"])
         # 2 defects → _grade_from_defect_count returns "A"
         assert grade == "A"
         assert 0.0 < conf <= 1.0
@@ -199,7 +199,7 @@ class TestDinoV2GradeClassifier:
     def test_confidence_is_probability(self):
         """Returned confidence must be a valid probability."""
         clf = _mocked_classifier(_make_logits(1))
-        _, conf = clf.classify(_make_fake_image())
+        _, conf, _ = clf.classify(_make_fake_image())
         assert 0.0 < conf <= 1.0
 
 

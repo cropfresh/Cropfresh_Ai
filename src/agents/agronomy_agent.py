@@ -1,75 +1,55 @@
 """
 Agronomy Agent
 ==============
-Specialized agent for agricultural knowledge.
+Specialized agent for agricultural knowledge with deep-reasoning,
+strict RAG grounding, and full multilingual support.
 
-Expertise:
-- Crop cultivation guides (planting, varieties, harvesting)
-- Pest and disease management
-- Soil health and fertilizers
-- Irrigation practices
-- Organic farming
-- Weather-based crop planning
+See also:
+- agronomy_prompt.py  — system prompt, role, weather keywords
+- agronomy_helpers.py — parse_follow_ups, compute_confidence, avg_score
 
 Author: CropFresh AI Team
-Version: 2.0.0
+Version: 3.0.0
 """
 
-from typing import Optional
+from typing import Any, Optional
+import re
 
 from loguru import logger
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.agents.prompt_context import build_system_prompt
+from src.agents.agronomy_prompt import (
+    AGRONOMY_ROLE,
+    AGRONOMY_SYSTEM_PROMPT,
+    WEATHER_KEYWORDS,
+)
+from src.agents.agronomy_helpers import (
+    avg_score,
+    compute_confidence,
+    parse_follow_ups,
+)
 from src.memory.state_manager import AgentExecutionState, AgentStateManager
 from src.tools.registry import ToolRegistry
 
 
-AGRONOMY_SYSTEM_PROMPT = """You are the Agronomy Expert Agent for CropFresh AI, a professional agricultural assistant with deep expertise in Indian farming practices.
-
-Your knowledge covers:
-- Crop cultivation: Varieties, planting seasons, spacing, growth stages
-- Pest & disease management: Identification, organic/chemical treatments, IPM
-- Soil health: Testing, amendments, pH management, organic matter
-- Irrigation: Drip, sprinkler, flood, water scheduling
-- Fertilizers: NPK ratios, organic fertilizers, application timing
-- Post-harvest: Storage, handling, quality preservation
-- Regional practices: Karnataka, South India focus
-
-Guidelines:
-1. Provide practical, actionable advice farmers can implement
-2. Consider local conditions (Karnataka climate, soil types)
-3. Recommend both organic and conventional options when appropriate
-4. Include specific quantities, timings, and frequencies
-5. Warn about common mistakes and their prevention
-6. Use ₹ for any cost references
-
-If you have retrieved context, use it to ground your answer.
-If context is insufficient, provide general best practices clearly stating they are general recommendations.
-
-Respond in a helpful, professional tone. Be thorough but concise."""
-
-
-AGRONOMY_ROLE = "You are the Agronomy Expert Agent for CropFresh AI."
-
-
 class AgronomyAgent(BaseAgent):
     """
-    Specialized agent for agricultural knowledge.
-    
-    Handles:
-    - Crop cultivation queries
-    - Pest and disease management
-    - Soil health advice
-    - Irrigation recommendations
-    - Organic farming practices
-    
+    Specialized agent for agricultural knowledge (v3.0).
+
+    Features:
+    - Chain-of-Thought reasoning in every response
+    - Strict RAG grounding (no hallucinated dosages)
+    - Structured output (Analysis → Actions → Organic → Cautions → Follow-ups)
+    - Dynamic multilingual follow-ups parsed from LLM output
+    - Confidence scoring based on document relevance
+
     Usage:
         agent = AgronomyAgent(llm=provider, knowledge_base=kb)
         await agent.initialize()
-        response = await agent.process("How to grow tomatoes in Karnataka?")
+        response = await agent.process("ಟೊಮೆಟೊ ಬೆಳೆಯಲು ಹೇಗೆ?")
     """
-    
+
     def __init__(
         self,
         llm=None,
@@ -77,33 +57,23 @@ class AgronomyAgent(BaseAgent):
         state_manager: Optional[AgentStateManager] = None,
         knowledge_base=None,
     ):
-        """
-        Initialize Agronomy Agent.
-        
-        Args:
-            llm: LLM provider
-            tool_registry: Tool registry
-            state_manager: State manager
-            knowledge_base: Knowledge base for retrieval
-        """
         config = AgentConfig(
             name="agronomy_agent",
             description="Expert in crop cultivation, pest management, soil health, and farming practices",
             max_retries=2,
-            temperature=0.7,
-            max_tokens=800,
+            temperature=0.3,       # ? Lower for factual accuracy
+            max_tokens=1200,       # ? Room for structured CoT output
             kb_categories=["agronomy", "general"],
             tool_categories=["weather", "calculator"],
         )
-        
-        super().__init__(
+        super().__init__(  # type: ignore[call-arg]
             config=config,
             llm=llm,
             tool_registry=tool_registry,
             state_manager=state_manager,
             knowledge_base=knowledge_base,
         )
-    
+
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
         """Get agronomy system prompt with shared CropFresh context."""
         return build_system_prompt(
@@ -112,151 +82,144 @@ class AgronomyAgent(BaseAgent):
             context=context,
             agent_domain="agronomy",
         )
-    
+
     async def process(
         self,
         query: str,
         context: Optional[dict] = None,
         execution: Optional[AgentExecutionState] = None,
     ) -> AgentResponse:
-        """
-        Process an agronomy-related query.
-        
-        Args:
-            query: User query
-            context: Optional context
-            execution: Optional execution state
-            
-        Returns:
-            AgentResponse with agricultural advice
-        """
-        logger.info(f"AgronomyAgent processing: '{query[:50]}...'")
-        
+        """Process an agronomy query with deep reasoning."""
+        truncated: str = query[:80]  # type: ignore[index]
+        logger.info(f"AgronomyAgent processing: '{truncated}...'")
+
         try:
-            # Step 1: Retrieve relevant context
+            # * Step 1 — Retrieve relevant context
             if execution:
                 self.state_manager.add_step(execution.execution_id, "retrieve_context")
-            
+
             documents = await self.retrieve_context(
-                query=query,
-                top_k=5,
-                categories=["agronomy", "general"],
+                query=query, top_k=5, categories=["agronomy", "general"],
             )
-            
             if execution:
                 execution.documents = documents
-            
-            # Step 2: Check for weather tool if query mentions weather
-            tool_results = []
-            if self.tools and any(kw in query.lower() for kw in ["weather", "forecast", "rain", "temperature"]):
-                weather_result = await self.use_tool(
-                    "get_weather",
-                    execution=execution,
-                    location=context.get("user_profile", {}).get("location", "Kolar") if context else "Kolar",
-                )
-                if weather_result.success:
-                    tool_results.append({
-                        "tool": "get_weather",
-                        "success": True,
-                        "result": weather_result.result,
-                    })
-            
-            # Step 3: Generate response
+
+            # * Step 2 — Weather tool (multilingual keyword check)
+            tool_results = await self._maybe_fetch_weather(query, context, execution)
+
+            # * Step 3 — Build LLM messages
             if execution:
                 self.state_manager.add_step(execution.execution_id, "generate_response")
-            
-            messages = [
-                {"role": "system", "content": self._get_system_prompt(context)},
-            ]
-            
-            # Add context
-            context_text = ""
-            if documents:
-                context_text = f"\n\n**Retrieved Knowledge:**\n{self.format_context(documents)}"
-            
-            if tool_results:
-                context_text += f"\n\n**Tool Results:**\n{self.format_tool_results(tool_results)}"
-            
-            # Add conversation history if available
-            if context and context.get("conversation_summary"):
-                messages.append({
-                    "role": "system",
-                    "content": f"Previous conversation:\n{context['conversation_summary']}",
-                })
-            
-            # User message with context
-            user_message = query
-            if context_text:
-                user_message = f"{query}\n{context_text}"
-            
-            messages.append({"role": "user", "content": user_message})
-            
-            # Generate
+
+            messages = self._build_messages(query, context, documents, tool_results)
+
+            # * Step 4 — Generate
             if self.llm:
-                answer = await self.generate_with_llm(messages)
+                answer = await self.generate_with_llm(messages, context=context)
             else:
-                # Fallback - return context directly
                 answer = self._generate_fallback(query, documents)
-            
-            # Build response
+
+            # * Step 5 — Parse follow-ups & compute confidence
+            follow_ups = parse_follow_ups(answer)
+            confidence = compute_confidence(documents, bool(tool_results))
+
+            # Strip out [LANG: xx] tag from answer to clean up UI output
+            clean_answer = re.sub(r"^\[LANG:\s*[a-zA-Z]+\]\s*\n*", "", answer).strip()
+
             return AgentResponse(
-                content=answer,
+                content=clean_answer,
                 agent_name=self.name,
-                confidence=0.85 if documents else 0.6,
+                confidence=confidence,
                 sources=self._extract_sources(documents),
-                reasoning=f"Retrieved {len(documents)} documents, used agronomy expertise",
+                reasoning=(
+                    f"Retrieved {len(documents)} docs "
+                    f"(avg relevance {avg_score(documents):.2f}), "
+                    f"used agronomy expertise with CoT reasoning"
+                ),
                 tools_used=[r["tool"] for r in tool_results],
                 steps=["retrieve_context", "generate_response"],
-                suggested_actions=self._suggest_follow_ups(query),
+                suggested_actions=follow_ups,
             )
-            
+
         except Exception as e:
             logger.error(f"AgronomyAgent error: {e}")
             import traceback
             traceback.print_exc()
-            
             return AgentResponse(
-                content="I apologize, but I encountered an error processing your agricultural query. Please try rephrasing your question.",
+                content="I apologize, but I encountered an error processing your "
+                        "agricultural query. Please try rephrasing your question.",
                 agent_name=self.name,
                 confidence=0.0,
                 error=str(e),
                 steps=["error"],
             )
-    
-    def _generate_fallback(self, query: str, documents: list[dict]) -> str:
-        """Generate response without LLM."""
+
+    # ── Private helpers ────────────────────────────────────────
+
+    async def _maybe_fetch_weather(
+        self, query: str, context: Optional[dict], execution: Optional[AgentExecutionState],
+    ) -> list[dict]:
+        """Invoke weather tool if the query mentions weather in any language."""
+        if not self.tools:
+            return []
+        if not any(kw in query.lower() for kw in WEATHER_KEYWORDS):
+            return []
+
+        location = "Kolar"
+        if context:
+            location = (
+                context.get("user_profile", {}).get("location")
+                or context.get("entities", {}).get("location")
+                or location
+            )
+        result = await self.use_tool("get_weather", execution=execution, location=location)
+        if result.success:
+            return [{"tool": "get_weather", "success": True, "result": result.result}]
+        return []
+
+    def _build_messages(
+        self, query: str, context: Optional[dict],
+        documents: list[dict], tool_results: list[dict],
+    ) -> list[dict]:
+        """Assemble the LLM message list with system, context, and user."""
+        messages: list[dict] = [
+            {"role": "system", "content": self._get_system_prompt(context)},
+        ]
+
+        context_text = ""
+        if documents:
+            context_text = (
+                "\n\n**Retrieved Knowledge (use these as primary source):**\n"
+                + self.format_context(documents)
+            )
+        if tool_results:
+            context_text += (
+                "\n\n**Real-time Tool Data:**\n"
+                + self.format_tool_results(tool_results)
+            )
+
+        if context and context.get("conversation_summary"):
+            messages.append({
+                "role": "system",
+                "content": f"Previous conversation:\n{context['conversation_summary']}",
+            })
+
+        user_message = f"{query}\n{context_text}" if context_text else query
+        messages.append({"role": "user", "content": user_message})
+        return messages
+
+    @staticmethod
+    def _generate_fallback(query: str, documents: list[dict[str, Any]]) -> str:
+        """Generate response without LLM using document content."""
         if not documents:
-            return "I don't have specific information about that. Please contact your local agricultural extension office for detailed guidance."
-        
-        # Return top document content
-        parts = ["Based on available information:\n"]
-        for doc in documents[:3]:
-            parts.append(f"• {doc['text'][:300]}...")
-        
+            return (
+                "I don't have specific information about that topic. "
+                "Please contact your local KVK (Krishi Vigyan Kendra) or "
+                "agricultural extension office for detailed guidance."
+            )
+        parts: list[str] = ["Based on available information:\n"]
+        top_docs = documents[:3]  # type: ignore[index]
+        for doc in top_docs:
+            text: str = doc.get("text", "")
+            parts.append(f"• {text[:300]}...")
         return "\n".join(parts)
-    
-    def _suggest_follow_ups(self, query: str) -> list[str]:
-        """Suggest follow-up questions based on query."""
-        query_lower = query.lower()
-        
-        suggestions = []
-        
-        if "grow" in query_lower or "cultivat" in query_lower:
-            suggestions.extend([
-                "What pests should I watch for?",
-                "When is the best time to harvest?",
-            ])
-        
-        if "pest" in query_lower or "disease" in query_lower:
-            suggestions.extend([
-                "What organic treatments are available?",
-                "How can I prevent this in the next season?",
-            ])
-        
-        if "soil" in query_lower:
-            suggestions.extend([
-                "What fertilizers do you recommend?",
-                "How often should I test soil?",
-            ])
-        
-        return suggestions[:3]

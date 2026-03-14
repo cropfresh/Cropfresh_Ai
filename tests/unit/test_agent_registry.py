@@ -98,7 +98,7 @@ async def test_state_manager_is_in_memory_without_redis(mock_llm):
 @pytest.mark.asyncio
 async def test_routing_crop_recommendation_to_adcl():
     """ADCL keywords should route to adcl_agent (rule-based)."""
-    from src.agents.supervisor_agent import SupervisorAgent
+    from src.agents.supervisor import SupervisorAgent
 
     supervisor = SupervisorAgent(llm=None)  # * No LLM → rule-based
     routing = supervisor._route_rule_based("What should I sow this season?")
@@ -108,7 +108,7 @@ async def test_routing_crop_recommendation_to_adcl():
 @pytest.mark.asyncio
 async def test_routing_delivery_to_logistics():
     """Logistics keywords should route to logistics_agent (rule-based)."""
-    from src.agents.supervisor_agent import SupervisorAgent
+    from src.agents.supervisor import SupervisorAgent
 
     supervisor = SupervisorAgent(llm=None)
     routing = supervisor._route_rule_based("How much will delivery cost?")
@@ -118,7 +118,7 @@ async def test_routing_delivery_to_logistics():
 @pytest.mark.asyncio
 async def test_routing_listing_to_crop_listing():
     """Listing keywords should route to crop_listing_agent (rule-based)."""
-    from src.agents.supervisor_agent import SupervisorAgent
+    from src.agents.supervisor import SupervisorAgent
 
     supervisor = SupervisorAgent(llm=None)
     routing = supervisor._route_rule_based("I want to create listing for tomatoes")
@@ -128,7 +128,7 @@ async def test_routing_listing_to_crop_listing():
 @pytest.mark.asyncio
 async def test_routing_quality_check():
     """Quality keywords should route to quality_assessment_agent."""
-    from src.agents.supervisor_agent import SupervisorAgent
+    from src.agents.supervisor import SupervisorAgent
 
     supervisor = SupervisorAgent(llm=None)
     routing = supervisor._route_rule_based("quality check my produce please")
@@ -138,7 +138,7 @@ async def test_routing_quality_check():
 @pytest.mark.asyncio
 async def test_routing_buyer_match():
     """Buyer matching keywords should route to buyer_matching_agent."""
-    from src.agents.supervisor_agent import SupervisorAgent
+    from src.agents.supervisor import SupervisorAgent
 
     supervisor = SupervisorAgent(llm=None)
     routing = supervisor._route_rule_based("find buyer for my tomatoes")
@@ -148,7 +148,7 @@ async def test_routing_buyer_match():
 @pytest.mark.asyncio
 async def test_routing_agronomy():
     """Agronomy keywords should route to agronomy_agent."""
-    from src.agents.supervisor_agent import SupervisorAgent
+    from src.agents.supervisor import SupervisorAgent
 
     supervisor = SupervisorAgent(llm=None)
     routing = supervisor._route_rule_based("how to grow tomatoes in Karnataka?")
@@ -158,7 +158,7 @@ async def test_routing_agronomy():
 @pytest.mark.asyncio
 async def test_routing_greeting():
     """Greetings should route to general_agent."""
-    from src.agents.supervisor_agent import SupervisorAgent
+    from src.agents.supervisor import SupervisorAgent
 
     supervisor = SupervisorAgent(llm=None)
     routing = supervisor._route_rule_based("hello, how are you?")

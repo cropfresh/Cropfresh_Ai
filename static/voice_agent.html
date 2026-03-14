@@ -119,17 +119,26 @@
             <h3 class="card-title">💬 Conversation</h3>
 
             <!-- Status bar -->
-            <div id="restStatus" class="rest-status">Tap the mic to start speaking</div>
+            <div id="restStatus" class="rest-status">
+              Tap the mic to start speaking
+            </div>
 
             <!-- Chat thread -->
             <div class="chat-thread" id="restChat">
               <div class="chat-bubble-wrap system">
-                <div class="chat-bubble system">Record your voice query — results will appear here as a conversation.</div>
+                <div class="chat-bubble system">
+                  Record your voice query — results will appear here as a
+                  conversation.
+                </div>
               </div>
             </div>
 
             <!-- Badges -->
-            <div class="badge-strip" id="restBadges" style="margin-top: 10px"></div>
+            <div
+              class="badge-strip"
+              id="restBadges"
+              style="margin-top: 10px"
+            ></div>
           </article>
         </div>
 
@@ -175,22 +184,39 @@
 
           <!-- Session controls -->
           <div class="ws-session-row">
-            <input id="wsUserId" class="input" style="max-width: 160px" placeholder="User ID" value="ws-test-user" />
+            <input
+              id="wsUserId"
+              class="input"
+              style="max-width: 160px"
+              placeholder="User ID"
+              value="ws-test-user"
+            />
             <select id="wsLang" class="select" style="max-width: 120px">
+              <option value="auto">🌐 Auto</option>
               <option value="hi">Hindi</option>
               <option value="en">English</option>
               <option value="kn">Kannada</option>
               <option value="te">Telugu</option>
               <option value="ta">Tamil</option>
-              <option value="auto">Auto</option>
             </select>
             <button class="btn btn-primary" id="btnWsConnect">Connect</button>
-            <button class="btn btn-secondary" id="btnWsDisconnect" disabled>Disconnect</button>
-            <button class="btn btn-secondary" id="btnWsClearTimeline">🗑 Clear</button>
+            <button class="btn btn-secondary" id="btnWsDisconnect" disabled>
+              Disconnect
+            </button>
+            <button class="btn btn-secondary" id="btnWsClearTimeline">
+              🗑 Clear
+            </button>
           </div>
 
           <!-- Live status bar -->
-          <div id="wsLiveStatus" class="ws-status-bar">Click Connect to begin</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div id="wsLiveStatus" class="ws-status-bar" style="flex: 1; margin: 0;">
+              Click Connect to begin
+            </div>
+            <div id="wsDetectedLangBadge" class="badge d-none" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: var(--event-lang); font-weight: 600; font-size: 0.8rem;">
+              EN
+            </div>
+          </div>
 
           <!-- Push-to-Talk -->
           <div style="margin: 12px 0; text-align: center">
@@ -202,7 +228,15 @@
             >
               🎤 Hold to Speak (PTT)
             </button>
-            <div style="font-size:0.7rem; color: var(--text-muted); margin-top:6px">Hold button or Spacebar · release to send</div>
+            <div
+              style="
+                font-size: 0.7rem;
+                color: var(--text-muted);
+                margin-top: 6px;
+              "
+            >
+              Hold button or Spacebar · release to send
+            </div>
           </div>
 
           <!-- Event timeline -->
@@ -270,7 +304,9 @@
           <label class="label" style="margin-top: 16px">💬 Conversation</label>
           <div class="chat-thread" id="wsChat">
             <div class="chat-bubble-wrap system">
-              <div class="chat-bubble system">Connect and hold PTT to start talking.</div>
+              <div class="chat-bubble system">
+                Connect and hold PTT to start talking.
+              </div>
             </div>
           </div>
         </article>
@@ -454,6 +490,8 @@
     <script src="./assets/js/shared.js"></script>
     <script src="./assets/js/voice-agent-core.js"></script>
     <script src="./assets/js/voice-agent-rest.js"></script>
+    <script src="./assets/js/voice-agent-ws-ui.js"></script>
+    <script src="./assets/js/voice-agent-ws-audio.js"></script>
     <script src="./assets/js/voice-agent-ws.js"></script>
     <script src="./assets/js/voice-agent-tts.js"></script>
     <script src="./assets/js/voice-agent-tools.js"></script>

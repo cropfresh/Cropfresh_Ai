@@ -23,15 +23,15 @@ class AgmarknetScraper(ScraplingBaseScraper):
     # Polite settings for government portals
     rate_limit_delay: float = 2.0 
     
-    _filters_cache: dict = None
+    _filters_cache: Optional[dict[str, Any]] = None
     
-    async def _get_filters(self, client: httpx.AsyncClient) -> dict:
+    async def _get_filters(self, client: httpx.AsyncClient) -> dict[str, Any]:
         if self._filters_cache is None:
             logger.info("Fetching taxonomy filters from Agmarknet API...")
             res = await client.get(f"{self.base_url}/daily-price-arrival/filters", headers={"Referer": "https://agmarknet.gov.in/"})
             res.raise_for_status()
             self._filters_cache = res.json().get("data", {})
-        return self._filters_cache
+        return self._filters_cache or {}
     
     async def scrape(self, state: str, commodity: str, date_from: Optional[str] = None, date_to: Optional[str] = None, district: Optional[str] = None, market: Optional[str] = None, **kwargs) -> ScrapeResult:
         """Executes a scrape against Agmarknet using the direct JSON API."""
@@ -67,7 +67,7 @@ class AgmarknetScraper(ScraplingBaseScraper):
                 district_param = "[100001]"
                 if district:
                     for d in filters.get("district_data", []):
-                        if str(d.get("state_id")) == str(state_id) and d.get("district_name", "").lower() == district.lower():
+                        if d.get("district_name") and str(d.get("state_id")) == str(state_id) and str(d.get("district_name")).lower() == district.lower():
                             district_param = f"[{d.get('id')}]"
                             break
                             
@@ -115,3 +115,8 @@ class AgmarknetScraper(ScraplingBaseScraper):
             duration_ms = (time.time() - start_time) * 1000
             logger.error(f"Failed to scrape Agmarknet API: {e}")
             return self.build_result(url=search_url, data=[], duration_ms=duration_ms, error=str(e))
+
+
+def get_agmarknet_scraper() -> AgmarknetScraper:
+    """Return a ready-to-use AgmarknetScraper (no-arg factory)."""
+    return AgmarknetScraper()

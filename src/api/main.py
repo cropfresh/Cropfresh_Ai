@@ -188,7 +188,7 @@ async def lifespan(app: FastAPI):
         logger.warning("Agent system initialization failed: {}", exc)
         # * Fallback: create bare supervisor so health checks pass
         try:
-            from src.agents.supervisor_agent import SupervisorAgent
+            from src.agents.supervisor import SupervisorAgent
 
             supervisor = SupervisorAgent(llm=app.state.llm)
             await supervisor.initialize()
@@ -256,7 +256,6 @@ app.add_middleware(
 
 # ─── API Key auth ──────────────────────────────────
 from src.api.middleware.auth import APIKeyMiddleware  # noqa: E402
-
 app.add_middleware(APIKeyMiddleware, api_key=_settings.api_key or None)
 
 
@@ -283,6 +282,13 @@ async def root():
 async def health():
     """Liveness probe — always returns 200 if the process is alive."""
     return {"status": "alive"}
+
+from fastapi import WebSocket
+@app.websocket("/ws/test")
+async def test_websocket(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_text("Hello from bare websocket!")
+    await websocket.close()
 
 
 @app.get("/health/ready", tags=["health"])

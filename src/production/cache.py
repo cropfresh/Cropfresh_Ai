@@ -11,30 +11,37 @@ Features:
 """
 
 import hashlib
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Optional, Any
+from typing import Optional, Any, Dict, List
 
-from loguru import logger
-from pydantic import BaseModel, Field
+try:
+    from loguru import logger  # type: ignore[import-untyped]
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
 
 
-class CacheConfig(BaseModel):
+@dataclass
+class CacheConfig:
     """Cache configuration."""
     default_ttl_seconds: int = 300  # 5 minutes
     max_entries: int = 1000
     enable_metrics: bool = True
 
 
-class CacheEntry(BaseModel):
+@dataclass
+class CacheEntry:
     """A single cache entry."""
     key: str
     value: Any
-    created_at: datetime = Field(default_factory=datetime.now)
     expires_at: datetime
+    created_at: datetime = field(default_factory=datetime.now)
     hits: int = 0
 
 
-class CacheStats(BaseModel):
+@dataclass
+class CacheStats:
     """Cache statistics."""
     total_entries: int = 0
     total_hits: int = 0
@@ -68,7 +75,7 @@ class ResponseCache:
         """
         self.config = config or CacheConfig()
         
-        self._cache: dict[str, CacheEntry] = {}
+        self._cache: Dict[str, CacheEntry] = {}
         self._hits = 0
         self._misses = 0
     
@@ -90,7 +97,7 @@ class ResponseCache:
         
         # Check expiration
         if datetime.now() > entry.expires_at:
-            del self._cache[key]
+            self._cache.pop(key, None)
             self._misses += 1
             return None
         
@@ -105,7 +112,7 @@ class ResponseCache:
         key: str,
         value: Any,
         ttl: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Set value in cache.
         
@@ -139,7 +146,7 @@ class ResponseCache:
             True if deleted
         """
         if key in self._cache:
-            del self._cache[key]
+            self._cache.pop(key, None)
             return True
         return False
     
@@ -153,28 +160,29 @@ class ResponseCache:
         Returns:
             Number of keys invalidated
         """
-        to_delete = [k for k in self._cache if pattern in k]
+        to_delete: List[str] = [k for k in self._cache if pattern in k]
         for key in to_delete:
-            del self._cache[key]
+            self._cache.pop(key, None)
         return len(to_delete)
     
-    def _evict_oldest(self):
+    def _evict_oldest(self) -> None:
         """Evict oldest entries."""
         if not self._cache:
             return
         
         # Sort by creation time
-        sorted_keys = sorted(
+        sorted_keys: List[str] = sorted(
             self._cache.keys(),
             key=lambda k: self._cache[k].created_at,
         )
         
         # Remove oldest 10%
         evict_count = max(1, len(sorted_keys) // 10)
-        for key in sorted_keys[:evict_count]:
-            del self._cache[key]
+        for i in range(evict_count):
+            if i < len(sorted_keys):
+                self._cache.pop(sorted_keys[i], None)
     
-    def clear(self):
+    def clear(self) -> None:
         """Clear all cache entries."""
         self._cache.clear()
         logger.info("Cache cleared")
@@ -192,7 +200,7 @@ class ResponseCache:
         )
     
     @staticmethod
-    def generate_key(*args, **kwargs) -> str:
+    def generate_key(*args: Any, **kwargs: Any) -> str:
         """Generate cache key from arguments."""
         key_parts = [str(a) for a in args]
         key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))

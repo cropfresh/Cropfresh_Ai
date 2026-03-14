@@ -14,7 +14,7 @@ Version: 2.1.0
 """
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
-from src.agents.supervisor_agent import SupervisorAgent, RoutingDecision
+from src.agents.supervisor import SupervisorAgent, RoutingDecision
 from src.agents.agronomy_agent import AgronomyAgent
 from src.agents.commerce_agent import CommerceAgent
 from src.agents.platform_agent import PlatformAgent

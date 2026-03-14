@@ -269,6 +269,301 @@ uv run ruff check src/
 
 ## 📝 File Changes Log
 
+### 2026-03-11 — LLM Provider Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/orchestrator/llm_provider/models.py`          | Extracted `LLMMessage` and `LLMResponse` models                              |
+| CREATE | `src/orchestrator/llm_provider/base.py`            | Extracted `BaseLLMProvider` interface                                        |
+| CREATE | `src/orchestrator/llm_provider/bedrock.py`         | Extracted Amazon Bedrock provider                                            |
+| CREATE | `src/orchestrator/llm_provider/groq.py`            | Extracted Groq provider                                                      |
+| CREATE | `src/orchestrator/llm_provider/together.py`        | Extracted Together AI provider                                               |
+| CREATE | `src/orchestrator/llm_provider/vllm.py`            | Extracted vLLM provider                                                      |
+| CREATE | `src/orchestrator/llm_provider/factory.py`         | Extracted `create_llm_provider` factory                                      |
+| CREATE | `src/orchestrator/llm_provider/__init__.py`        | Initialized `llm_provider` package                                           |
+| UPDATE | `src/orchestrator/llm_provider.py`                 | Reduced (477 -> 24 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — Real-Time Data Manager Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/scrapers/realtime_data/models.py`             | Extracted health and data models                                             |
+| CREATE | `src/scrapers/realtime_data/health.py`             | Extracted `HealthMixin` for status tracking                                  |
+| CREATE | `src/scrapers/realtime_data/fetchers.py`           | Extracted `FetchersMixin` for unified API fallback logic                     |
+| CREATE | `src/scrapers/realtime_data/manager.py`            | Extracted core `RealTimeDataManager` class and singleton initialization      |
+| CREATE | `src/scrapers/realtime_data/__init__.py`           | Initialized the `realtime_data` package                                      |
+| UPDATE | `src/scrapers/realtime_data.py`                    | Reduced (480 -> 21 lines) by converting into an import proxy                 |
+| UPDATE | `src/tools/realtime_data.py`                       | Reduced (480 -> 21 lines) by converging to the same import proxy             |
+
+### 2026-03-11 — Deep Research Tool Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/tools/deep_research/models.py`                | Extracted tool data models (`PageContent`, `DeepResearchResult`)             |
+| CREATE | `src/tools/deep_research/constants.py`             | Extracted timeouts, token limits, system models                              |
+| CREATE | `src/tools/deep_research/fetching.py`              | Extracted Jina parallel page fetcher logic                                   |
+| CREATE | `src/tools/deep_research/llm.py`                   | Extracted helper for Groq LLM                                                |
+| CREATE | `src/tools/deep_research/map_reduce.py`            | Extracted Map-Reduce parallel fact extraction and reduction                  |
+| CREATE | `src/tools/deep_research/tool.py`                  | Extracted core `DeepResearchTool` orchestration class                        |
+| CREATE | `src/tools/deep_research/__init__.py`              | Initialized tool package                                                     |
+| UPDATE | `src/tools/deep_research.py`                       | Reduced (484 -> 54 lines) by converting into an import proxy and registry    |
+
+### 2026-03-11 — Duplex Pipeline Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/voice/duplex/models.py`                       | Extracted pipeline enums and models                                          |
+| CREATE | `src/voice/duplex/initializers.py`                 | Extracted component initializers (LLM, STT, TTS)                             |
+| CREATE | `src/voice/duplex/processing.py`                   | Extracted core audio rendering & STT logic                                   |
+| CREATE | `src/voice/duplex/pipeline.py`                     | Rebuilt `DuplexPipeline` class combining mixins                              |
+| CREATE | `src/voice/duplex/__init__.py`                     | Created package public interface                                             |
+| UPDATE | `src/voice/duplex_pipeline.py`                     | Reduced (488 -> 17 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — Price Prediction Agent Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/agents/price_prediction/models.py`            | Extracted `PricePrediction` model                                            |
+| CREATE | `src/agents/price_prediction/constants.py`         | Extracted seasonal calender and rule thresholds                              |
+| CREATE | `src/agents/price_prediction/analysis.py`          | Extracted `AnalysisMixin` with features, rules, trend logic                  |
+| CREATE | `src/agents/price_prediction/__init__.py`          | Provided a clean public interface for the agent                              |
+| UPDATE | `src/agents/price_prediction/agent.py`             | Reduced (514 -> 241 lines) by importing mixins and models                    |
+
+### 2026-03-11 — Base Agent Modular Refactoring (Protected File Compatible)
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/agents/base/models.py`                        | Extracted `AgentResponse` and `AgentConfig` models                           |
+| CREATE | `src/agents/base/retrieval.py`                     | Extracted `RetrievalMixin` for KB search and context formatting              |
+| CREATE | `src/agents/base/tools.py`                         | Extracted `ToolMixin` for safe tool execution and tracking                   |
+| CREATE | `src/agents/base/llm.py`                           | Extracted `LLMMixin` for memory injection, LLM generation, and retries       |
+| CREATE | `src/agents/base/agent.py`                         | Created `BaseAgent` core combining all mixins                                |
+| CREATE | `src/agents/base/__init__.py`                      | Exposed base agent components                                                |
+| UPDATE | `src/agents/base_agent.py`                         | Reduced (516 -> 15 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — VAD Module Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/voice/vad/models.py`                          | Extracted data models: `VADState`, `VADEvent`, `SpeechSegment`               |
+| CREATE | `src/voice/vad/utils.py`                           | Extracted utility functions for silence and audio bytes conversion           |
+| CREATE | `src/voice/vad/silero.py`                          | Extracted `SileroVAD` core implementation and logic                          |
+| CREATE | `src/voice/vad/bargein.py`                         | Extracted `BargeinDetector` class                                            |
+| CREATE | `src/voice/vad/__init__.py`                        | Exposed `SileroVAD`, `BargeinDetector`, models, and utils                    |
+| UPDATE | `src/voice/vad.py`                                 | Reduced (527 -> 20 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — AI Kosha Client Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/scrapers/aikosha/models.py`                   | Extracted data models: `AIKoshaCategory`, `AIKoshaDataset`, search results   |
+| CREATE | `src/scrapers/aikosha/catalog.py`                  | Extracted the static hardcoded datasets catalog                              |
+| CREATE | `src/scrapers/aikosha/client.py`                   | Extracted `AIKoshaClient` core logic for APIs and catalog search            |
+| CREATE | `src/scrapers/aikosha/__init__.py`                 | Exposed `AIKoshaClient`, models, and catalog methods                        |
+| UPDATE | `src/scrapers/aikosha_client.py`                   | Reduced (530 -> 19 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — WebRTC Transport Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/voice/webrtc/models.py`                       | Extracted `ConnectionState`, `WebRTCConfig`, `AudioChunk`                    |
+| CREATE | `src/voice/webrtc/tracks.py`                       | Extracted `AudioReceiveTrack` and `AudioSendTrack`                           |
+| CREATE | `src/voice/webrtc/transport.py`                    | Extracted `WebRTCTransport` core logic                                       |
+| CREATE | `src/voice/webrtc/signaling.py`                    | Extracted `WebRTCSignaling` logic                                            |
+| CREATE | `src/voice/webrtc/__init__.py`                     | Exposed WebRTC transport models and classes                                  |
+| UPDATE | `src/voice/webrtc_transport.py`                    | Reduced (538 -> 24 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — Agri Scrapers Tool Proxy
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| UPDATE | `src/tools/agri_scrapers.py`                       | Reduced (539 -> 26 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — Contextual Chunker Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/rag/contextual_chunker/models.py`             | Extracted data schemas `EnrichedChunk` and `ChunkingConfig`                  |
+| CREATE | `src/rag/contextual_chunker/constants.py`          | Extracted `CONTEXT_PROMPT` and `ENTITY_PATTERNS`                            |
+| CREATE | `src/rag/contextual_chunker/extractor.py`          | Extracted `ExtractorMixin` for headers, entities, and keywords              |
+| CREATE | `src/rag/contextual_chunker/splitter.py`           | Extracted `SplitterMixin` for semantic and simple chunking bounds           |
+| CREATE | `src/rag/contextual_chunker/llm_context.py`        | Extracted `LLMContextMixin` to handle LLM completions                        |
+| CREATE | `src/rag/contextual_chunker/chunker.py`            | Modularized `ContextualChunker` core using extraction and splitting mixins   |
+| CREATE | `src/rag/contextual_chunker/__init__.py`           | Exposed factory methods and schemas                                          |
+| UPDATE | `src/rag/contextual_chunker.py`                    | Reduced (553 -> 20 lines) by converting into an import proxy file            |
+| UPDATE | `ai/rag/contextual_chunker.py`                     | Reduced (553 -> 20 lines) by converting into an import proxy file            |
+
+### 2026-03-11 — TTS (Voice) Module Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/voice/tts/models.py`                          | Extracted schemas `TTSVoice`, `TTSEmotion`, `SynthesisResult`                |
+| CREATE | `src/voice/tts/utils.py`                           | Extracted helper utilities                                                   |
+| CREATE | `src/voice/tts/indic.py`                           | Extracted `IndicTTS` implementation for AI4Bharat                            |
+| CREATE | `src/voice/tts/edge.py`                            | Extracted `EdgeTTSProvider` implementation for Edge TTS                      |
+| CREATE | `src/voice/tts/__init__.py`                        | Exposed public interfaces for seamless imports                               |
+| DELETE | `src/voice/tts.py`                                 | Cleaned up monolithic (566 lines) file for <200 bounds compliance            |
+
+### 2026-03-11 — Buyer Matching Agent Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/agents/buyer_matching/constants.py`           | Extracted matcher tuning constants `MAX_MATCH_DISTANCE_KM`, `GRADE_ORDER`    |
+| CREATE | `src/agents/buyer_matching/models.py`              | Extracted data schemas `BuyerProfile`, `ListingProfile`, `MatchResult`       |
+| CREATE | `src/agents/buyer_matching/engine.py`              | Isolated the multi-factor scoring logic `MatchingEngine`                     |
+| CREATE | `src/agents/buyer_matching/cache.py`               | Extracted `BuyerMatchingCacheMixin` for memory-safety                        |
+| CREATE | `src/agents/buyer_matching/mock_data.py`           | Extracted `BuyerMatchingMockDataMixin` for isolated unit testing             |
+| UPDATE | `src/agents/buyer_matching/agent.py`               | Refactored `BuyerMatchingAgent` to consume core mixins (569 -> 167 lines)    |
+| CREATE | `src/agents/buyer_matching/__init__.py`            | Exposed public interfaces for seamless imports                               |
+
+### 2026-03-11 — Listing Service Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/api/services/listing_service/constants.py`    | Extracted standard `SHELF_LIFE_DAYS` and `GRADE_ORDER`                       |
+| CREATE | `src/api/services/listing_service/models.py`       | Extracted `CreateListingRequest` and `ListingResponse` structures            |
+| CREATE | `src/api/services/listing_service/enrichment.py`   | Extracted external ML `ListingEnrichmentMixin` dependencies                  |
+| CREATE | `src/api/services/listing_service/storage.py`      | Extracted AuroraPostgresClient wrappers `ListingStorageMixin`                |
+| CREATE | `src/api/services/listing_service/service.py`      | Re-implemented `ListingService` incorporating separation of concerns         |
+| CREATE | `src/api/services/listing_service/__init__.py`     | Final backward-compatible API export point                                   |
+| DELETE | `src/api/services/listing_service.py`              | Cleaned up monolithic (571 lines) file for <200 bounds compliance            |
+
+### 2026-03-11 — Google AMED Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/tools/google_amed/models.py`                  | Extracted AMED structures `CropType`, `HealthStatus`, `CropMonitoringData`   |
+| CREATE | `src/tools/google_amed/mock_data.py`               | Extracted `AMEDMockDataMixin` for robust synthetic response generation       |
+| CREATE | `src/tools/google_amed/client.py`                  | Extracted main `GoogleAMEDClient` integrating the data mixes                 |
+| CREATE | `src/tools/google_amed/__init__.py`                | Re-exported `get_amed_client` factory ensuring backwards compatibility       |
+| DELETE | `src/tools/google_amed.py`                         | Dismantled monolithic file (579 lines) to respect 200-line modular rule      |
+
+### 2026-03-11 — Digital Twin Engine Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/agents/digital_twin/engine/utils.py`          | Pure analysis, confidence math, and grading estimation functions             |
+| CREATE | `src/agents/digital_twin/engine/storage.py`        | `StorageMixin` handling Postgres persistence and in-memory caches            |
+| CREATE | `src/agents/digital_twin/engine/report.py`         | `DiffReportMixin` handling the orchestration of ML similarity diffing        |
+| CREATE | `src/agents/digital_twin/engine/core.py`           | `DigitalTwinEngine` orchestrator integrating via inheritance mixins          |
+| CREATE | `src/agents/digital_twin/engine/__init__.py`       | Exposed identically to original module structure API exports                 |
+| DELETE | `src/agents/digital_twin/engine.py`                | Swept monolithic file (586 lines) under the 200-line compliance rule         |
+
+### 2026-03-11 — Agri Scrapers Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/scrapers/agri_scrapers/models.py`             | Extracted `MandiPrice`, `WeatherData`, `NewsArticle` schemas                 |
+| CREATE | `src/scrapers/agri_scrapers/constants.py`          | Centralized data URLs and source constants                                   |
+| CREATE | `src/scrapers/agri_scrapers/enam.py`               | Extracted `ENAMScraper` for StealthyFetcher-powered dashboard parsing        |
+| CREATE | `src/scrapers/agri_scrapers/imd.py`                | Extracted `IMDWeatherScraper` for agricultural advisories logic              |
+| CREATE | `src/scrapers/agri_scrapers/rss.py`                | Extracted `RSSNewsScraper` for feedparser logic                              |
+| CREATE | `src/scrapers/agri_scrapers/api.py`                | Extracted `AgriculturalDataAPI` handling fallback logic                      |
+| CREATE | `src/scrapers/agri_scrapers/__init__.py`           | Initialized the package identical to old file exports                        |
+| DELETE | `src/scrapers/agri_scrapers.py`                    | Deleted monolithic file (611 lines) replacing it with the new package        |
+
+### 2026-03-11 — Web Scraping Agent Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/agents/web_scraping_agent/models.py`          | Extracted `ScrapingResult` and `ScrapingConfig`                              |
+| CREATE | `src/agents/web_scraping_agent/base.py`            | Extracted `BaseWebScraper` for Playwright initialization                     |
+| CREATE | `src/agents/web_scraping_agent/cache.py`           | Extracted `ScraperCacheMixin` for caching HTML results locally               |
+| CREATE | `src/agents/web_scraping_agent/parser.py`          | Extracted `HTMLParserMixin` for markdown translation                         |
+| CREATE | `src/agents/web_scraping_agent/browser.py`         | Extracted `BrowserScraperMixin` for basic orchestration                      |
+| CREATE | `src/agents/web_scraping_agent/extractor.py`       | Extracted `LLMExtractorMixin` for structured LLM data extraction             |
+| CREATE | `src/agents/web_scraping_agent/agent.py`           | Reassembled `WebScrapingAgent` orchestrator via Mixin composition            |
+| CREATE | `src/agents/web_scraping_agent/__init__.py`        | Exposed unified clean API representing the old monolithic file               |
+| DELETE | `src/agents/web_scraping_agent.py`                 | Removed monolithic file (624 lines) fulfilling the 200-line rule             |
+
+### 2026-03-11 — State Manager Modular Refactoring
+
+| Action | File                                               | Description                                                                  |
+| ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/shared/memory/state_manager/models.py`        | Extracted memory models (`ConversationContext`, etc.)                        |
+| CREATE | `src/shared/memory/state_manager/base.py`          | Base state holding Redis context and cache structures                        |
+| CREATE | `src/shared/memory/state_manager/session.py`       | `SessionManagerMixin` for conversation messages and history window           |
+| CREATE | `src/shared/memory/state_manager/execution.py`     | `ExecutionTrackerMixin` for tracking execution state steps                   |
+| CREATE | `src/shared/memory/state_manager/voice.py`         | `VoiceSessionMixin` for NFR6 WebRTC SLA rehydration checks                   |
+| CREATE | `src/shared/memory/state_manager/manager.py`       | Extracted `AgentStateManager` combining all mixins                           |
+| CREATE | `src/shared/memory/state_manager/__init__.py`      | Exposed identical API replacing the old module                               |
+| DELETE | `src/shared/memory/state_manager.py`               | Removed monolithic file (630 lines) to comply with 200-line limit            |
+
+### 2026-03-11 — Query Processor Modular Refactoring
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/rag/query_processor/models.py`            | Extracted data models (ExpandedQuery, QueryProcessorConfig)                  |
+| CREATE | `src/rag/query_processor/prompts.py`           | Extracted processing prompts                                                 |
+| CREATE | `src/rag/query_processor/hyde.py`              | Extracted HyDE expansion logic                                               |
+| CREATE | `src/rag/query_processor/multi_query.py`       | Extracted Multi-Query expansion logic                                        |
+| CREATE | `src/rag/query_processor/step_back.py`         | Extracted Step-Back generation logic                                         |
+| CREATE | `src/rag/query_processor/decompose.py`         | Extracted query decomposition logic                                          |
+| CREATE | `src/rag/query_processor/rewrite.py`           | Extracted query rewriting logic                                              |
+| CREATE | `src/rag/query_processor/processor.py`         | Extracted `AdvancedQueryProcessor` orchestrator                              |
+| CREATE | `src/rag/query_processor/__init__.py`          | Initialized package                                                          |
+| DELETE | `src/rag/query_processor.py`                   | Deleted monolithic file to comply with 200-line rule                         |
+| UPDATE | `ai/rag/query_processor.py`                    | Converted duplicate file to an import proxy for the new package              |
+
+### 2026-03-11 — IMD Weather Client Modular Refactoring
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/scrapers/imd_weather/models.py`           | Extracted data models (CurrentWeather, DailyForecast, WeatherAlert, etc.)    |
+| CREATE | `src/scrapers/imd_weather/constants.py`        | Extracted API constants and district coordinates                             |
+| CREATE | `src/scrapers/imd_weather/mock_data.py`        | Extracted mock data generation functions                                     |
+| CREATE | `src/scrapers/imd_weather/cache.py`            | Extracted `IMDCacheManager` class                                            |
+| CREATE | `src/scrapers/imd_weather/advisory.py`         | Extracted logic to generate agricultural advisories from weather             |
+| CREATE | `src/scrapers/imd_weather/client.py`           | Extracted orchestrator `IMDWeatherClient` class                              |
+| CREATE | `src/scrapers/imd_weather/__init__.py`         | Exposed models and client instance                                           |
+| DELETE | `src/scrapers/imd_weather.py`                  | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
+| UPDATE | `src/tools/imd_weather.py`                     | Replaced duplicate monolithic code with an import proxy to the new package   |
+
+### 2026-03-11 — eNAM Client Modular Refactoring
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/scrapers/enam_client/models.py`           | Extracted data models (MandiPrice, PriceTrend, etc.)                         |
+| CREATE | `src/scrapers/enam_client/constants.py`        | Extracted API and state/commodity constants                                  |
+| CREATE | `src/scrapers/enam_client/mock_data.py`        | Extracted mock data generation functions                                     |
+| CREATE | `src/scrapers/enam_client/cache.py`            | Extracted `ENAMCacheManager` class                                           |
+| CREATE | `src/scrapers/enam_client/api_fetch.py`        | Extracted API call and parsing logic (`fetch_live_prices`, etc.)             |
+| CREATE | `src/scrapers/enam_client/trends.py`           | Extracted trend calculation and market summary generation                    |
+| CREATE | `src/scrapers/enam_client/client.py`           | Extracted orchestrator `ENAMClient` class                                    |
+| CREATE | `src/scrapers/enam_client/__init__.py`         | Exposed models and client instance                                           |
+| DELETE | `src/scrapers/enam_client.py`                  | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
+| UPDATE | `src/tools/enam_client.py`                     | Replaced duplicate monolithic code with an import proxy to the new package   |
+
+### 2026-03-11 — Supervisor Agent Modular Refactoring
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/agents/supervisor/models.py`              | Extracted RoutingDecision model                                              |
+| CREATE | `src/agents/supervisor/prompts.py`             | Extracted ROUTING_PROMPT and prompt generation                               |
+| CREATE | `src/agents/supervisor/rules.py`               | Extracted rule-based fallback routing logic                                  |
+| CREATE | `src/agents/supervisor/router.py`              | Extracted LLM routing coordination logic                                     |
+| CREATE | `src/agents/supervisor/session.py`             | Extracted session and context management logic                               |
+| CREATE | `src/agents/supervisor/utils.py`               | Extracted response merging utilities                                         |
+| CREATE | `src/agents/supervisor/agent.py`               | Extracted core SupervisorAgent class orchestrating the new modules           |
+| CREATE | `src/agents/supervisor/__init__.py`            | Created package index exporting SupervisorAgent and RoutingDecision          |
+| DELETE | `src/agents/supervisor_agent.py`               | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
+| UPDATE | `src/agents/__init__.py`                       | Updated imports to use the new `src.agents.supervisor` package               |
+
+### 2026-03-11 — Agronomy Agent Multilingual Accuracy Improvements
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| UPDATE | `src/agents/agronomy_prompt.py`                | Added language tagging, CoT translation, and code-mixed few-shot examples    |
+| UPDATE | `src/agents/agronomy_helpers.py`               | Made _FOLLOWUP_SECTION_RE regex robust for translated section headers        |
+| UPDATE | `src/agents/agronomy_agent.py`                 | Stripped [LANG: xx] tag from final LLM response before returning             |
+| UPDATE | `tests/unit/agents/test_agronomy_agent.py`     | Updated tests to verify parsing of natively translated follow-up headers     |
+| UPDATE | `src/agents/agronomy_prompt.py`                | Expanded Kannada-specific vocabulary mapping, tone, and grammar enforcement  |
+| CREATE | `scripts/test_llm_routing.py`                  | Standalone LLM prompt testing script to view agent routing visualizations    |
+| CREATE | `tests/unit/agents/test_supervisor_agent.py`   | Robust LLM parsing and keyword fallback unit tests for Supervisor Agent      |
+| UPDATE | `.env`                                         | Switched the active LLM provider from Bedrock to Groq (`llama-3.3-70b-versatile`) |
+| UPDATE | `src/orchestrator/llm_provider.py`             | Updated `GroqProvider` default arguments for `llama-3.3-70b-versatile`       |
+| UPDATE | `scripts/test_llm_routing.py`                  | Adjusted expected outputs to match exact routing prompt instructions; fixed Windows console Unicode display issues |
+
 ### 2026-02-27 — Workflow Documentation System
 
 | Action | File                                           | Description                                                                  |
