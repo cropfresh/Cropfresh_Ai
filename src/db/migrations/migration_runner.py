@@ -25,7 +25,6 @@ from typing import Any
 
 from loguru import logger
 
-
 # * Migrations directory (same folder as this file)
 MIGRATIONS_DIR = Path(__file__).parent
 

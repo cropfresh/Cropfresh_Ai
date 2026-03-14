@@ -8,10 +8,11 @@ import hashlib
 import json
 from datetime import datetime
 from typing import Optional
+
 from loguru import logger
 
-from .models import ScrapingResult
 from .base import BaseWebScraper
+from .models import ScrapingResult
 
 
 class ScraperCacheMixin(BaseWebScraper):

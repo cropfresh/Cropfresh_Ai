@@ -6,11 +6,11 @@ Features are imported directly from src/scrapers/enam_client.
 """
 
 from src.scrapers.enam_client import (
-    PriceTrendDirection,
-    MandiPrice,
-    PriceTrend,
-    MarketSummary,
     ENAMClient,
+    MandiPrice,
+    MarketSummary,
+    PriceTrend,
+    PriceTrendDirection,
     get_enam_client,
 )
 

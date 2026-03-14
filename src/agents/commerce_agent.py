@@ -24,7 +24,6 @@ from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState, AgentStateManager
 from src.tools.registry import ToolRegistry
 
-
 COMMERCE_SYSTEM_PROMPT = """Your expertise covers:
 - Real-time mandi prices across Indian markets
 - Price trend analysis and seasonal patterns
@@ -62,19 +61,19 @@ COMMERCE_ROLE = "You are the Commerce Expert Agent for CropFresh AI, specializin
 class CommerceAgent(BaseAgent):
     """
     Specialized agent for market intelligence and pricing.
-    
+
     Handles:
     - Market price queries
     - Sell/hold recommendations
     - AISP calculations
     - Price trend analysis
-    
+
     Usage:
         agent = CommerceAgent(llm=provider, tool_registry=registry)
         await agent.initialize()
         response = await agent.process("What is the current tomato price in Kolar?")
     """
-    
+
     def __init__(
         self,
         llm=None,
@@ -84,7 +83,7 @@ class CommerceAgent(BaseAgent):
     ):
         """
         Initialize Commerce Agent.
-        
+
         Args:
             llm: LLM provider
             tool_registry: Tool registry
@@ -100,7 +99,7 @@ class CommerceAgent(BaseAgent):
             kb_categories=["market", "regulatory"],
             tool_categories=["pricing", "calculator"],
         )
-        
+
         super().__init__(
             config=config,
             llm=llm,
@@ -108,22 +107,22 @@ class CommerceAgent(BaseAgent):
             state_manager=state_manager,
             knowledge_base=knowledge_base,
         )
-        
+
         # Pricing agent for market data
         self._pricing_agent = None
-    
+
     async def initialize(self) -> bool:
         """Initialize with pricing agent."""
         from src.agents.pricing_agent import PricingAgent
-        
+
         self._pricing_agent = PricingAgent(
             llm=self.llm,
             use_mock=True,  # Use mock for now
         )
-        
+
         self._initialized = True
         return True
-    
+
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
         """Get commerce system prompt with shared CropFresh context."""
         return build_system_prompt(
@@ -132,7 +131,7 @@ class CommerceAgent(BaseAgent):
             context=context,
             agent_domain="commerce",
         )
-    
+
     async def process(
         self,
         query: str,
@@ -141,25 +140,25 @@ class CommerceAgent(BaseAgent):
     ) -> AgentResponse:
         """
         Process a commerce-related query.
-        
+
         Args:
             query: User query
             context: Optional context
             execution: Optional execution state
-            
+
         Returns:
             AgentResponse with market intelligence
         """
         logger.info(f"CommerceAgent processing: '{query[:50]}...'")
-        
+
         try:
             # Step 1: Extract entities from query
             commodity, location = self._extract_market_entities(query)
-            
+
             # Step 2: Get market prices
             if execution:
                 self.state_manager.add_step(execution.execution_id, "fetch_prices")
-            
+
             price_data = None
             if self._pricing_agent and commodity:
                 try:
@@ -183,28 +182,28 @@ class CommerceAgent(BaseAgent):
                     logger.info(f"Got price data: {price_data}")
                 except Exception as e:
                     logger.warning(f"Price fetch failed: {e}")
-            
+
             # Step 3: Retrieve market knowledge
             if execution:
                 self.state_manager.add_step(execution.execution_id, "retrieve_context")
-            
+
             documents = await self.retrieve_context(
                 query=query,
                 top_k=3,
                 categories=["market", "regulatory"],
             )
-            
+
             # Step 4: Generate response
             if execution:
                 self.state_manager.add_step(execution.execution_id, "generate_response")
-            
+
             messages = [
                 {"role": "system", "content": self._get_system_prompt(context)},
             ]
-            
+
             # Build context
             context_parts = []
-            
+
             if price_data:
                 price_context = f"""
 **Current Market Data:**
@@ -226,23 +225,23 @@ class CommerceAgent(BaseAgent):
 - Total AISP: ₹{aisp.get('total_aisp', 0):.0f} (₹{aisp.get('aisp_per_kg', 0):.1f}/kg)
 """
                 context_parts.append(price_context)
-            
+
             if documents:
                 context_parts.append(f"**Market Knowledge:**\n{self.format_context(documents)}")
-            
+
             # User message
             user_message = query
             if context_parts:
                 user_message = f"{query}\n\n{''.join(context_parts)}"
-            
+
             messages.append({"role": "user", "content": user_message})
-            
+
             # Generate
             if self.llm:
                 answer = await self.generate_with_llm(messages)
             else:
                 answer = self._generate_fallback(query, price_data, documents)
-            
+
             return AgentResponse(
                 content=answer,
                 agent_name=self.name,
@@ -253,12 +252,12 @@ class CommerceAgent(BaseAgent):
                 steps=["fetch_prices", "retrieve_context", "generate_response"],
                 suggested_actions=self._suggest_follow_ups(query, price_data),
             )
-            
+
         except Exception as e:
             logger.error(f"CommerceAgent error: {e}")
             import traceback
             traceback.print_exc()
-            
+
             return AgentResponse(
                 content="I apologize, but I couldn't fetch the market data. Please try again or check our app for the latest prices.",
                 agent_name=self.name,
@@ -266,11 +265,11 @@ class CommerceAgent(BaseAgent):
                 error=str(e),
                 steps=["error"],
             )
-    
+
     def _extract_market_entities(self, query: str) -> tuple[Optional[str], Optional[str]]:
         """Extract commodity and location from query."""
         query_lower = query.lower()
-        
+
         # Common commodities
         commodities = {
             "tomato": ["tomato", "tamatar"],
@@ -282,28 +281,28 @@ class CommerceAgent(BaseAgent):
             "capsicum": ["capsicum", "shimla mirch"],
             "cauliflower": ["cauliflower", "phool gobi"],
         }
-        
+
         # Find commodity
         commodity = None
         for name, keywords in commodities.items():
             if any(kw in query_lower for kw in keywords):
                 commodity = name.title()
                 break
-        
+
         # Karnataka locations
         locations = [
             "kolar", "bangalore", "bengaluru", "mysore", "mysuru",
             "hubli", "dharwad", "belgaum", "belagavi", "shimoga",
         ]
-        
+
         location = None
         for loc in locations:
             if loc in query_lower:
                 location = loc.title()
                 break
-        
+
         return commodity, location
-    
+
     def _generate_fallback(self, query: str, price_data: Optional[dict], documents: list) -> str:
         """Generate response without LLM."""
         if price_data:
@@ -318,16 +317,16 @@ class CommerceAgent(BaseAgent):
 
 *Prices from Agmarknet. For the most accurate pricing, check the CropFresh app.*
 """
-        
+
         if documents:
             return f"Based on market knowledge:\n{documents[0].get('text', 'No information available.')}"
-        
+
         return "I couldn't find specific market data. Please specify the commodity and location."
-    
+
     def _suggest_follow_ups(self, query: str, price_data: Optional[dict]) -> list[str]:
         """Suggest follow-up questions."""
         suggestions = []
-        
+
         if price_data:
             suggestions.extend([
                 f"Calculate AISP for 500kg of {price_data['commodity']}",
@@ -339,5 +338,5 @@ class CommerceAgent(BaseAgent):
                 "What is the current tomato price?",
                 "Should I sell my onions now?",
             ])
-        
+
         return suggestions[:3]

@@ -6,7 +6,7 @@ Pydantic models for research agent.
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -39,7 +39,7 @@ class Citation(BaseModel):
     date_published: Optional[date] = None
     date_accessed: date = Field(default_factory=date.today)
     source_type: SourceType = SourceType.WEB
-    
+
     def to_apa(self) -> str:
         """Format as APA citation."""
         parts = []
@@ -53,7 +53,7 @@ class Citation(BaseModel):
         if self.url:
             parts.append(f"Retrieved from {self.url}")
         return " ".join(parts)
-    
+
     def to_inline(self) -> str:
         """Format as inline citation marker."""
         return f"[{self.ref_id}]"
@@ -97,18 +97,18 @@ class ResearchPlan(BaseModel):
     steps: list[ResearchStep] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now)
     estimated_time_sec: int = 60
-    
+
     def get_next_step(self) -> Optional[ResearchStep]:
         """Get the next pending step that has all dependencies met."""
         completed_ids = {s.step_id for s in self.steps if s.status == StepStatus.COMPLETED}
-        
+
         for step in self.steps:
             if step.status == StepStatus.PENDING:
                 deps_met = all(dep in completed_ids for dep in step.depends_on)
                 if deps_met:
                     return step
         return None
-    
+
     @property
     def progress(self) -> float:
         """Get completion percentage."""
@@ -116,7 +116,7 @@ class ResearchPlan(BaseModel):
             return 0.0
         completed = sum(1 for s in self.steps if s.status == StepStatus.COMPLETED)
         return completed / len(self.steps)
-    
+
     @property
     def all_findings(self) -> list[Finding]:
         """Get all findings from all steps."""
@@ -137,24 +137,24 @@ class ResearchReport(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     confidence_score: float = 0.0
     total_sources: int = 0
-    
+
     def to_markdown(self) -> str:
         """Convert report to markdown format."""
         md = []
         md.append(f"# {self.title}\n")
         md.append(f"*Generated: {self.created_at.strftime('%Y-%m-%d %H:%M')}*\n")
         md.append(f"\n## Summary\n{self.summary}\n")
-        
+
         for section in self.sections:
             md.append(f"\n## {section.get('title', 'Section')}\n")
             md.append(f"{section.get('content', '')}\n")
-        
+
         if self.citations:
             md.append("\n## References\n")
             for i, cite in enumerate(self.citations, 1):
                 cite.ref_id = str(i)
                 md.append(f"{i}. {cite.to_apa()}\n")
-        
+
         return "\n".join(md)
 
 

@@ -3,12 +3,12 @@ FastAPI routes for agricultural price intelligence.
 """
 from datetime import date
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, HTTPException
 
 # Assuming a dependency injection setup for DB and Services
 # from src.api.dependencies import get_price_aggregator
-from src.api.services.price_aggregator import PriceAggregatorService, AggregatedPriceResult
-from pydantic import BaseModel
+from src.api.services.price_aggregator import AggregatedPriceResult
 
 router = APIRouter(prefix="/prices", tags=["prices"])
 
@@ -26,10 +26,10 @@ async def get_latest_price(
     """
     target = target_date or date.today()
     try:
-        # In actual usage, aggregator would be injected. 
+        # In actual usage, aggregator would be injected.
         # Using a mock instantiation here for architectural completeness
         # result = await aggregator.get_aggregated_price(commodity, market, target)
-        
+
         # return result
         return {
             "commodity": commodity,
@@ -67,7 +67,7 @@ async def get_price_history(
     """
     if from_date > to_date:
         raise HTTPException(status_code=400, detail="from_date must be before to_date")
-        
+
     # Implementation loops over dates or uses DB aggregations
     return {"message": "History endpoint mocked", "commodity": commodity, "market": market}
 

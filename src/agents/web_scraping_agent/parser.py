@@ -5,9 +5,10 @@ Converts raw HTML to Markdown strings gracefully.
 """
 
 import re
+
 from loguru import logger
-from readability import Document
 from markdownify import markdownify as md
+from readability import Document
 
 
 class HTMLParserMixin:
@@ -22,19 +23,19 @@ class HTMLParserMixin:
             # Bolierplate Removal via Readability
             doc = Document(html)
             main_html = doc.summary()
-            
+
             # Markdownify
             markdown = md(
-                main_html, 
-                strip=['a', 'img', 'script', 'style'], 
+                main_html,
+                strip=['a', 'img', 'script', 'style'],
                 heading_style="ATX",
                 bullets="-",
             )
-            
+
             # Clean up excessive newlines
             markdown = re.sub(r'\n{3,}', '\n\n', markdown)
             return markdown.strip()
-            
+
         except Exception as e:
             logger.warning(f"Readability/Markdownify failed, falling back to basic extraction: {e}")
             # Fallback regex filter

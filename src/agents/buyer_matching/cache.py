@@ -5,7 +5,7 @@ Redis-backed and local in-memory caching for matching results.
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, Any
+from typing import Any, Optional
 
 from loguru import logger
 

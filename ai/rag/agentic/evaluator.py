@@ -17,7 +17,6 @@ from loguru import logger
 
 from ai.rag.agentic.models import EvalGate
 
-
 EVALUATOR_PROMPT = """You are a quality evaluator for an Indian agricultural AI assistant.
 
 Evaluate the generated answer against these criteria:
@@ -79,6 +78,7 @@ class AgenticSelfEvaluator:
 
         try:
             import json
+
             from src.orchestrator.llm_provider import LLMMessage
 
             context_text = "\n\n".join(

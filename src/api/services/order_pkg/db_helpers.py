@@ -5,8 +5,6 @@ Database helper methods for OrderService — extracted from the private methods.
 import uuid
 from typing import Any, Optional
 
-from loguru import logger
-
 from src.api.services.order_pkg.models import AISPBreakdown, OrderResponse
 
 

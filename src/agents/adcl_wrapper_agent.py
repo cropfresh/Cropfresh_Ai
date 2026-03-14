@@ -20,7 +20,6 @@ from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState
 
-
 # * District extraction keywords (Karnataka focus)
 DISTRICTS = [
     "bangalore", "bengaluru", "kolar", "mysore", "mysuru",

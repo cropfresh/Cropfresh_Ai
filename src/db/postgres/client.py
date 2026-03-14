@@ -9,7 +9,7 @@ Authentication:
 - Password: direct connection string (development)
 """
 
-from typing import Any, Optional
+from typing import Optional
 
 from loguru import logger
 

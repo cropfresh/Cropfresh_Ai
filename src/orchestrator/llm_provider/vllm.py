@@ -7,8 +7,8 @@ vLLM provider for self-hosted production endpoints.
 import json
 from typing import Any, AsyncIterator
 
-from .models import LLMMessage, LLMResponse
 from .base import BaseLLMProvider
+from .models import LLMMessage, LLMResponse
 
 
 class VLLMProvider(BaseLLMProvider):

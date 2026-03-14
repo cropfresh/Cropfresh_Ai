@@ -18,14 +18,12 @@ Supported intents:
 # NOTE: This agent wraps ListingService in a BaseAgent-compatible interface
 
 import re
-from datetime import date
 from typing import Any, Optional
 
 from loguru import logger
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.memory.state_manager import AgentExecutionState
-
 
 # * Known commodity aliases for entity extraction
 COMMODITY_ALIASES: dict[str, str] = {

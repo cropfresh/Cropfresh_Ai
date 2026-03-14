@@ -30,21 +30,21 @@ class AMEDMockDataMixin:
         """Generate mock crop monitoring data."""
         now = datetime.now()
         month = now.month
-        
+
         # Determine likely crop based on season
         if 6 <= month <= 10:  # Kharif
             primary_crop = random.choice([CropType.RICE, CropType.MAIZE, CropType.COTTON])
             stage = random.choice([CropStage.VEGETATIVE, CropStage.FLOWERING])
-        elif 11 <= month or month <= 3:  # Rabi  
+        elif 11 <= month or month <= 3:  # Rabi
             primary_crop = random.choice([CropType.WHEAT, CropType.VEGETABLES])
             stage = random.choice([CropStage.SOWING, CropStage.VEGETATIVE])
         else:  # Zaid
             primary_crop = random.choice([CropType.VEGETABLES, CropType.FRUITS])
             stage = CropStage.VEGETATIVE
-        
+
         # Generate NDVI (0.2-0.8 for crops)
         ndvi = random.uniform(0.35, 0.75)
-        
+
         # Determine health based on NDVI
         if ndvi > 0.6:
             health = HealthStatus.EXCELLENT
@@ -58,7 +58,7 @@ class AMEDMockDataMixin:
         else:
             health = HealthStatus.STRESSED
             stress = ["Water stress", "Possible nutrient deficiency"]
-        
+
         return CropMonitoringData(
             location_lat=lat,
             location_lon=lon,
@@ -89,7 +89,7 @@ class AMEDMockDataMixin:
         now = datetime.now()
         year = now.year
         month = now.month
-        
+
         # Determine current season
         if 6 <= month <= 10:
             season = "Kharif"
@@ -109,14 +109,14 @@ class AMEDMockDataMixin:
             sowing_end = datetime(year, 4, 15)
             harvest_start = datetime(year, 5, 15)
             harvest_end = datetime(year, 6, 30)
-        
+
         # Calculate progress
         season_start = sowing_start
         season_end = harvest_end
         total_days = (season_end - season_start).days
         elapsed_days = (now - season_start).days
         progress = min(100, max(0, (elapsed_days / total_days) * 100))
-        
+
         # Determine stage based on progress
         if progress < 10:
             stage = CropStage.SOWING
@@ -130,7 +130,7 @@ class AMEDMockDataMixin:
             stage = CropStage.MATURITY
         else:
             stage = CropStage.HARVESTED
-        
+
         return SeasonInfo(
             crop=crop.title(),
             location_lat=lat,
@@ -155,19 +155,19 @@ class AMEDMockDataMixin:
         """Generate mock field boundaries."""
         boundaries = []
         num_fields = random.randint(5, 15)
-        
+
         for i in range(num_fields):
             # Random offset from center
             offset_lat = random.uniform(-0.05, 0.05)
             offset_lon = random.uniform(-0.05, 0.05)
-            
+
             boundaries.append(FieldBoundary(
                 field_id=f"field_{i+1:03d}",
                 center_lat=lat + offset_lat,
                 center_lon=lon + offset_lon,
                 area_hectares=random.uniform(0.5, 5.0),
             ))
-        
+
         return boundaries
 
     def _get_mock_regional_stats(
@@ -183,9 +183,9 @@ class AMEDMockDataMixin:
             "andhra pradesh": ["Rice", "Chillies", "Cotton", "Groundnut", "Sugarcane"],
             "tamil nadu": ["Rice", "Sugarcane", "Cotton", "Groundnut", "Banana"],
         }
-        
+
         crops = state_crops.get(state.lower(), ["Rice", "Wheat", "Cotton", "Maize", "Groundnut"])
-        
+
         top_crops = [
             {
                 "crop": crop,
@@ -194,7 +194,7 @@ class AMEDMockDataMixin:
             }
             for crop in crops[:5]
         ]
-        
+
         return RegionalCropStats(
             state=state.title(),
             district=district.title(),

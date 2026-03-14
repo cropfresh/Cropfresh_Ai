@@ -5,12 +5,13 @@ Extracts facts from pages and synthesis into a final answer.
 """
 
 import asyncio
+
 import httpx
 from loguru import logger
 
-from .models import PageContent, ExtractedFact
 from .constants import GROQ_FAST_MODEL, GROQ_SYNTH_MODEL
 from .llm import _groq_complete
+from .models import ExtractedFact, PageContent
 
 
 async def _extract_facts(

@@ -1,5 +1,6 @@
 ﻿from pydantic import BaseModel
 
+
 class PriceBase(BaseModel):
     crop_id: str
     mandi: str

@@ -6,6 +6,7 @@ RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval
 ! Import from `src.rag.raptor_pkg` directly in new code.
 """
 
+from src.rag.raptor_pkg.index import RAPTORIndex, create_raptor_index
 from src.rag.raptor_pkg.models import (
     ClusterInfo,
     NodeLevel,
@@ -13,7 +14,6 @@ from src.rag.raptor_pkg.models import (
     RAPTORNode,
     RAPTORTreeStats,
 )
-from src.rag.raptor_pkg.index import RAPTORIndex, create_raptor_index
 
 __all__ = [
     "ClusterInfo",

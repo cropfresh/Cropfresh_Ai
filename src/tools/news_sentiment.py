@@ -27,7 +27,6 @@ from typing import Optional
 import httpx
 from loguru import logger
 
-
 # ── News item model ──────────────────────────────────────────────────────────
 
 @dataclass
@@ -90,7 +89,7 @@ _SNIP_RE  = re.compile(r"<description><!\[CDATA\[(.+?)]]></description>")
 
 async def _fetch_ddg_news(query: str, max_items: int = 10) -> list[NewsItem]:
     """Fetch headline + snippet from the DuckDuckGo news RSS feed."""
-    url = _DDG_RSS.format(query=httpx.URL(query).path)
+    _DDG_RSS.format(query=httpx.URL(query).path)
     try:
         async with httpx.AsyncClient(timeout=8) as client:
             resp = await client.get(

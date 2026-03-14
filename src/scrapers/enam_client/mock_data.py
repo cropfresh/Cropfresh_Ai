@@ -5,6 +5,7 @@ eNAM Mock Data Generation
 import random
 from datetime import datetime
 from typing import Optional
+
 from .models import MandiPrice, PriceTrend, PriceTrendDirection
 
 
@@ -33,7 +34,7 @@ def get_mock_prices_data(
         "carrot": {"min": 1800, "max": 3500, "modal": 2600},
         "beans": {"min": 3000, "max": 5500, "modal": 4200},
     }
-    
+
     # Markets by state
     markets_by_state = {
         "karnataka": [
@@ -63,18 +64,18 @@ def get_mock_prices_data(
             ("Chennai", "Koyambedu Market"),
         ],
     }
-    
+
     commodity_lower = commodity.lower()
     state_lower = state.lower()
-    
+
     base = base_prices.get(commodity_lower, {"min": 2000, "max": 4000, "modal": 3000})
     markets = markets_by_state.get(state_lower, [("Unknown", "Main Market")])
-    
+
     prices = []
     for i, (dist, mkt) in enumerate(markets[:limit]):
         # Add variation per market
         variation = random.uniform(-0.15, 0.15)
-        
+
         prices.append(MandiPrice(
             commodity=commodity.title(),
             variety="Local" if i % 2 == 0 else "Hybrid",
@@ -89,7 +90,7 @@ def get_mock_prices_data(
             price_date=datetime.now(),
             source="mock",
         ))
-    
+
     return prices
 
 
@@ -102,23 +103,23 @@ def get_mock_trend_data(
     current_price = random.uniform(2000, 5000)
     change_7d = random.uniform(-12, 12)
     change_30d = random.uniform(-20, 20)
-    
+
     def get_trend_direction(change: float) -> PriceTrendDirection:
         if change > 3:
             return PriceTrendDirection.UP
         elif change < -3:
             return PriceTrendDirection.DOWN
         return PriceTrendDirection.STABLE
-    
+
     trend_7d = get_trend_direction(change_7d)
-    
+
     if trend_7d == PriceTrendDirection.UP:
         forecast = f"{commodity} prices rising by {abs(change_7d):.1f}%. Consider selling if you have stock."
     elif trend_7d == PriceTrendDirection.DOWN:
         forecast = f"{commodity} prices declining by {abs(change_7d):.1f}%. May want to hold for better rates."
     else:
         forecast = f"{commodity} prices stable. Good time for regular trading."
-    
+
     return PriceTrend(
         commodity=commodity.title(),
         state=state.title(),

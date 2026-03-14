@@ -41,7 +41,6 @@ from src.tools.ml_forecaster import ForecastResult, PriceForecaster
 from src.tools.news_sentiment import CommoditySentiment, NewsSentimentScraper
 from src.tools.weather import WeatherForecast, WeatherTool
 
-
 # ── Domain models ─────────────────────────────────────────────────────────────
 
 class FarmerContext(BaseModel):
@@ -260,8 +259,9 @@ class PricingAgent:
 
     def get_seasonal_adjustment(self, commodity: str, month: int) -> float:
         """Return seasonal multiplier. Delegates to ml_forecaster's table."""
-        from src.tools.ml_forecaster import _seasonal_factor
         from datetime import datetime
+
+        from src.tools.ml_forecaster import _seasonal_factor
         if month < 1 or month > 12:
             raise ValueError("month must be 1–12")
         return _seasonal_factor(commodity, datetime(2024, month, 1))

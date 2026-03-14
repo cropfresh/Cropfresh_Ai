@@ -22,7 +22,7 @@ from src.tools.registry import get_tool_registry
 
 class SearchResult(BaseModel):
     """Single search result."""
-    
+
     title: str
     url: str
     snippet: str
@@ -31,7 +31,7 @@ class SearchResult(BaseModel):
 
 class SearchResults(BaseModel):
     """Web search results."""
-    
+
     query: str
     results: list[SearchResult] = Field(default_factory=list)
     total: int = 0
@@ -40,15 +40,15 @@ class SearchResults(BaseModel):
 class WebSearchTool:
     """
     Web search integration for real-time information.
-    
+
     Primary: Tavily API (designed for LLMs)
     Fallback: DuckDuckGo (no API key needed)
-    
+
     Usage:
         tool = WebSearchTool(api_key="your_tavily_key")
         results = await tool.search("current tomato prices Karnataka")
     """
-    
+
     def __init__(
         self,
         api_key: str = "",
@@ -56,14 +56,14 @@ class WebSearchTool:
     ):
         """
         Initialize web search tool.
-        
+
         Args:
             api_key: Tavily API key
             use_mock: Use mock results (default True)
         """
         self.api_key = api_key
         self.use_mock = use_mock
-    
+
     async def search(
         self,
         query: str,
@@ -72,24 +72,24 @@ class WebSearchTool:
     ) -> SearchResults:
         """
         Search the web for information.
-        
+
         Args:
             query: Search query
             max_results: Maximum results to return
             include_domains: Optional list of domains to prioritize
-            
+
         Returns:
             SearchResults with found information
         """
         if self.use_mock or not self.api_key:
             return self._get_mock_results(query)
-        
+
         try:
             return await self._search_tavily(query, max_results, include_domains)
         except Exception as e:
             logger.warning(f"Tavily search failed: {e}, falling back to mock")
             return self._get_mock_results(query)
-    
+
     async def _search_tavily(
         self,
         query: str,
@@ -98,7 +98,7 @@ class WebSearchTool:
     ) -> SearchResults:
         """Search using Tavily API."""
         import httpx
-        
+
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(
                 "https://api.tavily.com/search",
@@ -112,7 +112,7 @@ class WebSearchTool:
             )
             response.raise_for_status()
             data = response.json()
-        
+
         results = []
         for item in data.get("results", []):
             results.append(SearchResult(
@@ -121,17 +121,17 @@ class WebSearchTool:
                 snippet=item.get("content", ""),
                 source=item.get("source", ""),
             ))
-        
+
         return SearchResults(
             query=query,
             results=results,
             total=len(results),
         )
-    
+
     def _get_mock_results(self, query: str) -> SearchResults:
         """Return mock results for development."""
         query_lower = query.lower()
-        
+
         # Agricultural price-related queries
         if any(kw in query_lower for kw in ["price", "rate", "mandi", "market"]):
             return SearchResults(
@@ -152,7 +152,7 @@ class WebSearchTool:
                 ],
                 total=2,
             )
-        
+
         # Weather-related queries
         if any(kw in query_lower for kw in ["weather", "forecast", "rain", "monsoon"]):
             return SearchResults(
@@ -167,7 +167,7 @@ class WebSearchTool:
                 ],
                 total=1,
             )
-        
+
         # Farming/agricultural queries
         if any(kw in query_lower for kw in ["grow", "farm", "crop", "cultivation"]):
             return SearchResults(
@@ -188,7 +188,7 @@ class WebSearchTool:
                 ],
                 total=2,
             )
-        
+
         # Default mock
         return SearchResults(
             query=query,
@@ -202,28 +202,28 @@ class WebSearchTool:
             ],
             total=1,
         )
-    
+
     def format_for_llm(self, results: SearchResults) -> str:
         """
         Format search results for LLM consumption.
-        
+
         Args:
             results: SearchResults object
-            
+
         Returns:
             Formatted string for LLM context
         """
         if not results.results:
             return f"No web results found for: {results.query}"
-        
+
         parts = [f"Web search results for '{results.query}':\n"]
-        
+
         for i, result in enumerate(results.results, 1):
             parts.append(f"[{i}] {result.title}")
             parts.append(f"    Source: {result.source or result.url}")
             parts.append(f"    {result.snippet}")
             parts.append("")
-        
+
         return "\n".join(parts)
 
 

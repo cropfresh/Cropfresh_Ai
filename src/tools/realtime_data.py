@@ -5,9 +5,9 @@ Preserves backwards compatibility for old imports from `src.tools.realtime_data`
 """
 
 from src.scrapers.realtime_data import (
-    DataSourceStatus,
     DataFreshness,
     DataSourceHealth,
+    DataSourceStatus,
     RealTimeData,
     RealTimeDataManager,
     get_realtime_data_manager,

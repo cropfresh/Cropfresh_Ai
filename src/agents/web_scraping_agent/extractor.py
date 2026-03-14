@@ -8,12 +8,14 @@ import json
 import re
 from datetime import datetime
 from typing import Any, Optional, Type
+
 from loguru import logger
 from pydantic import BaseModel
 
-from .models import ScrapingResult, ScrapingConfig
-from .browser import BrowserScraperMixin
 from src.tools.web_search import WebSearchTool
+
+from .browser import BrowserScraperMixin
+from .models import ScrapingConfig, ScrapingResult
 
 
 class LLMExtractorMixin(BrowserScraperMixin):

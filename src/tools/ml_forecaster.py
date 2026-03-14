@@ -21,14 +21,12 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from statistics import mean, pstdev
 from typing import Optional
 
 from loguru import logger
-
 
 # ── Domain model ────────────────────────────────────────────────────────────
 
@@ -115,8 +113,8 @@ def _linear_trend_forecast(prices: list[float], horizon: int) -> Optional[list[f
     Returns None if sklearn is unavailable (graceful degradation).
     """
     try:
-        from sklearn.linear_model import LinearRegression  # type: ignore
         import numpy as np  # type: ignore
+        from sklearn.linear_model import LinearRegression  # type: ignore
 
         x = np.arange(len(prices)).reshape(-1, 1)
         y = np.array(prices)

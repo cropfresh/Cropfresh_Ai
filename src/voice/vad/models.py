@@ -24,7 +24,7 @@ class VADEvent:
     timestamp_ms: float
     probability: float
     audio_chunk: Optional[bytes] = None
-    
+
 
 @dataclass
 class SpeechSegment:

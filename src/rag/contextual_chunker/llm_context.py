@@ -4,7 +4,6 @@ Contextual Chunker LLM Context Mixin
 Mixin for generating enriched contexts utilizing an LLM or simple heuristics.
 """
 
-from typing import Any
 from loguru import logger
 
 from .constants import CONTEXT_PROMPT
@@ -32,7 +31,7 @@ class LLMContextMixin:
             )
             response = await self.llm.agenerate([prompt])
             context = response.generations[0][0].text.strip()
-            
+
             if len(context) > self.config.context_max_length * 4:
                 context = context[:self.config.context_max_length * 4] + "..."
             return context

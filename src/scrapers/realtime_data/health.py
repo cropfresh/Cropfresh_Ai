@@ -7,7 +7,7 @@ Mixin for tracking the health of data sources.
 from datetime import datetime
 from typing import Optional
 
-from .models import DataSourceStatus, DataFreshness, DataSourceHealth
+from .models import DataFreshness, DataSourceHealth, DataSourceStatus
 
 
 class HealthMixin:

@@ -13,7 +13,12 @@ eval_runner     — batch orchestrator and CLI entry-point
 from src.evaluation.dataset_loader import DatasetLoader
 from src.evaluation.eval_runner import EvalRunner
 from src.evaluation.models import EvalReportMeta, EvalResults, GoldenItem, PerQuestionScore
-from src.evaluation.ragas_evaluator import RAGASEvaluator, RAGPipeline, RAGResponse, create_ragas_evaluator
+from src.evaluation.ragas_evaluator import (
+    RAGASEvaluator,
+    RAGPipeline,
+    RAGResponse,
+    create_ragas_evaluator,
+)
 from src.evaluation.report_generator import ReportGenerator
 
 __all__ = [

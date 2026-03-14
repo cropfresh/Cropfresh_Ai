@@ -6,9 +6,9 @@ The actual implementation has been modularized into `src.rag.contextual_chunker`
 """
 
 from src.rag.contextual_chunker import (
-    EnrichedChunk,
     ChunkingConfig,
     ContextualChunker,
+    EnrichedChunk,
     create_contextual_chunker,
     enrich_documents,
 )

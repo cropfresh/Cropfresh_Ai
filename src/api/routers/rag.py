@@ -6,11 +6,10 @@ REST API endpoints for the agentic RAG system.
 
 from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from src.config import get_settings
-
 
 router = APIRouter()
 
@@ -88,13 +87,13 @@ _knowledge_agent = None
 async def get_knowledge_agent():
     """Get or create knowledge agent instance."""
     global _knowledge_agent
-    
+
     if _knowledge_agent is None:
         from src.agents.knowledge_agent import KnowledgeAgent
         from src.orchestrator.llm_provider import create_llm_provider
-        
+
         settings = get_settings()
-        
+
         # Create LLM if provider is configured
         llm = None
         if settings.has_llm_configured:
@@ -106,7 +105,7 @@ async def get_knowledge_agent():
                 region=getattr(settings, "aws_region", "ap-south-1"),
                 aws_profile=getattr(settings, "aws_profile", ""),
             )
-        
+
         _knowledge_agent = KnowledgeAgent(
             llm=llm,
             qdrant_host=settings.qdrant_host,
@@ -114,7 +113,7 @@ async def get_knowledge_agent():
             qdrant_api_key=settings.qdrant_api_key,
         )
         await _knowledge_agent.initialize()
-    
+
     return _knowledge_agent
 
 
@@ -126,16 +125,16 @@ async def get_knowledge_agent():
 async def rag_query(request: QueryRequest):
     """
     Query the knowledge base using agentic RAG.
-    
+
     Uses adaptive routing, document grading, and self-correction.
     """
     agent = await get_knowledge_agent()
-    
+
     response = await agent.answer(
         question=request.question,
         context=request.context,
     )
-    
+
     return QueryResponse(
         answer=response.answer,
         sources=response.sources,
@@ -153,17 +152,17 @@ async def rag_search(
 ):
     """
     Semantic search without generation.
-    
+
     Returns relevant documents based on similarity.
     """
     agent = await get_knowledge_agent()
-    
+
     results = await agent.search(
         query=query,
         top_k=top_k,
         category=category,
     )
-    
+
     return SearchResponse(
         results=[
             SearchResult(
@@ -183,11 +182,11 @@ async def rag_search(
 async def rag_ingest(request: IngestRequest):
     """
     Ingest documents into the knowledge base.
-    
+
     Each document should have 'text', and optionally 'source', 'category'.
     """
     agent = await get_knowledge_agent()
-    
+
     # Validate documents
     for i, doc in enumerate(request.documents):
         if "text" not in doc:
@@ -195,9 +194,9 @@ async def rag_ingest(request: IngestRequest):
                 status_code=400,
                 detail=f"Document {i} missing 'text' field"
             )
-    
+
     count = await agent.ingest_documents(request.documents)
-    
+
     return IngestResponse(
         ingested=count,
         message=f"Successfully ingested {count} documents",
@@ -209,10 +208,10 @@ async def rag_stats():
     """Get knowledge base statistics."""
     agent = await get_knowledge_agent()
     stats = agent.get_stats()
-    
+
     if "error" in stats:
         raise HTTPException(status_code=500, detail=stats["error"])
-    
+
     return StatsResponse(
         collection=stats.get("collection", ""),
         vectors_count=stats.get("vectors_count", 0),

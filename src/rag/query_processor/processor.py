@@ -2,25 +2,25 @@
 Main Query Processor Class
 """
 
-import time
 import asyncio
-from typing import Optional
-from loguru import logger
-from typing import Any
+import time
+from typing import Any, Optional
 
-from .models import ExpandedQuery, QueryExpansionType, QueryProcessorConfig
-from .hyde import hyde_expand
-from .multi_query import multi_query_expand
-from .step_back import step_back_expand
+from loguru import logger
+
 from .decompose import decompose_query
+from .hyde import hyde_expand
+from .models import ExpandedQuery, QueryExpansionType, QueryProcessorConfig
+from .multi_query import multi_query_expand
 from .rewrite import rewrite_query
+from .step_back import step_back_expand
 
 
 class AdvancedQueryProcessor:
     """
     Advanced Query Processing for improved retrieval.
     """
-    
+
     def __init__(
         self,
         llm: Any = None,
@@ -28,16 +28,16 @@ class AdvancedQueryProcessor:
     ):
         """
         Initialize advanced query processor.
-        
+
         Args:
             llm: Language model for query processing
             config: Query processor configuration
         """
         self.llm = llm
         self.config = config or QueryProcessorConfig()
-        
+
         logger.info("AdvancedQueryProcessor initialized")
-    
+
     async def process_query(
         self,
         query: str,
@@ -47,12 +47,12 @@ class AdvancedQueryProcessor:
         Apply multiple query processing techniques.
         """
         start_time = time.time()
-        
+
         result = ExpandedQuery(
             original_query=query,
             expansion_type=QueryExpansionType.MULTI_QUERY,
         )
-        
+
         # Determine which techniques to apply
         if techniques is None:
             techniques = []
@@ -66,11 +66,11 @@ class AdvancedQueryProcessor:
                 techniques.append(QueryExpansionType.DECOMPOSE)
             if self.config.rewrite_enabled:
                 techniques.append(QueryExpansionType.REWRITE)
-        
+
         # Apply techniques in parallel
         tasks = []
         task_types = []
-        
+
         for technique in techniques:
             if technique == QueryExpansionType.MULTI_QUERY:
                 tasks.append(self.multi_query_expand(query))
@@ -87,15 +87,15 @@ class AdvancedQueryProcessor:
             elif technique == QueryExpansionType.REWRITE:
                 tasks.append(self.rewrite_query(query))
                 task_types.append(technique)
-        
+
         if tasks:
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             for technique, res in zip(task_types, results):
                 if isinstance(res, Exception):
                     logger.warning(f"Query expansion failed for {technique}: {res}")
                     continue
-                
+
                 # We expect the helper functions to return an ExpandedQuery from which we can pull the values
                 if technique == QueryExpansionType.MULTI_QUERY:
                     result.expanded_queries = res.expanded_queries
@@ -107,28 +107,28 @@ class AdvancedQueryProcessor:
                     result.sub_queries = res.sub_queries
                 elif technique == QueryExpansionType.REWRITE:
                     result.rewritten_query = res.rewritten_query
-        
+
         result.processing_time_ms = (time.time() - start_time) * 1000
-        
+
         logger.info(f"Query processed: {len(result.all_queries)} total queries generated")
         return result
-    
+
     async def hyde_expand(self, query: str) -> ExpandedQuery:
         """HyDE (Hypothetical Document Embeddings)."""
         return await hyde_expand(self.llm, self.config, query)
-    
+
     async def multi_query_expand(self, query: str) -> ExpandedQuery:
         """Generate multiple query variations."""
         return await multi_query_expand(self.llm, self.config, query)
-    
+
     async def step_back_expand(self, query: str) -> ExpandedQuery:
         """Step-Back Prompting."""
         return await step_back_expand(self.llm, query)
-    
+
     async def decompose_query(self, query: str) -> ExpandedQuery:
         """Query Decomposition."""
         return await decompose_query(self.llm, self.config, query)
-    
+
     async def rewrite_query(self, query: str) -> ExpandedQuery:
         """Query Rewriting."""
         return await rewrite_query(self.llm, query)

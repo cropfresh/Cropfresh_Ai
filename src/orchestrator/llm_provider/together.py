@@ -6,8 +6,8 @@ Together AI provider for backup access.
 
 from typing import Any, AsyncIterator
 
-from .models import LLMMessage, LLMResponse
 from .base import BaseLLMProvider
+from .models import LLMMessage, LLMResponse
 
 
 class TogetherProvider(BaseLLMProvider):

@@ -23,7 +23,6 @@ from loguru import logger
 from src.evaluation.dataset_loader import DatasetLoader
 from src.evaluation.models import EvalResults, GoldenItem, PerQuestionScore
 
-
 # ---------------------------------------------------------------------------
 # RAG Pipeline protocol — allows any pipeline to be plugged in for evaluation
 # ---------------------------------------------------------------------------

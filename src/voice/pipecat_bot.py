@@ -15,21 +15,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from loguru import logger  # ← fixes NameError present in original prototype
-
+from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineTask
-from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.processors.aggregators.llm_response import LLMUserResponseAggregator
 from pipecat.transports.network.fastapi_websocket import (
-    FastAPIWebsocketTransport,
     FastAPIWebsocketParams,
+    FastAPIWebsocketTransport,
 )
+
+from src.voice.pipecat.agent_processor import CropFreshAgentProcessor
 
 # Local Bhashini Services
 from src.voice.pipecat.stt_service import LocalBhashiniSTTService
 from src.voice.pipecat.tts_service import LocalBhashiniTTSService
-from src.voice.pipecat.agent_processor import CropFreshAgentProcessor
 
 if TYPE_CHECKING:
     from src.agents.voice_agent import VoiceAgent

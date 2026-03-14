@@ -8,9 +8,11 @@ import re
 import time
 from datetime import date
 from typing import Any, Optional
+
 from loguru import logger
 
-from src.scrapers.base_scraper import ScrapeResult, ScraplingBaseScraper, FetcherType
+from src.scrapers.base_scraper import FetcherType, ScrapeResult, ScraplingBaseScraper
+
 from .models import WeatherData
 
 

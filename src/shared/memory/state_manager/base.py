@@ -6,9 +6,10 @@ Provides shared state (memory dicts, Redis connection) for the mixins.
 
 from datetime import timedelta
 from typing import Optional
+
 from loguru import logger
 
-from .models import ConversationContext, AgentExecutionState
+from .models import AgentExecutionState, ConversationContext
 
 
 class BaseStateManager:
@@ -37,7 +38,7 @@ class BaseStateManager:
         # In-memory fallback structures
         self._sessions: dict[str, ConversationContext] = {}
         self._executions: dict[str, AgentExecutionState] = {}
-        
+
         # in-memory voice_session_id → session_id mapping
         self._voice_sessions: dict[str, str] = {}
 

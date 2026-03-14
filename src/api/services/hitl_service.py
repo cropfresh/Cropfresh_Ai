@@ -24,11 +24,10 @@ Design: Degrades gracefully — no DB and no Redis means log-only mode.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 from loguru import logger
-
 
 # * ─── HITL trigger thresholds (must stay in sync with vision_models.py) ──────
 

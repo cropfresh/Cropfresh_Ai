@@ -4,16 +4,17 @@ IMD Weather Cache Manager
 
 from datetime import datetime
 from typing import Any, Optional
+
 from loguru import logger
 
 
 class IMDCacheManager:
     """Simple in-memory cache for IMD weather data."""
-    
+
     def __init__(self, ttl: int = 1800):
         self.ttl = ttl
         self._cache: dict[str, tuple[datetime, Any]] = {}
-        
+
     def get_cache_key(self, prefix: str, *args) -> str:
         """Generate cache key from arguments."""
         return f"{prefix}:" + ":".join(str(a).lower() for a in args)

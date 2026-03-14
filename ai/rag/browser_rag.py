@@ -6,6 +6,8 @@ Browser RAG Integration — Backward compatibility redirect.
 ! Import from `ai.rag.browser_rag_pkg` directly in new code.
 """
 
+from ai.rag.browser_rag_pkg.extractor import ContentExtractor, QualityFilter
+from ai.rag.browser_rag_pkg.integration import BrowserRAGIntegration
 from ai.rag.browser_rag_pkg.models import (
     Citation,
     CitedAnswer,
@@ -13,8 +15,6 @@ from ai.rag.browser_rag_pkg.models import (
     TargetSource,
 )
 from ai.rag.browser_rag_pkg.sources import AgriSourceSelector
-from ai.rag.browser_rag_pkg.extractor import ContentExtractor, QualityFilter
-from ai.rag.browser_rag_pkg.integration import BrowserRAGIntegration
 
 __all__ = [
     "Citation",

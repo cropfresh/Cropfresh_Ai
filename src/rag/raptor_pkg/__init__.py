@@ -2,6 +2,7 @@
 RAPTOR Package — Re-exports for backward compatibility.
 """
 
+from src.rag.raptor_pkg.index import RAPTORIndex, create_raptor_index
 from src.rag.raptor_pkg.models import (
     ClusterInfo,
     NodeLevel,
@@ -9,7 +10,6 @@ from src.rag.raptor_pkg.models import (
     RAPTORNode,
     RAPTORTreeStats,
 )
-from src.rag.raptor_pkg.index import RAPTORIndex, create_raptor_index
 
 __all__ = [
     "ClusterInfo",

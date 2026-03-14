@@ -5,10 +5,12 @@ Analytical logic for price prediction (features, trends, rules).
 """
 
 from datetime import datetime
+
 import numpy as np
 
 from src.tools.agmarknet import AgmarknetPrice
-from .constants import SEASONAL_CALENDAR, SELL_NOW_DELTA, HOLD_3D_DELTA
+
+from .constants import HOLD_3D_DELTA, SEASONAL_CALENDAR, SELL_NOW_DELTA
 
 
 class AnalysisMixin:

@@ -13,9 +13,9 @@ Changes from dev baseline:
   - Graceful shutdown with connection cleanup
 """
 
+import asyncio
 import os
 import sys
-import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -31,7 +31,6 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from src.api.config import get_settings
-
 
 # ─────────────────────────────────────────────────
 # Lifespan: startup + shutdown
@@ -256,6 +255,7 @@ app.add_middleware(
 
 # ─── API Key auth ──────────────────────────────────
 from src.api.middleware.auth import APIKeyMiddleware  # noqa: E402
+
 app.add_middleware(APIKeyMiddleware, api_key=_settings.api_key or None)
 
 
@@ -284,6 +284,8 @@ async def health():
     return {"status": "alive"}
 
 from fastapi import WebSocket
+
+
 @app.websocket("/ws/test")
 async def test_websocket(websocket: WebSocket):
     await websocket.accept()
@@ -336,7 +338,7 @@ async def prometheus_metrics():
       - cropfresh_cache_hits_total / cropfresh_cache_misses_total
     """
     try:
-        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+        from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
         return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
     except ImportError:

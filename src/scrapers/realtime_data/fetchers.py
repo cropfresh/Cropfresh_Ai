@@ -5,11 +5,11 @@ Mixins detailing fetch workflows for prices, weather, and crop monitoring.
 """
 
 import time
-import asyncio
 from typing import Optional
+
 from loguru import logger
 
-from .models import RealTimeData, DataFreshness
+from .models import DataFreshness, RealTimeData
 
 
 class FetchersMixin:

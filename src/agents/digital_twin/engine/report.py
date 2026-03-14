@@ -5,22 +5,23 @@ Handles execution of AI diff reporting comparing twins against arrival.
 """
 
 from typing import Any
+
 from loguru import logger
 
-from src.agents.digital_twin.models import ArrivalData, DiffReport, DigitalTwin
 from src.agents.digital_twin.diff_analysis import (
     compute_grade_delta,
     compute_new_defects,
     compute_similarity,
 )
 from src.agents.digital_twin.liability import determine_liability
+from src.agents.digital_twin.models import ArrivalData, DiffReport, DigitalTwin
 
 from .utils import (
+    build_explanation,
+    compute_report_confidence,
     compute_transit_hours,
     estimate_arrival_grade,
     infer_arrival_defects,
-    compute_report_confidence,
-    build_explanation,
 )
 
 

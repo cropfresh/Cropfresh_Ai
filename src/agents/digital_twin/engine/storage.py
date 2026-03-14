@@ -7,6 +7,7 @@ Provides database persist and fetch capabilities for digital twins.
 import json
 from datetime import UTC, datetime
 from typing import Any, Optional
+
 from loguru import logger
 
 from src.agents.digital_twin.models import DigitalTwin

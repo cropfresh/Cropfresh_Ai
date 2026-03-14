@@ -5,11 +5,12 @@ Concurrent fetching of web pages via Jina Reader.
 """
 
 import asyncio
+
 import httpx
 from loguru import logger
 
+from .constants import FETCH_TIMEOUT_SEC, JINA_BASE_URL, MAX_CONTENT_CHARS, MAX_PAGES
 from .models import PageContent
-from .constants import JINA_BASE_URL, FETCH_TIMEOUT_SEC, MAX_CONTENT_CHARS, MAX_PAGES
 
 
 async def _fetch_page(url: str, client: httpx.AsyncClient) -> PageContent:

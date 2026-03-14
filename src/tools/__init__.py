@@ -16,6 +16,32 @@ Author: CropFresh AI Team
 Version: 3.1.0
 """
 
+# Import tools to trigger auto-registration
+from src.tools import calculator, deep_research, weather, web_search
+from src.tools.agmarknet import AgmarknetPrice, AgmarknetTool
+from src.tools.deep_research import DeepResearchResult, DeepResearchTool
+
+# New real-time data clients
+from src.tools.enam_client import ENAMClient, MandiPrice, PriceTrend, get_enam_client
+from src.tools.google_amed import (
+    CropMonitoringData,
+    GoogleAMEDClient,
+    SeasonInfo,
+    get_amed_client,
+)
+from src.tools.imd_weather import (
+    AgroAdvisory,
+    CurrentWeather,
+    IMDWeatherClient,
+    WeatherForecast,
+    get_imd_client,
+)
+from src.tools.realtime_data import (
+    DataFreshness,
+    RealTimeData,
+    RealTimeDataManager,
+    get_realtime_data_manager,
+)
 from src.tools.registry import (
     ToolDefinition,
     ToolParameter,
@@ -23,36 +49,6 @@ from src.tools.registry import (
     ToolResult,
     get_tool_registry,
 )
-from src.tools.agmarknet import AgmarknetPrice, AgmarknetTool
-
-# New real-time data clients
-from src.tools.enam_client import ENAMClient, MandiPrice, PriceTrend, get_enam_client
-from src.tools.imd_weather import (
-    IMDWeatherClient,
-    CurrentWeather,
-    WeatherForecast,
-    AgroAdvisory,
-    get_imd_client,
-)
-from src.tools.google_amed import (
-    GoogleAMEDClient,
-    CropMonitoringData,
-    SeasonInfo,
-    get_amed_client,
-)
-from src.tools.realtime_data import (
-    RealTimeDataManager,
-    RealTimeData,
-    DataFreshness,
-    get_realtime_data_manager,
-)
-
-# Import tools to trigger auto-registration
-from src.tools import weather
-from src.tools import calculator
-from src.tools import web_search
-from src.tools import deep_research
-from src.tools.deep_research import DeepResearchTool, DeepResearchResult
 
 __all__ = [
     # Registry

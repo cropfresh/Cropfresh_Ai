@@ -16,16 +16,16 @@ from typing import Any, Optional
 from loguru import logger
 
 from src.api.services.registration_pkg.models import (
+    _DEFAULT_JWT_SECRET,
     INITIAL_QUALITY_SCORE,
+    JWT_EXPIRY_DAYS,
     KARNATAKA_DISTRICT_LANGUAGE,
     OTP_EXPIRY_MINUTES,
     OTP_LENGTH,
-    JWT_EXPIRY_DAYS,
+    USER_TYPES,
     OTPRecord,
     ProfileResponse,
     TokenResponse,
-    USER_TYPES,
-    _DEFAULT_JWT_SECRET,
 )
 
 

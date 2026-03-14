@@ -4,10 +4,10 @@ Voice Activity Detection (VAD) Package
 Real-time voice activity detection using Silero VAD.
 """
 
-from .models import VADState, VADEvent, SpeechSegment
-from .silero import SileroVAD
 from .bargein import BargeinDetector
-from .utils import create_silence, bytes_to_wav
+from .models import SpeechSegment, VADEvent, VADState
+from .silero import SileroVAD
+from .utils import bytes_to_wav, create_silence
 
 __all__ = [
     "VADState",

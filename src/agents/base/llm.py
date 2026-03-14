@@ -6,12 +6,13 @@ LLM generation and memory integrations.
 
 import asyncio
 from typing import Any, Optional
+
 from loguru import logger
 
 
 class LLMMixin:
     """Mixin providing LLM interaction and conversational memory capabilities."""
-    
+
     def _build_memory_context(self, context: Optional[dict]) -> str:
         """
         Phase 4 (G4) — Build a concise memory block from the session context.
@@ -57,9 +58,9 @@ class LLMMixin:
         """
         if not self.llm:
             raise ValueError("No LLM configured for agent")
-        
+
         from src.orchestrator.llm_provider import LLMMessage
-        
+
         # Phase 4: inject memory as a system message between domain prompt and user
         working_messages = list(messages)  # shallow copy
         memory_text = self._build_memory_context(context)
@@ -74,20 +75,20 @@ class LLMMixin:
                 insert_at,
                 {"role": "system", "content": memory_text},
             )
-        
+
         llm_messages = [
             LLMMessage(role=m["role"], content=m["content"])
             for m in working_messages
         ]
-        
+
         response = await self.llm.generate(
             llm_messages,
             temperature=temperature or self.config.temperature,
             max_tokens=max_tokens or self.config.max_tokens,
         )
-        
+
         return response.content
-        
+
     async def _retry_operation(
         self,
         operation,
@@ -100,7 +101,7 @@ class LLMMixin:
         """
         retries = max_retries or self.config.max_retries
         last_error = None
-        
+
         for attempt in range(retries + 1):
             try:
                 return await operation(*args, **kwargs)
@@ -110,5 +111,5 @@ class LLMMixin:
                     wait = 2 ** attempt  # Exponential backoff
                     logger.warning(f"Retry {attempt + 1}/{retries} after {wait}s: {e}")
                     await asyncio.sleep(wait)
-        
+
         raise last_error

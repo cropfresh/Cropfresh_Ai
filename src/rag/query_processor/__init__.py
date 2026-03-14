@@ -4,10 +4,9 @@ Query Processor Package
 Advanced query processing techniques for improved retrieval.
 """
 
-from typing import Optional
-from typing import Any
+from typing import Any, Optional
 
-from .models import QueryExpansionType, ExpandedQuery, QueryProcessorConfig
+from .models import ExpandedQuery, QueryExpansionType, QueryProcessorConfig
 from .processor import AdvancedQueryProcessor
 
 

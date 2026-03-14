@@ -3,8 +3,10 @@ Session handling logic for the Supervisor Agent.
 """
 
 from typing import Any
+
 from src.agents.base_agent import AgentResponse
 from src.memory.state_manager import Message
+
 
 async def process_with_session(
     agent_instance: Any,

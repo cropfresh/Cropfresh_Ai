@@ -6,8 +6,6 @@ Handles full-duplex WebSocket connection with streaming LLM + TTS.
 
 from __future__ import annotations
 
-import base64
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from fastapi import WebSocket
@@ -17,7 +15,7 @@ if TYPE_CHECKING:
     from src.voice.duplex_pipeline import DuplexPipeline
 
 try:
-    from src.voice.vad import SileroVAD, VADState, BargeinDetector, bytes_to_wav
+    from src.voice.vad import BargeinDetector, SileroVAD, VADState, bytes_to_wav
     VAD_AVAILABLE = True
 except ImportError:
     VAD_AVAILABLE = False

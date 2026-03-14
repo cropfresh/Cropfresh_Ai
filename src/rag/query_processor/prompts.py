@@ -21,7 +21,7 @@ Original question: {query}
 Generate {count} alternative search queries, one per line:"""
 
 STEP_BACK_PROMPT = """You are an AI assistant that reformulates specific questions into more general ones.
-Given a specific question about agriculture, generate a broader, more abstract question 
+Given a specific question about agriculture, generate a broader, more abstract question
 that could provide background knowledge helpful for answering the original.
 
 Original question: {query}

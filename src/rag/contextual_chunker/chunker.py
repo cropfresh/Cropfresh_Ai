@@ -5,24 +5,25 @@ Main class for context-enriched document chunking.
 """
 
 from typing import Optional
+
 from loguru import logger
 
-from .models import ChunkingConfig, EnrichedChunk
 from .extractor import ExtractorMixin
-from .splitter import SplitterMixin
 from .llm_context import LLMContextMixin
+from .models import ChunkingConfig, EnrichedChunk
+from .splitter import SplitterMixin
 
 
 class ContextualChunker(ExtractorMixin, SplitterMixin, LLMContextMixin):
     """
     Context-enriched document chunking.
-    
+
     Each chunk is augmented with:
     - Document title and source
     - Section headers (if any)
     - Preceding context summary
     - Key entities mentioned
-    
+
     This context helps the retrieval system understand
     what each chunk is about, even without seeing the
     full document.
@@ -47,13 +48,13 @@ class ContextualChunker(ExtractorMixin, SplitterMixin, LLMContextMixin):
     ) -> list[EnrichedChunk]:
         """
         Split document and add context to each chunk.
-        
+
         Args:
             document: Document object or text string
             document_title: Optional title override
             document_source: Optional source override
             document_summary: Document summary for context
-            
+
         Returns:
             List of EnrichedChunk with context
         """
@@ -65,26 +66,26 @@ class ContextualChunker(ExtractorMixin, SplitterMixin, LLMContextMixin):
             text = str(document)
             title = document_title
             source = document_source
-        
+
         section_headers = []
         if self.config.propagate_headers:
             section_headers = self._extract_section_headers(text)
-        
+
         if self.config.use_semantic_boundaries:
             raw_chunks = self._semantic_chunk(text)
         else:
             raw_chunks = self._simple_chunk(text)
-        
+
         enriched_chunks = []
         total_chunks = len(raw_chunks)
-        
+
         for idx, (chunk_text, start_char, end_char) in enumerate(raw_chunks):
             section = self._find_section_for_position(section_headers, start_char)
-            
+
             entities = []
             if self.config.extract_entities:
                 entities = self._extract_entities(chunk_text)
-            
+
             context = ""
             if self.config.add_context:
                 if self.config.use_llm_context and self.llm:
@@ -95,7 +96,7 @@ class ContextualChunker(ExtractorMixin, SplitterMixin, LLMContextMixin):
                     context = self._generate_simple_context(
                         chunk_text, title, source, section, idx, total_chunks
                     )
-            
+
             enriched_chunks.append(EnrichedChunk(
                 text=chunk_text,
                 context=context,
@@ -109,6 +110,6 @@ class ContextualChunker(ExtractorMixin, SplitterMixin, LLMContextMixin):
                 entities=entities,
                 keywords=self._extract_keywords(chunk_text),
             ))
-        
+
         logger.info(f"Created {len(enriched_chunks)} enriched chunks")
         return enriched_chunks

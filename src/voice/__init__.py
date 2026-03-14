@@ -4,32 +4,37 @@
 # VAD: Silero VAD for real-time voice activity detection
 # Transport: WebRTC for bidirectional streaming
 
-from .stt import IndicWhisperSTT, FasterWhisperSTT, MultiProviderSTT, TranscriptionResult
-from .tts import IndicTTS, EdgeTTSProvider, SynthesisResult
-from .entity_extractor import VoiceEntityExtractor, ExtractionResult
 from .audio_utils import AudioProcessor
+from .entity_extractor import ExtractionResult, VoiceEntityExtractor
+from .stt import FasterWhisperSTT, IndicWhisperSTT, MultiProviderSTT, TranscriptionResult
+from .tts import EdgeTTSProvider, IndicTTS, SynthesisResult
 
 # New modules for advanced voice agent
 try:
-    from .vad import SileroVAD, VADState, VADEvent, SpeechSegment, BargeinDetector
+    from .vad import BargeinDetector, SileroVAD, SpeechSegment, VADEvent, VADState
     VAD_AVAILABLE = True
 except ImportError:
     VAD_AVAILABLE = False
 
 try:
-    from .webrtc_transport import WebRTCTransport, WebRTCSignaling, ConnectionState
+    from .webrtc_transport import ConnectionState, WebRTCSignaling, WebRTCTransport
     WEBRTC_AVAILABLE = True
 except ImportError:
     WEBRTC_AVAILABLE = False
 
 try:
-    from .streaming_tts import StreamingTTS, CancellationToken, AudioChunk, MultiProviderStreamingTTS
+    from .streaming_tts import (
+        AudioChunk,
+        CancellationToken,
+        MultiProviderStreamingTTS,
+        StreamingTTS,
+    )
     STREAMING_TTS_AVAILABLE = True
 except ImportError:
     STREAMING_TTS_AVAILABLE = False
 
 try:
-    from .duplex_pipeline import DuplexPipeline, PipelineState, PipelineEvent, AudioOutputChunk
+    from .duplex_pipeline import AudioOutputChunk, DuplexPipeline, PipelineEvent, PipelineState
     DUPLEX_AVAILABLE = True
 except ImportError:
     DUPLEX_AVAILABLE = False

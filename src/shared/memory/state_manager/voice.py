@@ -7,6 +7,7 @@ Handles NFR6 WebRTC voice session rehydration and linkage.
 import asyncio
 from datetime import datetime
 from typing import Optional
+
 from loguru import logger
 
 from .models import ConversationContext, SessionExpiredError
@@ -29,7 +30,7 @@ class VoiceSessionMixin(SessionManagerMixin):
         if context:
             context.voice_session_id = voice_session_id
             context.last_active_at = datetime.now()
-            
+
             redis = await self._get_redis()
             if redis:
                 await redis.setex(
@@ -100,9 +101,9 @@ class VoiceSessionMixin(SessionManagerMixin):
         context = await self.get_context(session_id)
         if not context:
             return
-            
+
         context.last_active_at = datetime.now()
-        
+
         redis = await self._get_redis()
         if redis:
             await redis.setex(

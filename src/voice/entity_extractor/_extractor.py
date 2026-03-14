@@ -4,22 +4,22 @@ VoiceEntityExtractor – main extraction class.
 Depends only on the sibling data modules; has no large data literals of its own.
 """
 
-import re
 import json
+import re
 from typing import Optional
 
 from loguru import logger
 
-from src.voice.entity_extractor._intents import VoiceIntent, ExtractionResult
+from src.voice.entity_extractor._crops import COMMODITY_ALIASES, CROP_NAMES
+from src.voice.entity_extractor._intents import ExtractionResult, VoiceIntent
 from src.voice.entity_extractor._keywords import INTENT_KEYWORDS
-from src.voice.entity_extractor._crops import CROP_NAMES, COMMODITY_ALIASES
+from src.voice.entity_extractor._language import detect_language_from_text
 from src.voice.entity_extractor._patterns import (
-    QUANTITY_PATTERNS,
-    PRICE_PATTERNS,
     LOCATION_PATTERNS,
+    PRICE_PATTERNS,
+    QUANTITY_PATTERNS,
     UNIT_MAP,
 )
-from src.voice.entity_extractor._language import detect_language_from_text
 
 
 class VoiceEntityExtractor:

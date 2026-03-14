@@ -8,9 +8,6 @@ Provides regex-based entity extraction for agricultural terms
 import re
 from typing import Any
 
-from loguru import logger
-
-
 # Compiled once at module level for efficiency
 _ENTITY_PATTERNS: dict[str, Any] = {}
 

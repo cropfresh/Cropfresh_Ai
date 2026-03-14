@@ -11,10 +11,10 @@ Components:
 - Prompt Optimizer: Context-aware prompts
 """
 
-from src.rag.enhanced.instructed_retriever import InstructedRetriever
-from src.rag.enhanced.strategy_selector import StrategySelector, RetrievalStrategy
 from src.rag.enhanced.bidirectional_rag import BidirectionalRAG
+from src.rag.enhanced.instructed_retriever import InstructedRetriever
 from src.rag.enhanced.prompt_optimizer import PromptOptimizer
+from src.rag.enhanced.strategy_selector import RetrievalStrategy, StrategySelector
 
 __all__ = [
     "InstructedRetriever",

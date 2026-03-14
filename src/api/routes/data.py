@@ -8,12 +8,11 @@ and AI Kosha dataset access.
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
-from loguru import logger
 from pydantic import BaseModel, Field
 
 from src.config import get_settings
 from src.scrapers.agri_scrapers import AgriculturalDataAPI, DataSource
-from src.scrapers.aikosha_client import AIKoshaClient, AIKoshaCategory
+from src.scrapers.aikosha_client import AIKoshaCategory, AIKoshaClient
 
 router = APIRouter(prefix="/data", tags=["data"])
 

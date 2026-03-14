@@ -18,8 +18,8 @@ from src.agents.digital_twin.models import ArrivalData, DiffReport, DigitalTwin
 from src.agents.digital_twin.similarity import ResNetSimilarityEngine
 from src.agents.quality_assessment.vision_models import QualityResult
 
-from .storage import StorageMixin
 from .report import DiffReportMixin
+from .storage import StorageMixin
 
 
 class DigitalTwinEngine(StorageMixin, DiffReportMixin):

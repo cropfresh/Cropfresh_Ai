@@ -10,10 +10,10 @@ Components:
 - Config: Production configuration
 """
 
-from src.production.observability import setup_observability, trace_agent, AgentMetrics
-from src.production.rate_limiter import RateLimiter, RateLimitExceeded
 from src.production.cache import ResponseCache
 from src.production.config import ProductionConfig, load_config
+from src.production.observability import AgentMetrics, setup_observability, trace_agent
+from src.production.rate_limiter import RateLimiter, RateLimitExceeded
 
 __all__ = [
     "setup_observability",

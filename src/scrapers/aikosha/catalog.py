@@ -4,7 +4,7 @@ AI Kosha Agricultural Catalog
 Curated catalog of agricultural datasets from AI Kosha.
 """
 
-from .models import AIKoshaDataset, AIKoshaCategory
+from .models import AIKoshaCategory, AIKoshaDataset
 
 
 def get_agri_catalog() -> list[AIKoshaDataset]:

@@ -19,7 +19,6 @@ from src.agents.supervisor import SupervisorAgent
 from src.memory.state_manager import AgentStateManager
 from src.tools.registry import ToolRegistry
 
-
 # * ═══════════════════════════════════════════════════════════════
 # * SHARED DEPENDENCIES — created once, injected into all agents
 # * ═══════════════════════════════════════════════════════════════

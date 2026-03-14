@@ -1,5 +1,5 @@
 """
-Source Constants 
+Source Constants
 ================
 Data source configurations for agricultural data.
 """

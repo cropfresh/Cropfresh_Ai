@@ -17,7 +17,6 @@ from loguru import logger
 
 from src.evaluation.models import EvalReportMeta, EvalResults
 
-
 # Consistent emoji indicators used throughout the report
 _OK = "✅"
 _FAIL = "❌"

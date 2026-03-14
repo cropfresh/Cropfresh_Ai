@@ -9,7 +9,6 @@ Unified interface for switching between LLM providers:
 """
 
 import asyncio
-import json
 from abc import ABC, abstractmethod
 from typing import Any, AsyncIterator
 
@@ -32,7 +31,7 @@ class LLMResponse(BaseModel):
 
 class BaseLLMProvider(ABC):
     """Abstract base class for LLM providers."""
-    
+
     @abstractmethod
     async def generate(
         self,
@@ -43,7 +42,7 @@ class BaseLLMProvider(ABC):
     ) -> LLMResponse:
         """Generate a response from the LLM."""
         pass
-    
+
     @abstractmethod
     async def stream(
         self,
@@ -194,13 +193,13 @@ class BedrockProvider(BaseLLMProvider):
 
 class GroqProvider(BaseLLMProvider):
     """Groq API provider for development."""
-    
+
     def __init__(self, api_key: str, model: str = "llama-3.3-70b-versatile"):
         from groq import AsyncGroq
-        
+
         self.client = AsyncGroq(api_key=api_key)
         self.model = model
-    
+
     async def generate(
         self,
         messages: list[LLMMessage],
@@ -216,7 +215,7 @@ class GroqProvider(BaseLLMProvider):
             max_tokens=max_tokens,
             **kwargs,
         )
-        
+
         choice = response.choices[0]
         return LLMResponse(
             content=choice.message.content or "",
@@ -228,7 +227,7 @@ class GroqProvider(BaseLLMProvider):
             },
             finish_reason=choice.finish_reason or "stop",
         )
-    
+
     async def stream(
         self,
         messages: list[LLMMessage],
@@ -245,7 +244,7 @@ class GroqProvider(BaseLLMProvider):
             stream=True,
             **kwargs,
         )
-        
+
         async for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
@@ -253,10 +252,10 @@ class GroqProvider(BaseLLMProvider):
 
 class TogetherProvider(BaseLLMProvider):
     """Together AI provider (backup)."""
-    
+
     def __init__(self, api_key: str, model: str = "meta-llama/Llama-3.3-70B-Instruct"):
         import httpx
-        
+
         self.api_key = api_key
         self.model = model
         self.base_url = "https://api.together.xyz/v1"
@@ -264,7 +263,7 @@ class TogetherProvider(BaseLLMProvider):
             headers={"Authorization": f"Bearer {api_key}"},
             timeout=60.0,
         )
-    
+
     async def generate(
         self,
         messages: list[LLMMessage],
@@ -285,7 +284,7 @@ class TogetherProvider(BaseLLMProvider):
         )
         response.raise_for_status()
         data = response.json()
-        
+
         choice = data["choices"][0]
         return LLMResponse(
             content=choice["message"]["content"],
@@ -293,7 +292,7 @@ class TogetherProvider(BaseLLMProvider):
             usage=data.get("usage", {}),
             finish_reason=choice.get("finish_reason", "stop"),
         )
-    
+
     async def stream(
         self,
         messages: list[LLMMessage],
@@ -308,14 +307,14 @@ class TogetherProvider(BaseLLMProvider):
 
 class VLLMProvider(BaseLLMProvider):
     """vLLM provider for self-hosted production."""
-    
+
     def __init__(self, base_url: str, model: str = "llama-3.3-70b"):
         import httpx
-        
+
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.client = httpx.AsyncClient(timeout=120.0)
-    
+
     async def generate(
         self,
         messages: list[LLMMessage],
@@ -336,7 +335,7 @@ class VLLMProvider(BaseLLMProvider):
         )
         response.raise_for_status()
         data = response.json()
-        
+
         choice = data["choices"][0]
         return LLMResponse(
             content=choice["message"]["content"],
@@ -344,7 +343,7 @@ class VLLMProvider(BaseLLMProvider):
             usage=data.get("usage", {}),
             finish_reason=choice.get("finish_reason", "stop"),
         )
-    
+
     async def stream(
         self,
         messages: list[LLMMessage],
@@ -367,7 +366,7 @@ def create_llm_provider(
 ) -> BaseLLMProvider:
     """
     Factory function to create the appropriate LLM provider.
-    
+
     Args:
         provider: "bedrock", "groq", "together", or "vllm"
         api_key: API key (for Groq/Together)
@@ -375,7 +374,7 @@ def create_llm_provider(
         model: Model name or Bedrock alias (e.g. "claude-sonnet", "llama-70b")
         region: AWS region (for Bedrock)
         aws_profile: AWS profile name (for Bedrock, optional)
-        
+
     Returns:
         Configured LLM provider instance
     """

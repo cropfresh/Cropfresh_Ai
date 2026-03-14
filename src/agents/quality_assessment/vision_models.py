@@ -11,9 +11,6 @@ keeping the pipeline functional in dev / CI without model weights.
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from loguru import logger
 from pydantic import BaseModel, Field
 
 from src.agents.quality_assessment.dinov2_classifier import (

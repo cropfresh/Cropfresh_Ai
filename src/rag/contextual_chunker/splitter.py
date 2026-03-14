@@ -5,12 +5,11 @@ Mixin for logic regarding chunk boundaries, simple and semantic.
 """
 
 import re
-from typing import Any
 
 
 class SplitterMixin:
     """Mixin for text chunking mechanisms."""
-    
+
     # Assumes self.config is available
 
     def _simple_chunk(self, text: str) -> list[tuple[str, int, int]]:
@@ -66,7 +65,7 @@ class SplitterMixin:
                     current_chunk = para
                     current_start = char_pos
             char_pos += len(para) + 2
-        
+
         if len(current_chunk) >= self.config.min_chunk_size:
             chunks.append((
                 current_chunk.strip(),

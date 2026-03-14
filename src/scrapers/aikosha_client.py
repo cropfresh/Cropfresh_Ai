@@ -7,9 +7,9 @@ The actual implementation has been modularized into `src.scrapers.aikosha`.
 
 from src.scrapers.aikosha import (
     AIKoshaCategory,
+    AIKoshaClient,
     AIKoshaDataset,
     AIKoshaSearchResult,
-    AIKoshaClient,
     get_agri_catalog,
 )
 

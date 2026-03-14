@@ -11,16 +11,18 @@ Features:
 """
 
 from typing import Any, Dict, List, Optional
+
 from loguru import logger
-from neo4j import GraphDatabase, Driver
+from neo4j import Driver, GraphDatabase
+
 
 class GraphStore:
     """
     Neo4j Graph Store for CropFresh AI.
-    
+
     Manages knowledge graph connections and operations.
     """
-    
+
     def __init__(
         self,
         uri: str = "bolt://localhost:7687",
@@ -30,7 +32,7 @@ class GraphStore:
     ):
         """
         Initialize Graph Store.
-        
+
         Args:
             uri: Neo4j URI
             username: Auth username
@@ -42,19 +44,19 @@ class GraphStore:
         self.password = password
         self.database = database
         self._driver: Optional[Driver] = None
-        
+
     @property
     def driver(self) -> Driver:
         """Lazy load Neo4j driver."""
         if self._driver is None:
             self._connect()
         return self._driver
-        
+
     def _connect(self):
         """Connect to Neo4j."""
         try:
             self._driver = GraphDatabase.driver(
-                self.uri, 
+                self.uri,
                 auth=(self.username, self.password)
             )
             # Verify connection
@@ -63,27 +65,27 @@ class GraphStore:
         except Exception as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
             raise
-            
+
     def close(self):
         """Close connection."""
         if self._driver:
             self._driver.close()
             self._driver = None
-            
+
     def query(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
         Execute Cypher query.
-        
+
         Args:
             query: Cypher query string
             params: Query parameters
-            
+
         Returns:
             List of records as dictionaries
         """
         if params is None:
             params = {}
-            
+
         try:
             with self.driver.session(database=self.database) as session:
                 result = session.run(query, params)
@@ -95,11 +97,11 @@ class GraphStore:
     def add_entity(self, label: str, properties: Dict[str, Any]) -> str:
         """
         Add a node to the graph.
-        
+
         Args:
             label: Node label (e.g., Crop, Market, Disease)
             properties: Node properties
-            
+
         Returns:
             Properties of created node
         """
@@ -111,8 +113,8 @@ class GraphStore:
         return str(result[0]['n'])
 
     def add_relation(
-        self, 
-        source_label: str, 
+        self,
+        source_label: str,
         source_props: Dict[str, Any],
         target_label: str,
         target_props: Dict[str, Any],
@@ -122,7 +124,7 @@ class GraphStore:
         """
         Create a relationship between two nodes.
         Nodes are identified by matching ALL properties in source_props/target_props.
-        
+
         Args:
             source_label: Label of source node
             source_props: Properties to match source node
@@ -133,7 +135,7 @@ class GraphStore:
         """
         if rel_props is None:
             rel_props = {}
-            
+
         # Build dynamic match clauses (simplified)
         # Note: In production, passing dicts as params is safer/cleaner than string manipulation
         query = f"""
@@ -143,23 +145,23 @@ class GraphStore:
         SET r += $rel_props
         RETURN r
         """
-        
+
         params = {
             "source_props": source_props,
             "target_props": target_props,
             "rel_props": rel_props
         }
-        
+
         return self.query(query, params)
 
     def get_context(self, entity_name: str, depth: int = 2) -> List[Dict[str, Any]]:
         """
         Retrieve context subgraph for an entity.
-        
+
         Args:
             entity_name: Name property of the entity
             depth: Traversal depth
-            
+
         Returns:
             List of paths/relations
         """

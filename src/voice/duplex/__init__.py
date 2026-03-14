@@ -5,10 +5,10 @@ Modularized duplex pipeline package for CropFresh AI.
 """
 
 from .models import (
-    PipelineState,
-    PipelineEvent,
     AudioOutputChunk,
+    PipelineEvent,
     PipelineResult,
+    PipelineState,
 )
 from .pipeline import DuplexPipeline
 

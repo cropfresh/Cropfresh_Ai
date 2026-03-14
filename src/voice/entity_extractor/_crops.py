@@ -46,7 +46,7 @@ CROP_NAMES: dict[str, str] = {
     # ── Marathi ──────────────────────────────────────────────────────────────
     "टोमॅटो": "tomato",     "बटाटा": "potato",         "कांदा": "onion",
     "फ्लॉवर": "cauliflower","वांगे": "brinjal",          "भेंडी": "okra",
-    "मिरची": "chili",        "गाजर": "carrot",           "पालक": "spinach",
+    "मिरची": "chili",
     "आंबा": "mango",         "केळ": "banana",            "तांदूळ": "rice",
     "गहू": "wheat",
 

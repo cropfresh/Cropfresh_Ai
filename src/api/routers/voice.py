@@ -11,13 +11,12 @@ REST endpoints for voice processing:
 import base64
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, UploadFile, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from loguru import logger
+from pydantic import BaseModel
 
-from ...agents.voice_agent import VoiceAgent, VoiceResponse
-from ...voice import IndicWhisperSTT, IndicTTS, VoiceEntityExtractor, MultiProviderSTT
-
+from ...agents.voice_agent import VoiceAgent
+from ...voice import IndicTTS, MultiProviderSTT
 
 # Router
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
@@ -31,7 +30,7 @@ _tts: Optional[IndicTTS] = None
 def get_voice_agent() -> VoiceAgent:
     """Get or create voice agent instance"""
     global _voice_agent, _stt, _tts
-    
+
     if _voice_agent is None:
         # Use MultiProviderSTT for automatic fallback
         _stt = MultiProviderSTT(
@@ -43,7 +42,7 @@ def get_voice_agent() -> VoiceAgent:
         _tts = IndicTTS()
         _voice_agent = VoiceAgent(stt=_stt, tts=_tts)
         logger.info(f"Voice agent initialized with providers: {_stt.get_available_providers()}")
-    
+
     return _voice_agent
 
 
@@ -118,24 +117,24 @@ async def process_voice(
 ):
     """
     Process voice input and return voice response.
-    
+
     Complete flow:
     1. Transcribe audio to text
     2. Extract intent and entities
     3. Generate response
     4. Synthesize response audio
-    
+
     Returns transcription, intent, entities, and audio response.
     """
     try:
         # Read audio bytes
         audio_bytes = await audio.read()
-        
+
         if len(audio_bytes) == 0:
             raise HTTPException(status_code=400, detail="Empty audio file")
-        
+
         logger.info(f"Processing voice: {len(audio_bytes)} bytes, user={user_id}")
-        
+
         # Process with voice agent
         agent = get_voice_agent()
         result = await agent.process_voice(
@@ -144,10 +143,10 @@ async def process_voice(
             session_id=session_id,
             language=language,
         )
-        
+
         # Encode audio as base64
         audio_b64 = base64.b64encode(result.response_audio).decode("utf-8")
-        
+
         return VoiceProcessResponse(
             transcription=result.transcription,
             language=result.detected_language,
@@ -158,7 +157,7 @@ async def process_voice(
             session_id=result.session_id,
             confidence=result.confidence,
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -173,21 +172,21 @@ async def transcribe_audio(
 ):
     """
     Transcribe audio to text only.
-    
+
     Uses AI4Bharat IndicWhisper for Indian languages,
     with Groq Whisper API as fallback.
     """
     try:
         audio_bytes = await audio.read()
-        
+
         if len(audio_bytes) == 0:
             raise HTTPException(status_code=400, detail="Empty audio file")
-        
+
         logger.info(f"Transcribing: {len(audio_bytes)} bytes")
-        
+
         stt = get_stt()
         result = await stt.transcribe(audio_bytes, language=language)
-        
+
         return TranscribeResponse(
             text=result.text,
             language=result.language,
@@ -195,7 +194,7 @@ async def transcribe_audio(
             duration_seconds=result.duration_seconds,
             provider=result.provider,
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -207,16 +206,16 @@ async def transcribe_audio(
 async def synthesize_speech(request: SynthesizeRequest):
     """
     Synthesize text to speech audio.
-    
+
     Uses AI4Bharat IndicTTS for Indian languages,
     with Edge TTS as fallback.
     """
     try:
         if not request.text:
             raise HTTPException(status_code=400, detail="Empty text")
-        
+
         logger.info(f"Synthesizing: {len(request.text)} chars, lang={request.language}")
-        
+
         tts = get_tts()
         result = await tts.synthesize(
             text=request.text,
@@ -224,15 +223,15 @@ async def synthesize_speech(request: SynthesizeRequest):
             voice=request.voice,
             emotion=request.emotion,
         )
-        
+
         audio_b64 = base64.b64encode(result.audio).decode("utf-8")
-        
+
         return SynthesizeResponse(
             audio_base64=audio_b64,
             format=result.format,
             duration_seconds=result.duration_seconds,
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -247,7 +246,7 @@ async def get_languages():
     """
     stt = get_stt()
     tts = get_tts()
-    
+
     return LanguagesResponse(
         stt_languages=stt.get_supported_languages(),
         tts_languages=tts.get_supported_languages(),
@@ -261,7 +260,7 @@ async def clear_session(session_id: str):
     """
     agent = get_voice_agent()
     agent.clear_session(session_id)
-    
+
     return {"message": f"Session {session_id} cleared"}
 
 

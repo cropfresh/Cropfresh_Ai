@@ -12,8 +12,8 @@ Components:
 
 from src.autonomous.goal_agent import GoalAgent, Objective, ObjectiveTree
 from src.autonomous.pear_loop import PEARLoop, PlanStep
-from src.autonomous.progress_monitor import ProgressMonitor, TaskProgress
 from src.autonomous.persistence import TaskPersistence
+from src.autonomous.progress_monitor import ProgressMonitor, TaskProgress
 
 __all__ = [
     "GoalAgent",

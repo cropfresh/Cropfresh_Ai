@@ -1,45 +1,5 @@
 """RAG module - Advanced Agentic Retrieval Augmented Generation system."""
 
-from src.rag.embeddings import EmbeddingManager, get_embedding_manager
-from src.rag.knowledge_base import Document, KnowledgeBase, SearchResult
-from src.rag.query_analyzer import QueryAnalyzer, QueryAnalysis, QueryType, QueryCategory
-from src.rag.grader import DocumentGrader, GradeResult, HallucinationChecker
-from src.rag.retriever import RAGRetriever, RetrievalResult, decompose_query
-from src.rag.graph import create_rag_graph, run_agentic_rag, RAGState
-
-# Enhancement modules
-from src.rag.hybrid_search import BM25Index, HybridRetriever, HybridSearchResult, get_hybrid_retriever
-from src.rag.reranker import CrossEncoderReranker, LightweightReranker, RerankedResult, get_reranker
-from src.rag.graph_retriever import GraphRetriever, GraphAugmentedRetriever, GraphContext, EntityExtractor
-from src.rag.observability import configure_langsmith, trace_rag, RAGEvaluator
-
-# Advanced RAG modules (Phase 2)
-from src.rag.raptor import RAPTORIndex, RAPTORNode, RAPTORConfig, create_raptor_index
-from src.rag.contextual_chunker import (
-    ContextualChunker,
-    EnrichedChunk,
-    ChunkingConfig,
-    create_contextual_chunker,
-    enrich_documents,
-)
-
-# Phase 3-4: Query Processing & Enhanced Retrieval
-from src.rag.query_processor import (
-    AdvancedQueryProcessor,
-    ExpandedQuery,
-    QueryProcessorConfig,
-    QueryExpansionType,
-    create_query_processor,
-)
-from src.rag.enhanced_retriever import (
-    EnhancedRetriever,
-    ParentDocumentRetriever,
-    SentenceWindowRetriever,
-    MMRRetriever,
-    RetrievalStrategy,
-    create_enhanced_retriever,
-)
-
 # Phase 5: Advanced Reranking
 from src.rag.advanced_reranker import (
     AdvancedReranker,
@@ -47,29 +7,71 @@ from src.rag.advanced_reranker import (
     RerankerType,
     create_advanced_reranker,
 )
-
-# Phase 6: Real-Time Knowledge Injection
-from src.rag.knowledge_injection import (
-    KnowledgeInjector,
-    NewsStreamer,
-    MarketAlertSystem,
-    WeatherAdvisorySystem,
-    SchemeCrawler,
-    RealTimeUpdate,
-    AlertSeverity,
-    create_knowledge_injector,
+from src.rag.contextual_chunker import (
+    ChunkingConfig,
+    ContextualChunker,
+    EnrichedChunk,
+    create_contextual_chunker,
+    enrich_documents,
 )
+from src.rag.embeddings import EmbeddingManager, get_embedding_manager
+from src.rag.enhanced_retriever import (
+    EnhancedRetriever,
+    MMRRetriever,
+    ParentDocumentRetriever,
+    RetrievalStrategy,
+    SentenceWindowRetriever,
+    create_enhanced_retriever,
+)
+
+# Phase 9: Evaluation & Testing
+from src.rag.evaluation import (
+    EvalResult,
+    EvaluationSuite,
+    TestDataPoint,
+    create_evaluation_suite,
+)
+from src.rag.grader import DocumentGrader, GradeResult, HallucinationChecker
+from src.rag.graph import RAGState, create_rag_graph, run_agentic_rag
 
 # Phase 7: Enhanced Graph RAG
 from src.rag.graph_constructor import (
-    GraphConstructor,
     ConstructedGraph,
-    GraphNode,
-    GraphEdge,
     EntityType,
+    GraphConstructor,
+    GraphEdge,
+    GraphNode,
     RelationType,
     create_graph_constructor,
 )
+from src.rag.graph_retriever import (
+    EntityExtractor,
+    GraphAugmentedRetriever,
+    GraphContext,
+    GraphRetriever,
+)
+
+# Enhancement modules
+from src.rag.hybrid_search import (
+    BM25Index,
+    HybridRetriever,
+    HybridSearchResult,
+    get_hybrid_retriever,
+)
+from src.rag.knowledge_base import Document, KnowledgeBase, SearchResult
+
+# Phase 6: Real-Time Knowledge Injection
+from src.rag.knowledge_injection import (
+    AlertSeverity,
+    KnowledgeInjector,
+    MarketAlertSystem,
+    NewsStreamer,
+    RealTimeUpdate,
+    SchemeCrawler,
+    WeatherAdvisorySystem,
+    create_knowledge_injector,
+)
+from src.rag.observability import RAGEvaluator, configure_langsmith, trace_rag
 
 # Phase 8: Production Hardening
 from src.rag.production import (
@@ -78,14 +80,21 @@ from src.rag.production import (
     RateLimiter,
     production_guard,
 )
+from src.rag.query_analyzer import QueryAnalysis, QueryAnalyzer, QueryCategory, QueryType
 
-# Phase 9: Evaluation & Testing
-from src.rag.evaluation import (
-    EvaluationSuite,
-    TestDataPoint,
-    EvalResult,
-    create_evaluation_suite,
+# Phase 3-4: Query Processing & Enhanced Retrieval
+from src.rag.query_processor import (
+    AdvancedQueryProcessor,
+    ExpandedQuery,
+    QueryExpansionType,
+    QueryProcessorConfig,
+    create_query_processor,
 )
+
+# Advanced RAG modules (Phase 2)
+from src.rag.raptor import RAPTORConfig, RAPTORIndex, RAPTORNode, create_raptor_index
+from src.rag.reranker import CrossEncoderReranker, LightweightReranker, RerankedResult, get_reranker
+from src.rag.retriever import RAGRetriever, RetrievalResult, decompose_query
 
 __all__ = [
     # Embeddings
@@ -194,35 +203,35 @@ __all__ = [
 # Sprint 05: Agentic RAG & Adaptive Intelligence
 # ─────────────────────────────────────────────────────────────────────────────
 
-from ai.rag.agri_embeddings import AgriEmbeddingWrapper, get_agri_embedding_manager
-from ai.rag.query_analyzer import (
-    RetrievalRoute,
-    RoutingDecision,
-    AdaptiveQueryRouter,
-    ROUTE_COST_MAP,
-)
 from ai.rag.agentic_orchestrator import (
     AgenticOrchestrator,
-    SpeculativeDraftEngine,
     AgenticSelfEvaluator,
-    RetrievalPlanner,
-    RetrievalPlan,
-    ToolCall,
-    EvalGate,
     Draft,
+    EvalGate,
     OrchestratorResult,
+    RetrievalPlan,
+    RetrievalPlanner,
+    SpeculativeDraftEngine,
+    ToolCall,
 )
+from ai.rag.agri_embeddings import AgriEmbeddingWrapper, get_agri_embedding_manager
 
 # Sprint 06: Browser-Augmented RAG
 from ai.rag.browser_rag import (
-    BrowserRAGIntegration,
-    CitedAnswer,
-    Citation,
     AgriSourceSelector,
+    BrowserRAGIntegration,
+    Citation,
+    CitedAnswer,
     ContentExtractor,
     QualityFilter,
     ScrapeIntent,
     TargetSource,
+)
+from ai.rag.query_analyzer import (
+    ROUTE_COST_MAP,
+    AdaptiveQueryRouter,
+    RetrievalRoute,
+    RoutingDecision,
 )
 
 __all__ += [

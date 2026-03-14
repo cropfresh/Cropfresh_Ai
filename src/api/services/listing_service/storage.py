@@ -12,7 +12,7 @@ from .models import ListingResponse
 
 class ListingStorageMixin:
     """Mixin containing database operations for listings."""
-    
+
     db: Optional[Any]
 
     async def _persist_listing(self, listing_data: dict) -> str:

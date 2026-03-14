@@ -6,14 +6,15 @@ Provides Playwright browser context initialization and teardown.
 
 import sys
 from datetime import timedelta
-from typing import Any, Optional
 from pathlib import Path
+from typing import Any, Optional
 
 from loguru import logger
-from playwright.async_api import async_playwright, Browser, BrowserContext
+from playwright.async_api import Browser, BrowserContext, async_playwright
+
+from src.tools.browser_stealth import get_random_user_agent
 
 from .models import ScrapingConfig
-from src.tools.browser_stealth import get_random_user_agent
 
 
 class BaseWebScraper:

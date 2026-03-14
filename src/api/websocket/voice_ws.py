@@ -6,12 +6,12 @@ WebSocket Voice Endpoint — Backward compatibility redirect.
 ! Import from `src.api.websocket.voice_pkg` directly in new code.
 """
 
+from src.api.websocket.voice_pkg.router import router
 from src.api.websocket.voice_pkg.session import (
     MessageType,
     SessionManager,
     VoiceSession,
 )
-from src.api.websocket.voice_pkg.router import router
 
 __all__ = [
     "MessageType",

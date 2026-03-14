@@ -11,6 +11,7 @@ from typing import Any, Optional
 from loguru import logger
 
 from .constants import GRADE_ORDER
+from .enrichment import ListingEnrichmentMixin
 from .models import (
     CreateListingRequest,
     GradeAttachRequest,
@@ -18,7 +19,6 @@ from .models import (
     PaginatedListings,
 )
 from .storage import ListingStorageMixin
-from .enrichment import ListingEnrichmentMixin
 
 
 class ListingService(ListingStorageMixin, ListingEnrichmentMixin):

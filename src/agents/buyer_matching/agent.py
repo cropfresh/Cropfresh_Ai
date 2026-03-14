@@ -12,11 +12,11 @@ from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.memory.state_manager import AgentExecutionState
 from src.orchestrator.llm_provider import BaseLLMProvider
 
-from .constants import CACHE_TTL_SECONDS, GRADE_ORDER, MAX_MATCH_DISTANCE_KM
-from .models import BuyerProfile, ListingProfile, MatchCandidate, MatchResult
-from .engine import MatchingEngine
 from .cache import BuyerMatchingCacheMixin
+from .constants import CACHE_TTL_SECONDS, GRADE_ORDER, MAX_MATCH_DISTANCE_KM
+from .engine import MatchingEngine
 from .mock_data import BuyerMatchingMockDataMixin
+from .models import BuyerProfile, ListingProfile, MatchCandidate, MatchResult
 
 
 class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDataMixin):
@@ -126,10 +126,10 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
             quality_match = self.engine.calculate_quality_match(listing.grade, buyer_min_grade)
             price_fit = self.engine.calculate_price_fit(listing.asking_price_per_kg, buyer.max_price_per_kg)
             demand_signal = self.engine.calculate_demand_signal(listing.commodity, buyer.order_history)
-            
+
             if listing.commodity.lower() in [c.lower() for c in buyer.demand_commodities]:
                 demand_signal = min(1.0, demand_signal + 0.2)
-                
+
             reliability = self.engine.calculate_reliability(listing.reliability_score)
 
             match_score = (
@@ -151,10 +151,10 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
             fillable = min(listing.quantity_kg, buyer.demand_quantity_kg)
             if buyer.demand_quantity_kg <= 0:
                 fillable = listing.quantity_kg
-                
+
             estimated_delivery_hours = max(1.0, distance / 35.0)
             estimated_logistics_cost = round(distance * 0.8, 2)
-            
+
             reasons = [
                 f"proximity={proximity:.2f}",
                 f"quality={quality_match:.2f}",

@@ -57,7 +57,7 @@ class APIKeyMiddleware:
         self._api_key: str | None = api_key or os.environ.get("API_KEY", "").strip() or None
         # environment can be injected directly (useful in tests) or read from os.environ
         self._env_override: str | None = environment
-        
+
         if self._api_key:
             logger.info(
                 "🔐 API key auth ENABLED. Key configured: {}...",

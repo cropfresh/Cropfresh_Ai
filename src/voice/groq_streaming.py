@@ -16,14 +16,12 @@ Usage:
         await tts.synthesize_stream(sentence)
 """
 
-import asyncio
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import AsyncIterator, Optional
 
 from loguru import logger
-
 
 # ═══════════════════════════════════════════════════════════════
 # Configuration

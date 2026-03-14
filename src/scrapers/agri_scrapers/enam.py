@@ -8,10 +8,12 @@ import re
 import time
 from datetime import date
 from typing import Any, Optional
+
 from loguru import logger
 
-from src.scrapers.base_scraper import ScrapeResult, ScraplingBaseScraper, FetcherType
 from src.agents.web_scraping_agent import WebScrapingAgent
+from src.scrapers.base_scraper import FetcherType, ScrapeResult, ScraplingBaseScraper
+
 from .models import MandiPrice, MandiPriceList
 
 
@@ -117,16 +119,16 @@ class ENAMScraper(ScraplingBaseScraper):
     ) -> list[MandiPrice]:
         if not self.web_agent:
             return []
-            
+
         html_content = ""
         if hasattr(page, "body"):
             html_content = page.body.decode("utf-8", "ignore")
         elif hasattr(page, "html"):
             html_content = page.html
-            
+
         if not html_content:
             return []
-            
+
         instruction = "Extract all live trade prices from the eNAM dashboard table."
         result = await self.web_agent.extract_with_schema(
             html_content=html_content,
@@ -134,22 +136,22 @@ class ENAMScraper(ScraplingBaseScraper):
             schema=MandiPriceList,
             instruction=instruction
         )
-        
+
         fallback_prices = []
         if result.success and isinstance(result.extracted_data, dict):
             for item in result.extracted_data.get("prices", []):
                 try:
                     c = item.get("commodity", "")
                     s = item.get("state", "")
-                    
+
                     if commodity and commodity.lower() not in c.lower(): continue
                     if state and state.lower() not in s.lower(): continue
-                    
+
                     item["source"] = "enam_llm"
                     fallback_prices.append(MandiPrice(**item))
                 except Exception as e:
                     logger.debug(f"LLM item parse error: {e}")
-                    
+
         return fallback_prices
 
     def _safe_float(self, value: str) -> Optional[float]:

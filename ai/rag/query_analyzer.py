@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 class QueryType(str, Enum):
     """Types of queries for routing."""
-    
+
     VECTOR_SEARCH = "vector"      # Use knowledge base
     WEB_SEARCH = "web"            # Real-time data needed
     DECOMPOSE = "decompose"       # Break into sub-queries
@@ -28,7 +28,7 @@ class QueryType(str, Enum):
 
 class QueryCategory(str, Enum):
     """Domain categories for targeted retrieval."""
-    
+
     AGRONOMY = "agronomy"         # Crop guides, farming practices
     MARKET = "market"             # Prices, mandis, trading
     PLATFORM = "platform"         # CropFresh features, FAQs
@@ -38,14 +38,14 @@ class QueryCategory(str, Enum):
 
 class QueryAnalysis(BaseModel):
     """Result of query analysis."""
-    
+
     original_query: str
     query_type: QueryType
     category: QueryCategory
     sub_queries: list[str] = Field(default_factory=list)
     reasoning: str = ""
     confidence: float = 0.8
-    
+
     # Extracted entities
     crops: list[str] = Field(default_factory=list)
     locations: list[str] = Field(default_factory=list)
@@ -82,60 +82,61 @@ Respond in JSON format:
 class QueryAnalyzer:
     """
     Adaptive RAG Query Analyzer.
-    
+
     Uses LLM to classify queries and determine optimal retrieval strategy.
-    
+
     Usage:
         analyzer = QueryAnalyzer(llm=llm_provider)
         result = await analyzer.analyze("How to grow tomatoes in Karnataka?")
         print(result.query_type)  # QueryType.VECTOR_SEARCH
     """
-    
+
     def __init__(self, llm=None):
         """
         Initialize query analyzer.
-        
+
         Args:
             llm: LLM provider for classification
         """
         self.llm = llm
-    
+
     async def analyze(self, query: str) -> QueryAnalysis:
         """
         Analyze a query and determine routing.
-        
+
         Args:
             query: User query text
-            
+
         Returns:
             QueryAnalysis with classification and extracted entities
         """
         if self.llm is None:
             # Fallback to rule-based classification
             return self._analyze_rule_based(query)
-        
+
         return await self._analyze_with_llm(query)
-    
+
     async def _analyze_with_llm(self, query: str) -> QueryAnalysis:
         """Analyze query using LLM."""
         import json
+
         from src.orchestrator.llm_provider import LLMMessage
-        
+
         messages = [
             LLMMessage(role="system", content=QUERY_ANALYZER_PROMPT),
             LLMMessage(role="user", content=query),
         ]
-        
+
         try:
             response = await self.llm.generate(
                 messages,
                 temperature=0.0,  # Deterministic classification
                 max_tokens=500,
             )
-            
+
             # Parse JSON response
             result = json.loads(response.content)
-            
+
             return QueryAnalysis(
                 original_query=query,
                 query_type=QueryType(result.get("query_type", "vector")),
@@ -146,26 +147,26 @@ class QueryAnalyzer:
                 locations=result.get("locations", []),
                 time_sensitive=result.get("time_sensitive", False),
             )
-            
+
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse LLM response as JSON: {e}")
             return self._analyze_rule_based(query)
         except Exception as e:
             logger.error(f"LLM analysis failed: {e}")
             return self._analyze_rule_based(query)
-    
+
     def _analyze_rule_based(self, query: str) -> QueryAnalysis:
         """
         Simple rule-based classification as fallback.
-        
+
         Uses keyword matching for basic routing.
         """
         query_lower = query.lower()
-        
+
         # Detect query type
         query_type = QueryType.VECTOR_SEARCH
         time_sensitive = False
-        
+
         # Web search indicators
         web_keywords = [
             "current price", "today price", "weather", "forecast",
@@ -174,7 +175,7 @@ class QueryAnalyzer:
         if any(kw in query_lower for kw in web_keywords):
             query_type = QueryType.WEB_SEARCH
             time_sensitive = True
-        
+
         # Complex query indicators
         complex_keywords = [
             "compare", "difference between", "step by step",
@@ -182,7 +183,7 @@ class QueryAnalyzer:
         ]
         if any(kw in query_lower for kw in complex_keywords):
             query_type = QueryType.DECOMPOSE
-        
+
         # Direct answer indicators
         direct_keywords = [
             "hello", "hi", "thanks", "thank you", "bye", "goodbye",
@@ -190,29 +191,29 @@ class QueryAnalyzer:
         ]
         if any(kw in query_lower for kw in direct_keywords):
             query_type = QueryType.DIRECT
-        
+
         # Detect category
         category = QueryCategory.GENERAL
-        
+
         agronomy_keywords = [
             "grow", "plant", "cultivat", "harvest", "pest", "disease",
             "fertilizer", "soil", "seed", "irrigation", "organic"
         ]
         if any(kw in query_lower for kw in agronomy_keywords):
             category = QueryCategory.AGRONOMY
-        
+
         market_keywords = [
             "price", "mandi", "sell", "buy", "market", "rate", "export"
         ]
         if any(kw in query_lower for kw in market_keywords):
             category = QueryCategory.MARKET
-        
+
         platform_keywords = [
             "cropfresh", "app", "account", "register", "login", "feature"
         ]
         if any(kw in query_lower for kw in platform_keywords):
             category = QueryCategory.PLATFORM
-        
+
         # Extract crops (simple approach)
         crop_list = [
             "tomato", "potato", "onion", "carrot", "cabbage", "cauliflower",
@@ -220,7 +221,7 @@ class QueryAnalyzer:
             "apple", "grapes", "pomegranate", "chilli", "brinjal", "okra"
         ]
         crops = [c for c in crop_list if c in query_lower]
-        
+
         # Extract locations (Karnataka focus)
         location_list = [
             "karnataka", "kolar", "bangalore", "bengaluru", "mysore", "mysuru",
@@ -228,7 +229,7 @@ class QueryAnalyzer:
             "india", "maharashtra", "tamil nadu", "kerala", "andhra pradesh"
         ]
         locations = [loc.title() for loc in location_list if loc in query_lower]
-        
+
         return QueryAnalysis(
             original_query=query,
             query_type=query_type,
@@ -246,7 +247,6 @@ class QueryAnalyzer:
 
 import json
 import os
-from typing import Optional
 
 
 class RetrievalRoute(str, Enum):

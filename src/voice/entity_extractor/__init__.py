@@ -19,17 +19,17 @@ Sub-modules (import directly for data):
     _extractor – VoiceEntityExtractor
 """
 
-from src.voice.entity_extractor._intents import VoiceIntent, ExtractionResult
+from src.voice.entity_extractor._crops import COMMODITY_ALIASES, CROP_NAMES
 from src.voice.entity_extractor._extractor import VoiceEntityExtractor
-from src.voice.entity_extractor._language import detect_language_from_text
+from src.voice.entity_extractor._intents import ExtractionResult, VoiceIntent
 
 # Data constants also re-exported for convenience
 from src.voice.entity_extractor._keywords import INTENT_KEYWORDS
-from src.voice.entity_extractor._crops import CROP_NAMES, COMMODITY_ALIASES
+from src.voice.entity_extractor._language import detect_language_from_text
 from src.voice.entity_extractor._patterns import (
-    QUANTITY_PATTERNS,
-    PRICE_PATTERNS,
     LOCATION_PATTERNS,
+    PRICE_PATTERNS,
+    QUANTITY_PATTERNS,
     UNIT_MAP,
 )
 

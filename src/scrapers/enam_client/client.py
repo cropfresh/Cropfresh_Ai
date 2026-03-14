@@ -2,25 +2,23 @@
 eNAM Client Main Module
 """
 
-import httpx
-import random
 from typing import Any, Optional
+
 from loguru import logger
 
-from .models import MandiPrice, PriceTrend, PriceTrendDirection, MarketSummary
-from .constants import COMMODITY_CODES, STATE_CODES, APISETU_BASE
 from .cache import ENAMCacheManager
 from .mock_data import get_mock_prices_data, get_mock_trend_data
+from .models import MandiPrice, MarketSummary, PriceTrend
 
 
 class ENAMClient:
     """
     eNAM API Client for real-time mandi prices.
-    
+
     Connects to the Electronic National Agriculture Market platform
     for live commodity prices across 1,000+ mandis in India.
     """
-    
+
     def __init__(
         self,
         api_key: str = "",
@@ -30,12 +28,12 @@ class ENAMClient:
         self.api_key = api_key
         self.use_mock = use_mock or not api_key
         self.cache_manager = ENAMCacheManager(ttl=cache_ttl)
-        
+
         if self.use_mock:
             logger.info("ENAMClient initialized in MOCK mode")
         else:
             logger.info("ENAMClient initialized with live API")
-            
+
     async def get_live_prices(
         self,
         commodity: str,
@@ -49,7 +47,7 @@ class ENAMClient:
         cached = self.cache_manager.get(cache_key)
         if cached:
             return cached
-            
+
         if self.use_mock:
             prices = get_mock_prices_data(commodity, state, district, limit)
         else:
@@ -58,10 +56,10 @@ class ENAMClient:
             prices = await fetch_live_prices(
                 self.api_key, commodity, state, district, market, limit
             )
-            
+
         self.cache_manager.set(cache_key, prices)
         return prices
-        
+
     async def get_price_trends(
         self,
         commodity: str,
@@ -74,7 +72,7 @@ class ENAMClient:
         cached = self.cache_manager.get(cache_key)
         if cached:
             return cached
-            
+
         if self.use_mock:
             trend = get_mock_trend_data(commodity, state, market)
         else:
@@ -82,10 +80,10 @@ class ENAMClient:
             trend = await fetch_price_trends(
                 self, commodity, state, market, days
             )
-            
+
         self.cache_manager.set(cache_key, trend)
         return trend
-        
+
     async def get_market_summary(
         self,
         commodity: str,
@@ -94,11 +92,11 @@ class ENAMClient:
         """Get market summary for a commodity across all mandis in a state."""
         from .trends import get_market_summary
         return await get_market_summary(self, commodity, state)
-        
+
     def get_data_freshness(self) -> dict[str, Any]:
         """Get data freshness indicators."""
         stats = self.cache_manager.get_freshness_stats()
-        
+
         from datetime import datetime
         stats["mode"] = "mock" if self.use_mock else "live"
         stats["checked_at"] = datetime.now().isoformat()

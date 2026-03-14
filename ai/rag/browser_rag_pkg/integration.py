@@ -6,14 +6,14 @@ import asyncio
 import re
 import time
 from datetime import datetime, timezone
-from typing import Any, Optional
 from types import SimpleNamespace
+from typing import Any, Optional
 
 from loguru import logger
 
+from ai.rag.browser_rag_pkg.extractor import ContentExtractor, QualityFilter
 from ai.rag.browser_rag_pkg.models import Citation, CitedAnswer, ScrapeIntent, TargetSource
 from ai.rag.browser_rag_pkg.sources import AgriSourceSelector
-from ai.rag.browser_rag_pkg.extractor import ContentExtractor, QualityFilter
 
 
 class BrowserRAGIntegration:

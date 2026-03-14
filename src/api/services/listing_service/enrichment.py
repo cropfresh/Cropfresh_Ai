@@ -5,6 +5,7 @@ Handles listing augmentations: shelf life, ADCL demand tags, AI pricing, and AI 
 """
 
 from typing import Any, Optional
+
 from loguru import logger
 
 from .constants import SHELF_LIFE_DAYS

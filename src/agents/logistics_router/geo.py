@@ -13,8 +13,6 @@ from __future__ import annotations
 import math
 from typing import Union
 
-import numpy as np
-
 from src.agents.logistics_router.models import DeliveryPoint, PickupPoint
 
 _EARTH_RADIUS_KM: float = 6371.0

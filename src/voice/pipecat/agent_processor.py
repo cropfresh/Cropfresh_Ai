@@ -18,9 +18,8 @@ All other frames are passed through unchanged.
 """
 
 from loguru import logger
-
-from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
-from pipecat.frames.frames import Frame, TextFrame, EndFrame
+from pipecat.frames.frames import Frame, TextFrame
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
 
 class CropFreshAgentProcessor(FrameProcessor):

@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 class AgmarknetPrice(BaseModel):
     """Price data from Agmarknet."""
-    
+
     commodity: str
     state: str
     district: str
@@ -29,7 +29,7 @@ class AgmarknetPrice(BaseModel):
     max_price: float  # ₹/quintal
     modal_price: float  # ₹/quintal
     unit: str = "quintal"
-    
+
     @property
     def modal_price_per_kg(self) -> float:
         """Convert quintal price to per-kg."""
@@ -39,24 +39,24 @@ class AgmarknetPrice(BaseModel):
 class AgmarknetTool:
     """
     Agmarknet API Integration.
-    
+
     Fetches real-time and historical prices from Indian mandis.
-    
+
     Usage:
         tool = AgmarknetTool(api_key="your_key")
         prices = await tool.get_prices("Tomato", "Karnataka", "Kolar")
     """
-    
+
     # OGD Platform API
     BASE_URL = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070"
-    
+
     # CEDA Backup API
     CEDA_URL = "https://ceda.ashoka.edu.in/api/agmarknet/prices"
-    
+
     def __init__(self, api_key: str = "", cache_ttl: int = 900):
         """
         Initialize Agmarknet tool.
-        
+
         Args:
             api_key: data.gov.in API key
             cache_ttl: Cache TTL in seconds (default 15 min)
@@ -64,7 +64,7 @@ class AgmarknetTool:
         self.api_key = api_key
         self.cache_ttl = cache_ttl
         self._cache: dict = {}
-    
+
     async def get_prices(
         self,
         commodity: str,
@@ -75,26 +75,26 @@ class AgmarknetTool:
     ) -> list[AgmarknetPrice]:
         """
         Fetch current prices from Agmarknet.
-        
+
         Args:
             commodity: Crop name (e.g., "Tomato", "Potato", "Onion")
             state: Indian state (e.g., "Karnataka", "Maharashtra")
             district: Optional district filter
             market: Optional specific mandi name
             limit: Max results to return
-            
+
         Returns:
             List of AgmarknetPrice objects
         """
         cache_key = f"{commodity}:{state}:{district}:{market}"
-        
+
         # Check cache
         if cache_key in self._cache:
             cached_time, cached_data = self._cache[cache_key]
             if (datetime.now() - cached_time).seconds < self.cache_ttl:
                 logger.debug(f"Returning cached prices for {cache_key}")
                 return cached_data
-        
+
         # Build query params
         params = {
             "api-key": self.api_key,
@@ -103,12 +103,12 @@ class AgmarknetTool:
             "filters[commodity]": commodity,
             "filters[state]": state,
         }
-        
+
         if district:
             params["filters[district]"] = district
         if market:
             params["filters[market]"] = market
-        
+
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.get(self.BASE_URL, params=params)
@@ -117,7 +117,7 @@ class AgmarknetTool:
         except Exception as e:
             logger.warning(f"Primary API failed: {e}, trying CEDA backup")
             return await self._fallback_ceda(commodity, state, district, limit)
-        
+
         # Parse results
         prices = []
         for record in data.get("records", []):
@@ -139,10 +139,10 @@ class AgmarknetTool:
             except Exception as e:
                 logger.debug(f"Error parsing record: {e}")
                 continue
-        
+
         # Update cache
         self._cache[cache_key] = (datetime.now(), prices)
-        
+
         return prices
 
     async def get_historical_prices(
@@ -175,7 +175,7 @@ class AgmarknetTool:
 
         logger.warning("Insufficient live historical data, using mock history fallback")
         return self._get_mock_price_history(commodity, state, district or "Kolar", days)
-    
+
     async def _fallback_ceda(
         self,
         commodity: str,
@@ -200,7 +200,7 @@ class AgmarknetTool:
         except Exception as e:
             logger.error(f"CEDA API also failed: {e}")
             return []
-        
+
         # Parse CEDA format (may differ slightly)
         prices = []
         for record in data.get("data", []):
@@ -217,9 +217,9 @@ class AgmarknetTool:
                 ))
             except Exception:
                 continue
-        
+
         return prices
-    
+
     def get_mock_prices(
         self,
         commodity: str,
@@ -228,7 +228,7 @@ class AgmarknetTool:
     ) -> list[AgmarknetPrice]:
         """
         Return mock prices for testing without API key.
-        
+
         This provides realistic sample data for development.
         """
         mock_data = {
@@ -241,9 +241,9 @@ class AgmarknetTool:
             "Cabbage": {"min": 800, "max": 1500, "modal": 1100},
             "Cauliflower": {"min": 1200, "max": 2500, "modal": 1800},
         }
-        
+
         prices = mock_data.get(commodity, {"min": 2000, "max": 4000, "modal": 3000})
-        
+
         return [
             AgmarknetPrice(
                 commodity=commodity,

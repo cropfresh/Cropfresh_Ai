@@ -20,9 +20,8 @@ and optional — the agent runs standalone for testing.
 
 from __future__ import annotations
 
-import asyncio
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 

@@ -36,7 +36,7 @@ class SynthesisResult:
     language: str
     voice: str
     provider: str  # "indictts" or "edge-tts"
-    
+
     @property
     def is_successful(self) -> bool:
         return len(self.audio) > 0

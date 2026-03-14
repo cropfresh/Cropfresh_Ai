@@ -2,13 +2,14 @@
 eNAM API Fetching Logic
 """
 
-import httpx
 from datetime import datetime
 from typing import Optional
+
+import httpx
 from loguru import logger
 
+from .constants import APISETU_BASE, COMMODITY_CODES, STATE_CODES
 from .models import MandiPrice
-from .constants import COMMODITY_CODES, STATE_CODES, APISETU_BASE
 
 
 async def fetch_live_prices(
@@ -22,23 +23,23 @@ async def fetch_live_prices(
     """Fetch prices from eNAM API."""
     commodity_code = COMMODITY_CODES.get(commodity.lower(), commodity.upper())
     state_code = STATE_CODES.get(state.lower(), state.upper()[:2])
-    
+
     headers = {
         "X-Api-Key": api_key,
         "Accept": "application/json",
     }
-    
+
     params = {
         "commodity": commodity_code,
         "state": state_code,
         "limit": limit,
     }
-    
+
     if district:
         params["district"] = district
     if market:
         params["market"] = market
-    
+
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
@@ -48,9 +49,9 @@ async def fetch_live_prices(
             )
             response.raise_for_status()
             data = response.json()
-            
+
             return parse_api_response(data, commodity, state)
-            
+
     except httpx.HTTPError as e:
         logger.warning(f"eNAM API error: {e}, falling back to Agmarknet")
         return await fallback_to_agmarknet(commodity, state, district, limit)
@@ -67,7 +68,7 @@ def parse_api_response(
 ) -> list[MandiPrice]:
     """Parse eNAM API response into MandiPrice objects."""
     prices = []
-    
+
     for record in data.get("data", data.get("records", [])):
         try:
             prices.append(MandiPrice(
@@ -87,7 +88,7 @@ def parse_api_response(
         except Exception as e:
             logger.debug(f"Error parsing record: {e}")
             continue
-    
+
     return prices
 
 
@@ -100,7 +101,7 @@ async def fallback_to_agmarknet(
     """Fallback to Agmarknet if eNAM fails."""
     # Assuming agmarknet is a separate tool available in the codebase
     from src.tools.agmarknet import AgmarknetTool
-    
+
     agmarknet = AgmarknetTool()
     agmarknet_prices = await agmarknet.get_prices(
         commodity=commodity,
@@ -108,7 +109,7 @@ async def fallback_to_agmarknet(
         district=district,
         limit=limit,
     )
-    
+
     # Convert to MandiPrice format
     return [
         MandiPrice(

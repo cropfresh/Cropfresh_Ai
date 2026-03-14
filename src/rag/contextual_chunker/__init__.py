@@ -6,8 +6,8 @@ Enhanced document chunking with metadata and LLM-generated summaries.
 
 from typing import Optional
 
-from .models import EnrichedChunk, ChunkingConfig
 from .chunker import ContextualChunker
+from .models import ChunkingConfig, EnrichedChunk
 
 
 # Factory function
@@ -17,11 +17,11 @@ def create_contextual_chunker(
 ) -> ContextualChunker:
     """
     Create a configured contextual chunker.
-    
+
     Args:
         llm: LLM for context generation
         config: Chunking configuration
-        
+
     Returns:
         ContextualChunker instance
     """
@@ -36,22 +36,22 @@ async def enrich_documents(
 ) -> list[EnrichedChunk]:
     """
     Convenience function to chunk multiple documents with context.
-    
+
     Args:
         documents: List of documents
         llm: LLM for context generation
         config: Chunking configuration
-        
+
     Returns:
         Flat list of all EnrichedChunk from all documents
     """
     chunker = create_contextual_chunker(llm=llm, config=config)
-    
+
     all_chunks = []
     for doc in documents:
         chunks = await chunker.chunk_with_context(doc)
         all_chunks.extend(chunks)
-    
+
     return all_chunks
 
 __all__ = [

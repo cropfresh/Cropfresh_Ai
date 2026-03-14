@@ -17,7 +17,6 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-
 # ── Domain model ─────────────────────────────────────────────────────────────
 
 class AISPCalculation(BaseModel):

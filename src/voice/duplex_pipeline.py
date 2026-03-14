@@ -6,11 +6,11 @@ was extracted into `src.voice.duplex` modules.
 """
 
 from src.voice.duplex import (
-    PipelineState,
-    PipelineEvent,
     AudioOutputChunk,
-    PipelineResult,
     DuplexPipeline,
+    PipelineEvent,
+    PipelineResult,
+    PipelineState,
 )
 
 __all__ = [

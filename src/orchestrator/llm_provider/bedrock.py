@@ -6,10 +6,11 @@ Amazon Bedrock provider for production workloads.
 
 import asyncio
 from typing import Any, AsyncIterator
+
 from loguru import logger
 
-from .models import LLMMessage, LLMResponse
 from .base import BaseLLMProvider
+from .models import LLMMessage, LLMResponse
 
 
 class BedrockProvider(BaseLLMProvider):

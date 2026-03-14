@@ -129,6 +129,7 @@ Answer:"""
             return max(range(len(drafts)), key=lambda i: len(drafts[i].content))
         try:
             import json
+
             from src.orchestrator.llm_provider import LLMMessage
 
             drafts_text = "\n\n---\n\n".join(

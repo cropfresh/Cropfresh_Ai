@@ -8,20 +8,19 @@ from __future__ import annotations
 
 import base64
 from datetime import datetime
-from uuid import uuid4
 from typing import Any, Optional
+from uuid import uuid4
 
 from loguru import logger
 from pydantic import BaseModel, Field
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
-from src.memory.state_manager import AgentExecutionState
-from src.orchestrator.llm_provider import BaseLLMProvider
-from src.agents.quality_assessment.vision_models import CropVisionPipeline, QualityResult
 from src.agents.digital_twin.engine import DigitalTwinEngine, get_digital_twin_engine
 from src.agents.digital_twin.models import DiffReport, DigitalTwin
+from src.agents.quality_assessment.vision_models import CropVisionPipeline, QualityResult
 from src.api.services.hitl_service import HITLNotificationService
-
+from src.memory.state_manager import AgentExecutionState
+from src.orchestrator.llm_provider import BaseLLMProvider
 
 # * ═══════════════════════════════════════════════════════════════
 # * DATA MODELS

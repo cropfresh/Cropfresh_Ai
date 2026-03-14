@@ -24,7 +24,6 @@ from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState, AgentStateManager
 from src.tools.registry import ToolRegistry
 
-
 PLATFORM_SYSTEM_PROMPT = """You are the Platform Expert Agent for CropFresh AI, specializing in our agricultural marketplace platform.
 
 Your knowledge covers:
@@ -70,19 +69,19 @@ PLATFORM_ROLE = "You are the Platform Expert Agent for CropFresh AI."
 class PlatformAgent(BaseAgent):
     """
     Specialized agent for CropFresh platform support.
-    
+
     Handles:
     - Feature explanations
     - How-to guides
     - Troubleshooting
     - FAQs
-    
+
     Usage:
         agent = PlatformAgent(llm=provider, knowledge_base=kb)
         await agent.initialize()
         response = await agent.process("How do I register as a farmer?")
     """
-    
+
     def __init__(
         self,
         llm=None,
@@ -102,7 +101,7 @@ class PlatformAgent(BaseAgent):
             kb_categories=["platform", "general"],
             tool_categories=["database"],
         )
-        
+
         super().__init__(
             config=config,
             llm=llm,
@@ -110,7 +109,7 @@ class PlatformAgent(BaseAgent):
             state_manager=state_manager,
             knowledge_base=knowledge_base,
         )
-    
+
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
         """Get platform system prompt with shared CropFresh context."""
         return build_system_prompt(
@@ -120,7 +119,7 @@ class PlatformAgent(BaseAgent):
             include_platform=True,
             agent_domain="platform",
         )
-    
+
     async def process(
         self,
         query: str,
@@ -129,50 +128,50 @@ class PlatformAgent(BaseAgent):
     ) -> AgentResponse:
         """
         Process a platform-related query.
-        
+
         Args:
             query: User query
             context: Optional context
             execution: Optional execution state
-            
+
         Returns:
             AgentResponse with platform guidance
         """
         logger.info(f"PlatformAgent processing: '{query[:50]}...'")
-        
+
         try:
             # Step 1: Retrieve platform knowledge
             if execution:
                 self.state_manager.add_step(execution.execution_id, "retrieve_context")
-            
+
             documents = await self.retrieve_context(
                 query=query,
                 top_k=5,
                 categories=["platform", "general"],
             )
-            
+
             # Step 2: Generate response
             if execution:
                 self.state_manager.add_step(execution.execution_id, "generate_response")
-            
+
             messages = [
                 {"role": "system", "content": self._get_system_prompt(context)},
             ]
-            
+
             # Add context
             user_message = query
             if documents:
                 context_text = f"\n\n**Platform Knowledge:**\n{self.format_context(documents)}"
                 user_message = f"{query}{context_text}"
-            
+
             messages.append({"role": "user", "content": user_message})
-            
+
             # Generate
             if self.llm:
                 answer = await self.generate_with_llm(messages)
             else:
                 answer = self._generate_fallback(query, documents)
-            
+
             return AgentResponse(
                 content=answer,
                 agent_name=self.name,
@@ -182,10 +181,10 @@ class PlatformAgent(BaseAgent):
                 steps=["retrieve_context", "generate_response"],
                 suggested_actions=self._suggest_follow_ups(query),
             )
-            
+
         except Exception as e:
             logger.error(f"PlatformAgent error: {e}")
-            
+
             return AgentResponse(
                 content="I apologize, but I couldn't process your request. For immediate help, contact support@cropfresh.ai or call 1800-XXX-XXXX.",
                 agent_name=self.name,
@@ -193,11 +192,11 @@ class PlatformAgent(BaseAgent):
                 error=str(e),
                 steps=["error"],
             )
-    
+
     def _generate_fallback(self, query: str, documents: list) -> str:
         """Generate response without LLM."""
         query_lower = query.lower()
-        
+
         # Predefined answers for common questions
         faqs = {
             "register": """
@@ -230,25 +229,25 @@ Each produce gets a Digital Twin QR code for traceability!
 Payment issues? Contact support@cropfresh.ai
 """,
         }
-        
+
         for keyword, answer in faqs.items():
             if keyword in query_lower:
                 return answer
-        
+
         if documents:
             return f"Based on CropFresh documentation:\n{documents[0].get('text', '')}"
-        
+
         return "I don't have specific information about that. Please contact support@cropfresh.ai for help."
-    
+
     def _suggest_follow_ups(self, query: str) -> list[str]:
         """Suggest follow-up questions."""
         query_lower = query.lower()
-        
+
         if "register" in query_lower:
             return ["What documents do I need?", "How long does verification take?"]
         elif "payment" in query_lower:
             return ["How do I update my bank details?", "Why is my payment delayed?"]
         elif "order" in query_lower:
             return ["How do I track my order?", "How do I cancel an order?"]
-        
+
         return ["How do I list my produce?", "How do quality grades work?"]

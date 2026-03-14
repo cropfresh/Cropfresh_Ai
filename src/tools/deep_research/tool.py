@@ -6,15 +6,16 @@ Agentic 5-step Deep Research pipeline orchestrator.
 
 import os
 from typing import Optional
+
 import httpx
 from loguru import logger
 
 from src.tools.web_search import WebSearchTool
 
-from .models import DeepResearchResult
 from .constants import GROQ_API_KEY_ENV, MAX_PAGES
 from .fetching import fetch_all_pages
 from .map_reduce import extract_all_facts, synthesise_answer
+from .models import DeepResearchResult
 
 
 class DeepResearchTool:

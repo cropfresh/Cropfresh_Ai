@@ -6,6 +6,7 @@ Internal transcription and synthesis logic for the duplex pipeline.
 
 import base64
 from typing import AsyncIterator
+
 from loguru import logger
 
 from .models import AudioOutputChunk
@@ -24,7 +25,7 @@ class ProcessingMixin:
 
         try:
             # We are currently skipping the actual implementation of transcribe error
-            # as it was hard-coded to ignore failure before in duplex_pipeline.py 
+            # as it was hard-coded to ignore failure before in duplex_pipeline.py
             # (Wait, actually the STT result has `is_successful`, `text`, `language`).
             result = await self._stt.transcribe(audio_bytes, language=language) # This should work
             if getattr(result, "is_successful", True):  # Default to True if not present

@@ -6,6 +6,7 @@ Provider for Microsoft Edge TTS fallback support.
 
 import asyncio
 import io
+
 from loguru import logger
 
 from .models import SynthesisResult

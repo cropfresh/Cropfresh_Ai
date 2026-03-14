@@ -1,5 +1,6 @@
 ﻿from pydantic import BaseModel
 
+
 class ListingBase(BaseModel):
     crop_id: str
     quantity_kg: float

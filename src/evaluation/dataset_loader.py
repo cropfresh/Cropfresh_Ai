@@ -19,7 +19,6 @@ from loguru import logger
 
 from src.evaluation.models import GoldenItem
 
-
 # Path of the datasets sub-directory, relative to this file's location
 _DATASETS_DIR = Path(__file__).parent / "datasets"
 _GOLDEN_PATH = Path(__file__).parent / "golden_dataset.json"

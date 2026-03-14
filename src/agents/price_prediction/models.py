@@ -5,6 +5,7 @@ Data structures for price prediction agent.
 """
 
 from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 

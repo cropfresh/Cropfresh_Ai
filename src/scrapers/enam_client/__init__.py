@@ -4,13 +4,13 @@ eNAM API Client Package
 Integration with Electronic National Agriculture Market (eNAM) for live mandi prices.
 """
 
-from .models import (
-    PriceTrendDirection,
-    MandiPrice,
-    PriceTrend,
-    MarketSummary,
-)
 from .client import ENAMClient, get_enam_client
+from .models import (
+    MandiPrice,
+    MarketSummary,
+    PriceTrend,
+    PriceTrendDirection,
+)
 
 __all__ = [
     "PriceTrendDirection",

@@ -2,15 +2,17 @@
 Repository for price records (raw and normalized).
 """
 import json
-from typing import Any, Optional, List
 from datetime import date
+from typing import Any, List
+
 from loguru import logger
-from src.db.models.price_records import RawPriceRecord, NormalizedPriceRecord
+
+from src.db.models.price_records import NormalizedPriceRecord, RawPriceRecord
 
 
 class PriceRepository:
     """Handles data ingestion and basic retrieval queries for prices."""
-    
+
     def __init__(self, db_client: Any):
         """Initialize with an AuroraPostgresClient instance."""
         self.db = db_client
@@ -46,22 +48,22 @@ class PriceRepository:
         async with self.db.pool.acquire() as conn:
             row_id = await conn.fetchval(
                 """
-                INSERT INTO normalized_prices 
+                INSERT INTO normalized_prices
                 (commodity, variety, state, market, price_date, min_price, max_price, modal_price, unit, source, raw_record_id)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::uuid)
                 RETURNING id
                 """,
-                record.commodity, record.variety, record.state, record.market, 
-                record.price_date, record.min_price, record.max_price, record.modal_price, 
+                record.commodity, record.variety, record.state, record.market,
+                record.price_date, record.min_price, record.max_price, record.modal_price,
                 record.unit, record.source, record.raw_record_id
             )
         return str(row_id)
 
     async def get_prices(
-        self, 
-        commodity: str, 
-        market: str, 
-        start_date: date, 
+        self,
+        commodity: str,
+        market: str,
+        start_date: date,
         end_date: date
     ) -> List[NormalizedPriceRecord]:
         """Fetch normalized prices for a specific commodity/market/date range."""

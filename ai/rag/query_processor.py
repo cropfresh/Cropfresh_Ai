@@ -6,10 +6,10 @@ Features are imported directly from src/rag/query_processor.
 """
 
 from src.rag.query_processor import (
-    QueryExpansionType,
-    ExpandedQuery,
-    QueryProcessorConfig,
     AdvancedQueryProcessor,
+    ExpandedQuery,
+    QueryExpansionType,
+    QueryProcessorConfig,
     create_query_processor,
 )
 

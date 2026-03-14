@@ -5,8 +5,9 @@ Enums and data structures for real-time data integration.
 """
 
 from datetime import datetime
-from typing import Any, Optional
 from enum import Enum
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field
 
 

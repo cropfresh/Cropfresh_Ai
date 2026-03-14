@@ -12,7 +12,6 @@ from loguru import logger
 
 from ai.rag.agentic.models import RetrievalPlan, ToolCall
 
-
 PLANNER_SYSTEM_PROMPT = """You are a retrieval orchestrator for CropFresh, an Indian agricultural AI assistant.
 
 Available tools (use ONLY these exact names):
@@ -66,6 +65,7 @@ class RetrievalPlanner:
 
         try:
             import json
+
             from src.orchestrator.llm_provider import LLMMessage
 
             user_msg = f"Query: {query}"

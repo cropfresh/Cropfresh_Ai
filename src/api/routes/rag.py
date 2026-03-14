@@ -21,7 +21,6 @@ from pydantic import BaseModel, Field
 
 from src.api.config import get_settings
 
-
 router = APIRouter()
 
 

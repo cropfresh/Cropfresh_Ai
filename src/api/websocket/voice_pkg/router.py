@@ -13,16 +13,16 @@ from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-from src.api.websocket.voice_pkg.session import SessionManager, VAD_AVAILABLE
 from src.api.websocket.voice_pkg.duplex import process_duplex_speech
+from src.api.websocket.voice_pkg.session import VAD_AVAILABLE, SessionManager
 
 try:
-    from src.voice.vad import SileroVAD, VADState, BargeinDetector
+    from src.voice.vad import BargeinDetector, SileroVAD, VADState
 except ImportError:
     pass
 
 try:
-    from src.voice.duplex_pipeline import DuplexPipeline, PipelineState, PipelineEvent
+    from src.voice.duplex_pipeline import DuplexPipeline, PipelineEvent, PipelineState
     DUPLEX_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Duplex pipeline not available: {e}")
@@ -107,7 +107,6 @@ async def voice_duplex_websocket(
 
     pipeline = DuplexPipeline(llm_provider="groq", tts_provider="edge", stt_provider="groq")
     vad = None
-    bargein_detector = None
     audio_buffer: list[bytes] = []
     connection_language = language
     last_detected_language = None
@@ -135,7 +134,7 @@ async def voice_duplex_websocket(
             elif lang and lang != last_detected_language:
                 last_detected_language = lang
                 await send_msg("language_detected", {"language": lang})
-                
+
         await send_msg("pipeline_state", {"state": event.state.value, **event.data})
 
     pipeline.on_event(on_pipeline_event)
@@ -146,7 +145,7 @@ async def voice_duplex_websocket(
             try:
                 vad = SileroVAD()
                 await vad.initialize()
-                bargein_detector = BargeinDetector(vad)
+                BargeinDetector(vad)
                 logger.info(f"Duplex {session_id}: VAD ready")
             except Exception as e:
                 logger.warning(f"Duplex {session_id}: VAD unavailable: {e}")

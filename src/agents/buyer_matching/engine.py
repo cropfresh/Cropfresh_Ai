@@ -89,7 +89,7 @@ class MatchingEngine:
         Frequency + recency demand signal score.
         """
         relevant_orders = [
-            order for order in buyer_order_history 
+            order for order in buyer_order_history
             if str(order.get("commodity", "")).lower() == commodity.lower()
         ]
         if not relevant_orders:

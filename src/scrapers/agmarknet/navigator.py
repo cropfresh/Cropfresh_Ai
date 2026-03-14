@@ -4,7 +4,9 @@ Extracted to maintain <200 line rule.
 """
 import asyncio
 from typing import Any, Optional
+
 from loguru import logger
+
 
 class AgmarknetNavigator:
     """Handles the complex interaction with the Agmarknet 2.0 React SPA form."""
@@ -31,17 +33,17 @@ class AgmarknetNavigator:
 
         # Commodity*
         await AgmarknetNavigator._select_dropdown(page, "Commodity*", commodity)
-        
+
         # State*
         if state:
             await AgmarknetNavigator._select_dropdown(page, "State*", state)
             await asyncio.sleep(1.0)
-            
+
         # District
         if district:
             await AgmarknetNavigator._select_dropdown(page, "District", district)
             await asyncio.sleep(1.0)
-            
+
         # Market
         if market:
             await AgmarknetNavigator._select_dropdown(page, "Market", market)
@@ -58,12 +60,12 @@ class AgmarknetNavigator:
             return
 
         logger.debug(f"Selecting '{option_text}' in '{label_text}'...")
-        
+
         try:
             # Find the container that has the exact string in a label
             container = page.locator('div.relative.w-full').filter(has=page.locator(f'label:has-text("{label_text}")')).first
             clickable = container.locator(".peer")
-            
+
             await clickable.wait_for(state="visible", timeout=timeout)
             await asyncio.sleep(0.3)
             await clickable.click()

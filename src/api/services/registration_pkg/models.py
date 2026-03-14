@@ -3,10 +3,9 @@ Registration service data models, constants, and configuration.
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
-
 
 # ═══════════════════════════════════════════════════════════════
 # * Constants

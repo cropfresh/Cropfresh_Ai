@@ -4,10 +4,10 @@ Deep Research Tool Package
 Agentic Map-Reduce pipeline for comprehensive research.
 """
 
-from .models import PageContent, ExtractedFact, DeepResearchResult
-from .tool import DeepResearchTool
 from .fetching import fetch_all_pages
 from .map_reduce import extract_all_facts, synthesise_answer
+from .models import DeepResearchResult, ExtractedFact, PageContent
+from .tool import DeepResearchTool
 
 __all__ = [
     "PageContent",
@@ -20,6 +20,7 @@ __all__ = [
 ]
 
 from loguru import logger
+
 from src.tools.registry import get_tool_registry
 
 # ---------------------------------------------------------------------------

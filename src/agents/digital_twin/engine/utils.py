@@ -9,7 +9,6 @@ from typing import Any
 
 from src.agents.digital_twin.models import DigitalTwin
 
-
 # Grade sequence for arrival estimation (best → worst)
 GRADE_SEQUENCE: tuple[str, ...] = ("A+", "A", "B", "C")
 

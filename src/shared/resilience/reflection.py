@@ -12,7 +12,7 @@ Implements the Reflection pattern:
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any, Callable
+from typing import Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -77,19 +77,19 @@ Respond with JSON:
 class ReflectionEngine:
     """
     Implements agent self-reflection and correction.
-    
+
     Usage:
         reflector = ReflectionEngine(llm=groq_llm)
-        
+
         result = await reflector.reflect(
             query="What is the price of tomatoes?",
             response="Tomatoes cost $100 per kg.",  # Error!
         )
-        
+
         if result.was_corrected:
             print(result.corrected_output)
     """
-    
+
     def __init__(
         self,
         llm=None,
@@ -98,7 +98,7 @@ class ReflectionEngine:
     ):
         """
         Initialize reflection engine.
-        
+
         Args:
             llm: LLM for reflection analysis
             max_iterations: Maximum correction iterations
@@ -107,7 +107,7 @@ class ReflectionEngine:
         self.llm = llm
         self.max_iterations = max_iterations
         self.min_confidence = min_confidence
-    
+
     async def reflect(
         self,
         query: str,
@@ -116,33 +116,33 @@ class ReflectionEngine:
     ) -> ReflectionResult:
         """
         Reflect on and potentially correct a response.
-        
+
         Args:
             query: Original query
             response: Agent's response
             context: Optional context
-            
+
         Returns:
             ReflectionResult with analysis and corrections
         """
         start_time = datetime.now()
-        
+
         result = ReflectionResult(
             original_output=response,
             confidence_before=self._estimate_confidence(response),
         )
-        
+
         current_response = response
-        
+
         for iteration in range(self.max_iterations):
             # Analyze current response
             analysis = await self._analyze(query, current_response, context)
-            
+
             if not analysis["issues"]:
                 # No issues found
                 result.confidence_after = analysis.get("overall_quality", 0.8)
                 break
-            
+
             # Record issues
             for issue_data in analysis["issues"]:
                 result.issues_found.append(Issue(
@@ -150,22 +150,22 @@ class ReflectionEngine:
                     description=issue_data.get("description", ""),
                     severity=issue_data.get("severity", 0.5),
                 ))
-            
+
             # Apply correction if provided
             if analysis.get("corrected_response"):
                 current_response = analysis["corrected_response"]
                 result.was_corrected = True
                 result.corrected_output = current_response
-            
+
             result.iterations = iteration + 1
             result.confidence_after = analysis.get("overall_quality", 0.5)
-            
+
             # Stop if quality is good enough
             if result.confidence_after >= self.min_confidence:
                 break
-        
+
         result.reflection_time_ms = (datetime.now() - start_time).total_seconds() * 1000
-        
+
         logger.info(
             "Reflection: {} issues, corrected={}, conf: {:.2f} -> {:.2f}",
             len(result.issues_found),
@@ -173,9 +173,9 @@ class ReflectionEngine:
             result.confidence_before,
             result.confidence_after,
         )
-        
+
         return result
-    
+
     async def _analyze(
         self,
         query: str,
@@ -186,32 +186,32 @@ class ReflectionEngine:
         if not self.llm:
             # Fallback: simple heuristic analysis
             return self._heuristic_analysis(response)
-        
+
         try:
             import json
-            
+
             prompt = REFLECTION_PROMPT.format(query=query, response=response)
-            
+
             llm_response = await self.llm.agenerate(prompt)
-            
+
             # Parse JSON
             response_text = llm_response.strip()
             if response_text.startswith("```"):
                 response_text = response_text.split("```")[1]
                 if response_text.startswith("json"):
                     response_text = response_text[4:]
-            
+
             return json.loads(response_text)
-            
+
         except Exception as e:
             logger.warning("Reflection analysis failed: {}", str(e))
             return self._heuristic_analysis(response)
-    
+
     def _heuristic_analysis(self, response: str) -> dict:
         """Simple heuristic-based analysis."""
         issues = []
         quality = 0.7
-        
+
         # Check for common issues
         if len(response) < 50:
             issues.append({
@@ -220,7 +220,7 @@ class ReflectionEngine:
                 "severity": 0.4,
             })
             quality -= 0.1
-        
+
         # Check for uncertainty markers
         uncertainty_phrases = ["i don't know", "i'm not sure", "might be", "possibly"]
         if any(phrase in response.lower() for phrase in uncertainty_phrases):
@@ -230,7 +230,7 @@ class ReflectionEngine:
                 "severity": 0.3,
             })
             quality -= 0.1
-        
+
         # Check for missing structure
         if len(response) > 500 and not any(c in response for c in ['-', '•', '1.', '*']):
             issues.append({
@@ -238,32 +238,32 @@ class ReflectionEngine:
                 "description": "Long response without structure",
                 "severity": 0.2,
             })
-        
+
         return {
             "issues": issues,
             "corrected_response": None,
             "overall_quality": max(0.3, quality),
         }
-    
+
     def _estimate_confidence(self, response: str) -> float:
         """Estimate initial confidence from response."""
         score = 0.6  # Base
-        
+
         if len(response) > 100:
             score += 0.1
         if len(response) > 300:
             score += 0.1
-        
+
         # Has specific data
         if any(c.isdigit() for c in response):
             score += 0.05
-        
+
         # Has structure
         if any(c in response for c in ['-', '•', '1.']):
             score += 0.05
-        
+
         return min(0.9, score)
-    
+
     def _parse_issue_type(self, type_str: str) -> IssueType:
         """Parse issue type string."""
         mapping = {

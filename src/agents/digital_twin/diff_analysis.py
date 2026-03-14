@@ -22,7 +22,6 @@ from typing import Optional
 
 from loguru import logger
 
-
 # * Grade numeric values for delta computation (higher = better)
 GRADE_ORDER: dict[str, int] = {"A+": 4, "A": 3, "B": 2, "C": 1}
 
@@ -205,6 +204,7 @@ def try_perceptual_hash(
         try:
             import urllib.request
             from io import BytesIO
+
             from PIL import Image
 
             with urllib.request.urlopen(url, timeout=IMAGE_FETCH_TIMEOUT) as resp:

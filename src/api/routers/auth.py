@@ -18,7 +18,7 @@ Endpoints:
 
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Header, HTTPException, Query, Request
 from loguru import logger
 
 from src.api.services.registration_service import (

@@ -5,6 +5,7 @@ Helper functions for voice activity detection processing.
 """
 
 import struct
+
 import numpy as np
 
 
@@ -22,7 +23,7 @@ def bytes_to_wav(audio_bytes: bytes, sample_rate: int = 16000) -> bytes:
     byte_rate = sample_rate * num_channels * sample_width
     block_align = num_channels * sample_width
     data_size = len(audio_bytes)
-    
+
     header = struct.pack(
         '<4sI4s4sIHHIIHH4sI',
         b'RIFF',
@@ -39,5 +40,5 @@ def bytes_to_wav(audio_bytes: bytes, sample_rate: int = 16000) -> bytes:
         b'data',
         data_size,
     )
-    
+
     return header + audio_bytes

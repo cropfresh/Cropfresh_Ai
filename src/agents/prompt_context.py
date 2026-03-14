@@ -16,7 +16,6 @@ from typing import Optional
 
 from src.agents.kannada import get_kannada_context
 
-
 # * ═══════════════════════════════════════════════════════════════
 # * 1. CROPFRESH IDENTITY — who we are
 # * ═══════════════════════════════════════════════════════════════
@@ -153,12 +152,12 @@ def build_system_prompt(
         user_section = _build_user_context(context)
         if user_section:
             parts.append(user_section)
-            
+
         profile = context.get("user_profile", {})
         preferred_language = str(profile.get("language", "")).lower()
         if "kannada" in preferred_language or "kn" == preferred_language:
             is_kannada_user = True
-            
+
     # * Inject Kannada Guidelines if preferred language is Kannada
     if is_kannada_user:
         parts.append(get_kannada_context(agent_domain))

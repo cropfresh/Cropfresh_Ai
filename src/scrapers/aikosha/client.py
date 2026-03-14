@@ -5,11 +5,12 @@ Client for India's AI Kosha platform (indiaai.gov.in).
 """
 
 from typing import Any, Optional
+
 import httpx
 from loguru import logger
 
-from .models import AIKoshaCategory, AIKoshaDataset, AIKoshaSearchResult
 from .catalog import get_agri_catalog
+from .models import AIKoshaCategory, AIKoshaDataset, AIKoshaSearchResult
 
 
 class AIKoshaClient:

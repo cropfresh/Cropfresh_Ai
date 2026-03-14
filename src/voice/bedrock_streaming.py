@@ -20,19 +20,15 @@ Usage:
 
 import asyncio
 import os
-import re
-from dataclasses import dataclass
 from typing import AsyncIterator, Optional
 
 from loguru import logger
 
 from .groq_streaming import (
-    CROPFRESH_SYSTEM_PROMPT,
     SENTENCE_BOUNDARY_RE,
     SentenceChunk,
     StreamingConfig,
 )
-
 
 # ═══════════════════════════════════════════════════════════════
 # Bedrock Configuration

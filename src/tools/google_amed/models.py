@@ -6,6 +6,7 @@ Data structures for Google's Agricultural Monitoring and Event Detection API.
 
 from datetime import datetime
 from enum import Enum
+
 from pydantic import BaseModel, Field
 
 
@@ -59,29 +60,29 @@ class CropMonitoringData(BaseModel):
     location_lat: float
     location_lon: float
     radius_km: float = 10.0
-    
+
     # Detected crops
     primary_crop: CropType
     secondary_crops: list[CropType] = Field(default_factory=list)
     crop_confidence: float = 0.0
-    
+
     # Growth stage
     current_stage: CropStage
     days_since_sowing: int = 0
-    
+
     # Health indices
     ndvi: float = 0.0
     ndwi: float = 0.0
     evi: float = 0.0
-    
+
     # Health status
     health_status: HealthStatus
     stress_indicators: list[str] = Field(default_factory=list)
-    
+
     # Coverage
     total_fields: int = 0
     cultivated_area_hectares: float = 0.0
-    
+
     # Timestamps
     satellite_date: datetime = Field(default_factory=datetime.now)
     data_quality: str = "good"

@@ -7,19 +7,20 @@ trend analysis, and optional LLM contextual reasoning.
 
 from __future__ import annotations
 
+import json
+import re
 from datetime import datetime
 from typing import Any, Optional
-import re
-import json
+
 from loguru import logger
 
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.memory.state_manager import AgentExecutionState
 from src.orchestrator.llm_provider import BaseLLMProvider
-from src.tools.agmarknet import AgmarknetTool, AgmarknetPrice
+from src.tools.agmarknet import AgmarknetPrice, AgmarknetTool
 
-from .models import PricePrediction
 from .analysis import AnalysisMixin
+from .models import PricePrediction
 
 
 class PricePredictionAgent(BaseAgent, AnalysisMixin):

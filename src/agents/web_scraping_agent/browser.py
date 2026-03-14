@@ -6,13 +6,15 @@ Handles Playwright-based navigation and content extraction.
 
 from datetime import datetime
 from typing import Optional
+
 from loguru import logger
 
-from .models import ScrapingResult, ScrapingConfig
-from .base import BaseWebScraper
-from .parser import HTMLParserMixin
-from .cache import ScraperCacheMixin
 from src.tools.browser_stealth import apply_stealth
+
+from .base import BaseWebScraper
+from .cache import ScraperCacheMixin
+from .models import ScrapingConfig, ScrapingResult
+from .parser import HTMLParserMixin
 
 
 class BrowserScraperMixin(HTMLParserMixin, ScraperCacheMixin, BaseWebScraper):

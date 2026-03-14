@@ -22,7 +22,6 @@ Data source: Karnataka Horticulture Department season calendars.
 
 from __future__ import annotations
 
-
 # * ═══════════════════════════════════════════════════════════════
 # * Crop calendar — both sow and harvest months per crop
 # * ═══════════════════════════════════════════════════════════════

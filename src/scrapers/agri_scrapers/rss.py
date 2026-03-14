@@ -5,10 +5,11 @@ Scraper for agricultural news via RSS feeds.
 """
 
 from datetime import datetime
+
 from loguru import logger
 
+from .constants import SOURCE_URLS, DataSource
 from .models import NewsArticle
-from .constants import DataSource, SOURCE_URLS
 
 
 class RSSNewsScraper:

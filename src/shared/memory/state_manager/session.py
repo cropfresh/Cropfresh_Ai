@@ -7,10 +7,11 @@ Handles conversation context, message history, and entity updates.
 import uuid
 from datetime import datetime
 from typing import Any, Optional
+
 from loguru import logger
 
-from .models import ConversationContext, Message
 from .base import BaseStateManager
+from .models import ConversationContext, Message
 
 
 class SessionManagerMixin(BaseStateManager):
@@ -116,7 +117,7 @@ class SessionManagerMixin(BaseStateManager):
 
         recent = context.messages[-max_messages:]
         lines = ["Previous conversation:"]
-        
+
         for msg in recent:
             role = msg.role.upper()
             content = msg.content[:200] + "..." if len(msg.content) > 200 else msg.content

@@ -55,7 +55,6 @@ def _solve_ortools(
 ) -> tuple[list[PickupPoint], float]:
     """Solve using OR-Tools RoutingModel."""
     from ortools.constraint_solver import pywrapcp
-    from ortools.constraint_solver import routing_enums_pb2
 
     points: list[Union[PickupPoint, DeliveryPoint]] = [delivery] + pickups
     matrix = build_distance_matrix(points)

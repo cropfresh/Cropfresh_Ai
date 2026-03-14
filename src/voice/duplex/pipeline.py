@@ -5,13 +5,14 @@ The main DuplexPipeline orchestrator for CropFresh Voice Agent.
 """
 
 import asyncio
-import time
 import re
+import time
 from typing import AsyncIterator, Callable, Optional
+
 from loguru import logger
 
-from .models import PipelineState, PipelineEvent, AudioOutputChunk
 from .initializers import InitializersMixin
+from .models import AudioOutputChunk, PipelineEvent, PipelineState
 from .processing import ProcessingMixin
 
 
@@ -112,7 +113,7 @@ class DuplexPipeline(InitializersMixin, ProcessingMixin):
         Process speech audio through the full pipeline.
         Audio → STT → LLM (streaming) → TTS (streaming)
         """
-        start_time = time.time()
+        time.time()
         self.reset()
 
         # ── Stage 1: Transcribe ──

@@ -7,7 +7,6 @@ and returns a localized response string.
 
 from loguru import logger
 
-from src.agents.voice.models import VoiceSession
 from src.voice.entity_extractor import VoiceIntent
 
 

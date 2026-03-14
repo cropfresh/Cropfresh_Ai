@@ -4,27 +4,28 @@ Rule-based logic for the Supervisor Agent.
 
 from src.agents.supervisor.models import RoutingDecision
 
+
 def route_rule_based(query: str) -> RoutingDecision:
     """
     Simple rule-based routing as fallback.
-    
+
     Uses keyword matching when LLM is unavailable.
     """
     query_lower = query.lower()
-    
+
     # Agronomy keywords
     agronomy_kw = [
         "grow", "plant", "cultivat", "harvest", "pest", "disease",
         "fertilizer", "soil", "seed", "irrigation", "organic", "variety",
         "crop", "farming", "agriculture"
     ]
-    
+
     # Commerce keywords
     commerce_kw = [
         "price", "sell", "buy", "mandi", "market", "rate", "cost",
         "profit", "aisp", "logistics", "₹", "rupee", "quintal"
     ]
-    
+
     # Platform keywords
     platform_kw = [
         "register", "login", "app", "feature", "account", "order",
@@ -60,20 +61,20 @@ def route_rule_based(query: str) -> RoutingDecision:
             confidence=0.84,
             reasoning="Rule-based routing",
         )
-    
+
     # Web scraping keywords (live data)
     scraping_kw = [
         "live", "current", "today", "real-time", "realtime", "fetch",
         "scrape", "website", "portal", "enam", "agmarknet", "weather",
         "latest", "now", "today's"
     ]
-    
+
     # Browser agent keywords (interactive)
     browser_kw = [
         "login to", "submit", "navigate", "download", "form",
         "interactive", "authenticated", "dashboard", "check my"
     ]
-    
+
     # Research agent keywords (deep research)
     research_kw = [
         "research", "investigate", "comprehensive", "detailed",
@@ -147,17 +148,17 @@ def route_rule_based(query: str) -> RoutingDecision:
         "knowledge_agent": sum(1 for kw in knowledge_kw if kw in query_lower),
         "general_agent": sum(1 for kw in general_kw if kw in query_lower),
     }
-    
+
     # Find best match
     best_agent = max(scores, key=scores.get)
     best_score = scores[best_agent]
-    
+
     # Default to general if no keywords match
     if best_score == 0:
         best_agent = "general_agent"
-    
+
     confidence = min(best_score * 0.2 + 0.3, 0.9)  # Scale to 0.3-0.9
-    
+
     return RoutingDecision(
         agent_name=best_agent,
         confidence=confidence,

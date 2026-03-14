@@ -8,22 +8,21 @@ and resilient web scraping with built-in retry/circuit-breaker.
 import asyncio
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
+
+# Scrapling imports
+from scrapling.fetchers import Fetcher, StealthyFetcher
 from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
-
-# Scrapling imports
-from scrapling.fetchers import Fetcher, StealthyFetcher
-
 
 # ============================================================================
 # Enums & Models

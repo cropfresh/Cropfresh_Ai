@@ -6,7 +6,6 @@ Covers 10 Indian languages: hi, kn, en, ta, te, mr, bn, gu, pa, ml.
 
 from src.voice.entity_extractor import VoiceIntent
 
-
 # * Localised response templates for each intent
 RESPONSE_TEMPLATES = {
     VoiceIntent.CREATE_LISTING: {

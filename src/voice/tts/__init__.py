@@ -5,9 +5,9 @@ Uses AI4Bharat IndicTTS/IndicF5 for Indian language speech synthesis.
 Supports: Hindi, Kannada, Telugu, Tamil, + 16 more Indian languages.
 """
 
-from .models import TTSVoice, TTSEmotion, SynthesisResult
-from .indic import IndicTTS
 from .edge import EdgeTTSProvider
+from .indic import IndicTTS
+from .models import SynthesisResult, TTSEmotion, TTSVoice
 from .utils import normalize_edge_rate
 
 __all__ = [

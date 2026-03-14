@@ -21,11 +21,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from src.evaluation.dataset_loader import DatasetLoader, _DOMAIN_FILES
+from src.evaluation.dataset_loader import _DOMAIN_FILES, DatasetLoader
 from src.evaluation.models import EvalResults
 from src.evaluation.ragas_evaluator import RAGASEvaluator, create_ragas_evaluator
 from src.evaluation.report_generator import ReportGenerator
-
 
 # ---------------------------------------------------------------------------
 # Runner

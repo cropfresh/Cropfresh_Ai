@@ -12,10 +12,9 @@ WeeklyReport: full weekly output stored in adcl_reports table.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from typing import Any
-
 
 # * ═══════════════════════════════════════════════════════════════
 # * Crop-level record

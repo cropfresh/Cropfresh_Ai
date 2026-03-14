@@ -1,16 +1,19 @@
 """
 Normalizes raw scraped records into canonical Price records.
 """
-from typing import Dict, Any, Optional
 from datetime import date, datetime
+from typing import Any, Optional
+
 from loguru import logger
+
 from src.db.models.price_records import NormalizedPriceRecord, RawPriceRecord
+
 
 class PriceNormalizer:
     """
     Cleans, standardizes, and normalizes raw scraped data into canonical formats.
     """
-    
+
     # Simple mapping dictionaries could be expanded into DB tables or NLP models
     COMMODITY_MAP = {
         "bhindi(ladies finger)": "Bhindi",
@@ -20,7 +23,7 @@ class PriceNormalizer:
         "potato": "Potato",
         # ... add more mappings as needed
     }
-    
+
     UNIT_MAP = {
         "rs/quintal": "INR/Quintal",
         "rs./quintal": "INR/Quintal",
@@ -41,7 +44,7 @@ class PriceNormalizer:
         if not raw_unit: return "Unknown"
         clean_unit = raw_unit.strip().lower()
         return PriceNormalizer.UNIT_MAP.get(clean_unit, raw_unit.strip())
-        
+
     @staticmethod
     def _parse_date(date_intake: Any) -> date:
         """Ensure date is a valid python date object."""
@@ -65,19 +68,19 @@ class PriceNormalizer:
         Returns None if record lacks required fields.
         """
         data = raw_record.raw_data
-        
+
         # Required fields check
         market = data.get("market")
         raw_commodity = data.get("commodity")
-        
+
         if not market or not raw_commodity:
             logger.warning("Record missing required 'market' or 'commodity' fields. Skipping normalization.")
             return None
-            
+
         commodity = PriceNormalizer._normalize_commodity(raw_commodity)
         unit = PriceNormalizer._normalize_unit(data.get("unit", ""))
         price_date = PriceNormalizer._parse_date(data.get("price_date"))
-        
+
         # Build normalized record
         return NormalizedPriceRecord(
             commodity=commodity,

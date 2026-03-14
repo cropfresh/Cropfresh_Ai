@@ -2,32 +2,33 @@
 IMD Weather Client Main Module
 """
 
-import httpx
 from typing import Optional
+
+import httpx
 from loguru import logger
 
-from .models import (
-    CurrentWeather,
-    WeatherForecast,
-    WeatherAlert,
-    AgroAdvisory,
-    WeatherCondition,
-)
-from .constants import DISTRICT_COORDS, OWM_API_BASE
+from .advisory import generate_agro_advisory_data
 from .cache import IMDCacheManager
+from .constants import DISTRICT_COORDS, OWM_API_BASE
 from .mock_data import (
+    get_mock_alerts_data,
     get_mock_current_weather,
     get_mock_forecast_data,
-    get_mock_alerts_data,
 )
-from .advisory import generate_agro_advisory_data
+from .models import (
+    AgroAdvisory,
+    CurrentWeather,
+    WeatherAlert,
+    WeatherCondition,
+    WeatherForecast,
+)
 
 
 class IMDWeatherClient:
     """
     IMD Weather Client for agricultural weather data.
     """
-    
+
     def __init__(
         self,
         imd_api_key: str = "",
@@ -39,12 +40,12 @@ class IMDWeatherClient:
         self.owm_api_key = owm_api_key
         self.use_mock = use_mock or (not imd_api_key and not owm_api_key)
         self.cache_manager = IMDCacheManager(ttl=cache_ttl)
-        
+
         if self.use_mock:
             logger.info("IMDWeatherClient initialized in MOCK mode")
         else:
             logger.info("IMDWeatherClient initialized with live API")
-            
+
     async def get_current_weather(
         self,
         state: str,
@@ -55,17 +56,17 @@ class IMDWeatherClient:
         cached = self.cache_manager.get(cache_key)
         if cached:
             return cached
-            
+
         if self.use_mock:
             weather = get_mock_current_weather(state, district)
         elif self.owm_api_key:
             weather = await self._fetch_owm_current(state, district)
         else:
             weather = get_mock_current_weather(state, district)
-            
+
         self.cache_manager.set(cache_key, weather)
         return weather
-        
+
     async def _fetch_owm_current(
         self,
         state: str,
@@ -76,7 +77,7 @@ class IMDWeatherClient:
             (state.lower(), district.lower()),
             (20.5937, 78.9629)  # Default: center of India
         )
-        
+
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.get(
@@ -90,7 +91,7 @@ class IMDWeatherClient:
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 # Map OWM weather to our conditions
                 owm_main = data.get("weather", [{}])[0].get("main", "Clear").lower()
                 condition_map = {
@@ -102,7 +103,7 @@ class IMDWeatherClient:
                     "fog": WeatherCondition.FOG,
                     "haze": WeatherCondition.HAZE,
                 }
-                
+
                 return CurrentWeather(
                     state=state.title(),
                     district=district.title(),
@@ -118,11 +119,11 @@ class IMDWeatherClient:
                     description=data.get("weather", [{}])[0].get("description", ""),
                     source="openweathermap",
                 )
-                
+
         except Exception as e:
             logger.warning(f"OWM API error: {e}, using mock data")
             return get_mock_current_weather(state, district)
-            
+
     async def get_forecast(
         self,
         state: str,
@@ -134,24 +135,24 @@ class IMDWeatherClient:
         cached = self.cache_manager.get(cache_key)
         if cached:
             return cached
-            
+
         current = await self.get_current_weather(state, district)
-        
+
         if self.use_mock:
             daily_forecasts = get_mock_forecast_data(state, district, days)
         else:
             daily_forecasts = await self._fetch_forecast(state, district, days)
-            
+
         forecast = WeatherForecast(
             state=state.title(),
             district=district.title(),
             current=current,
             daily_forecasts=daily_forecasts,
         )
-        
+
         self.cache_manager.set(cache_key, forecast)
         return forecast
-        
+
     async def _fetch_forecast(
         self,
         state: str,
@@ -160,7 +161,7 @@ class IMDWeatherClient:
     ) -> list:
         """Fetch forecast from API."""
         return get_mock_forecast_data(state, district, days)
-        
+
     async def get_alerts(
         self,
         state: str,
@@ -168,7 +169,7 @@ class IMDWeatherClient:
     ) -> list[WeatherAlert]:
         """Get active weather alerts."""
         return get_mock_alerts_data(state, district)
-        
+
     async def get_agro_advisory(
         self,
         state: str,
@@ -178,7 +179,7 @@ class IMDWeatherClient:
         """Get agricultural advisory based on weather."""
         weather = await self.get_current_weather(state, district)
         forecast = await self.get_forecast(state, district, days=5)
-        
+
         return generate_agro_advisory_data(weather, forecast, crop)
 
 
