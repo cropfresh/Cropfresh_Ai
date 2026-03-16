@@ -1,6 +1,6 @@
 # CropFresh AI — Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-16 (11:25 IST)
+> **Last Updated:** 2026-03-16 (13:14 IST)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -269,7 +269,22 @@ uv run ruff check src/
 
 ## 📝 File Changes Log
 
-### 2026-03-16 — Live RAG Benchmark Lift
+### 2026-03-16 - Kannada-Aware RAG Prompting
+
+| Action | File                                      | Description                                                                  |
+| ------ | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/rag/language_support.py`             | Added Kannada/Kanglish language detection plus localized RAG fallback text  |
+| UPDATE | `src/rag/agentic/speculative.py`          | Injected Kannada-aware response instructions into speculative RAG drafting   |
+| UPDATE | `src/rag/graph_runtime/services.py`       | Localized no-doc and extractive fallback answers for Kannada RAG queries     |
+| UPDATE | `src/rag/graph_runtime/nodes.py`          | Localized generation error fallback and threaded route into answer builder   |
+| UPDATE | `src/rag/confidence_gate.py`              | Returned Kannada decline messages for safety/platform abstentions            |
+| UPDATE | `src/rag/query_rewriter_prompts.py`       | Added Kannada and Kanglish retrieval guidance to rewrite prompts             |
+| CREATE | `tests/unit/test_rag_language_support.py` | Added unit coverage for Kannada prompt injection and fallback behavior       |
+| UPDATE | `tests/unit/test_confidence_gate.py`      | Added Kannada-localized decline response regression test                     |
+| UPDATE | `WORKFLOW_STATUS.md`                      | Added this entry and refreshed the last-updated timestamp                    |
+
+### 2026-03-16 - Live RAG Benchmark Lift
+
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -360,6 +375,10 @@ uv run ruff check src/
 | CREATE | `tests/unit/test_rag_graph_facade.py`          | Compatibility facade mapping tests for `src/rag/graph.py`                    |
 | CREATE | `tests/unit/test_guardrail_cli.py`             | CLI summary and ASCII-safety tests                                           |
 | UPDATE | `tests/integration/test_rag_integration.py`    | Canonical runtime integration tests with mocked KB and live source adapters  |
+| DELETE | `ai/evals/`                                    | Removed unused legacy evaluation scaffold so `src/evaluation` is the single maintained evaluation surface |
+| UPDATE | `scripts/run-all-evals.sh`                     | Pointed the evaluation entrypoint at `python -m src.evaluation.eval_runner`  |
+| UPDATE | `tests/unit/test_ragas_evaluator.py`           | Cleaned imports while keeping coverage on the canonical `src.evaluation` stack |
+| UPDATE | `TESTING/STRATEGY.md`                          | Replaced stale `ai/evaluations` references with `src/evaluation` datasets and commands |
 
 ### 2026-03-14 — Phase 1: Anti-Hallucination Pipeline (ADR-010)
 
@@ -906,3 +925,35 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 [ ] Register for eNAM API access (enam.gov.in/register)
 [ ] Establish RAGAS evaluation baseline (20 golden queries)
 ```
+
+### 2026-03-16 — Vision Training Contracts Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/agents/quality_assessment/training/commodity_registry.py` | Stable commodity slug/id registry with launch cohort defaults |
+| CREATE | `src/agents/quality_assessment/training/manifest_schema.py` | Canonical manifest schema for lot/image/commodity/grade metadata |
+| CREATE | `src/agents/quality_assessment/training/splitter.py` | Deterministic grouped split assignment by farm/lot |
+| CREATE | `src/agents/quality_assessment/training/dataset_exporter.py` | Manifest-to-classification/YOLO export pipeline and dataset YAML writer |
+| CREATE | `src/agents/quality_assessment/training/model_contracts.py` | ONNX contract validation for YOLO, DINO, and ResNet runtime artifacts |
+| CREATE | `src/agents/quality_assessment/training/dinov2_model.py` | Commodity-conditioned DINO classifier model definition |
+| CREATE | `src/agents/quality_assessment/training/dinov2_data.py` | Manifest-backed DINO dataloaders |
+| CREATE | `src/agents/quality_assessment/training/dinov2_training.py` | DINO training/eval/export orchestration |
+| CREATE | `src/agents/quality_assessment/training/similarity_model.py` | ResNet similarity model definition |
+| CREATE | `src/agents/quality_assessment/training/similarity_dataset.py` | Triplet CSV dataset loader for similarity training |
+| CREATE | `src/agents/quality_assessment/training/similarity_training.py` | ResNet similarity training/export orchestration |
+| CREATE | `src/agents/quality_assessment/dinov2_runtime.py` | DINO preprocessing, softmax, and commodity tensor helpers |
+| CREATE | `src/agents/digital_twin/similarity_runtime.py` | ResNet runtime helpers and contract-aware loader |
+| CREATE | `scripts/export_quality_dataset.py` | Thin CLI for exporting canonical manifests into training layouts |
+| CREATE | `scripts/train_yolo_defects.py` | Thin CLI for training/exporting validated CropFresh YOLO defect models |
+| UPDATE | `scripts/train_dinov2_classifier.py` | Refactored to thin CLI over manifest-backed DINO training |
+| UPDATE | `scripts/train_resnet_similarity.py` | Refactored to thin CLI over ResNet similarity training |
+| UPDATE | `src/agents/quality_assessment/dinov2_classifier.py` | Validates ONNX contract, passes commodity_id, and keeps fallback behavior |
+| UPDATE | `src/agents/quality_assessment/yolo_detector.py` | Rejects invalid YOLO contracts and stays within small-file boundaries |
+| UPDATE | `src/agents/quality_assessment/vision_models.py` | Passes commodity through to the DINO runtime |
+| UPDATE | `src/agents/digital_twin/similarity.py` | Slim wrapper over extracted runtime helpers; preserves existing API |
+| CREATE | `tests/unit/test_quality_training_manifest.py` | Manifest schema validation coverage |
+| CREATE | `tests/unit/test_quality_training_splits.py` | Deterministic grouped split coverage |
+| CREATE | `tests/unit/test_quality_training_exporter.py` | Dataset export and YOLO layout coverage |
+| CREATE | `tests/unit/test_vision_model_contracts.py` | Rejects placeholder ONNX artifacts, accepts valid mocked contracts |
+| CREATE | `tests/unit/test_resnet_similarity_contract.py` | Runtime contract enforcement coverage for ResNet similarity |
+| UPDATE | `tests/unit/test_vision_dinov2.py` | Verifies commodity_id is passed into DINO inference |

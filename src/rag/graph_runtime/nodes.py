@@ -14,6 +14,7 @@ from typing import Any
 
 from loguru import logger
 
+from src.rag.language_support import detect_response_language, get_localized_message
 from src.rag.graph_runtime.state import RAGGraphState
 from src.rag.routing import AdaptiveQueryRouter, RetrievalRoute
 
@@ -184,6 +185,7 @@ async def generate_node(state: RAGGraphState) -> dict[str, Any]:
             query=query,
             documents=docs,
             llm=state.get("llm"),
+            route=state.get("route", ""),
         )
 
         logger.info(f"generate_node: answer_len={len(answer)}")
@@ -194,8 +196,9 @@ async def generate_node(state: RAGGraphState) -> dict[str, Any]:
         }
     except Exception as e:
         logger.warning(f"generate_node failed: {e}")
+        response_language = detect_response_language(query)
         return {
-            "answer": "Unable to generate an answer at this time.",
+            "answer": get_localized_message("generation_error", response_language),
             "generation_model": "error",
             "current_node": "generate",
         }

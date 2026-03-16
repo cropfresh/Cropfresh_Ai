@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.rag.language_support import detect_response_language, get_localized_message
 from src.rag.routing.prefilter import extract_entities
 
 
@@ -106,17 +107,29 @@ async def retrieve_browser_documents(query: str, web_search_tool: Any) -> list[A
     ]
 
 
-async def generate_answer(query: str, documents: list[Any], llm: Any) -> tuple[str, str]:
+async def generate_answer(
+    query: str,
+    documents: list[Any],
+    llm: Any,
+    route: str = "",
+) -> tuple[str, str]:
     """Generate an answer, falling back to grounded extractive text without an LLM."""
+    response_language = detect_response_language(query)
     if not documents:
-        return "I don't have enough information to answer.", "none"
+        return get_localized_message("no_information", response_language), "none"
 
     if llm is None:
         snippets = " ".join(getattr(doc, "text", str(doc)) for doc in documents[:2])
-        return snippets[:500], "extractive_fallback"
+        prefix = get_localized_message("extractive_prefix", response_language)
+        return f"{prefix}{snippets[:450]}".strip(), "extractive_fallback"
 
     from src.rag.agentic.speculative import SpeculativeDraftEngine
 
     engine = SpeculativeDraftEngine(drafter_llm=llm, verifier_llm=llm)
-    answer, _ = await engine.generate_and_select(documents=documents, query=query)
+    answer, _ = await engine.generate_and_select(
+        documents=documents,
+        query=query,
+        response_language=response_language,
+        route=route,
+    )
     return answer, "speculative_3x"

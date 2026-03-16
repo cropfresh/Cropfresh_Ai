@@ -21,6 +21,8 @@ from typing import Any, Optional
 from loguru import logger
 from pydantic import BaseModel
 
+from src.rag.language_support import detect_response_language, get_localized_message
+
 
 class SafetyLevel(str, Enum):
     """Safety classification for agricultural queries."""
@@ -61,23 +63,6 @@ PLATFORM_KEYWORDS = {
 SAFETY_CRITICAL_KEYWORDS_KN = {
     "ಔಷಧ", "ಕೀಟನಾಶಕ", "ವಿಷ", "ಸಾಲ", "ವಿಮೆ",
 }
-
-DECLINE_RESPONSES = {
-    SafetyLevel.SAFETY_CRITICAL: (
-        "I don't have enough verified information to answer this safely. "
-        "For pesticide dosages, financial advice, or health-related queries, "
-        "please consult your local KVK (Krishi Vigyan Kendra) or agriculture officer."
-    ),
-    SafetyLevel.SAFE: (
-        "I don't have enough information about this topic in my knowledge base. "
-        "Please try rephrasing your question or consult a local expert."
-    ),
-    SafetyLevel.PLATFORM: (
-        "I'm not sure about this. Please contact CropFresh support "
-        "or check the Help section in the app."
-    ),
-}
-
 
 class ConfidenceGate:
     """
@@ -120,6 +105,7 @@ class ConfidenceGate:
             GatedAnswer with approval status
         """
         safety_level = self.classify_safety(query)
+        response_language = detect_response_language(query)
         threshold = self.THRESHOLDS[safety_level]
 
         grounding = self._calculate_grounding(answer, documents)
@@ -135,7 +121,7 @@ class ConfidenceGate:
                 f"combined={combined:.2f} < threshold={threshold}"
             )
             return GatedAnswer(
-                answer=DECLINE_RESPONSES[safety_level],
+                answer=self._decline_response(safety_level, response_language),
                 is_approved=False,
                 safety_level=safety_level,
                 grounding_score=grounding,
@@ -157,6 +143,14 @@ class ConfidenceGate:
             grounding_score=grounding,
             confidence_threshold=threshold,
         )
+
+    def _decline_response(self, safety_level: SafetyLevel, language: str) -> str:
+        key_map = {
+            SafetyLevel.SAFETY_CRITICAL: "decline_safety_critical",
+            SafetyLevel.SAFE: "decline_safe",
+            SafetyLevel.PLATFORM: "decline_platform",
+        }
+        return get_localized_message(key_map[safety_level], language)
 
     def classify_safety(self, query: str) -> SafetyLevel:
         """Classify query safety level using keyword matching."""

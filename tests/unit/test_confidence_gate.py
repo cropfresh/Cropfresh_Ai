@@ -135,6 +135,19 @@ class TestGatingDecision:
         assert result.decline_reason is not None
 
     @pytest.mark.asyncio
+    async def test_kannada_decline_response_is_localized(self, gate, sample_docs):
+        """Kannada safety query should receive a Kannada decline response."""
+        result = await gate.gate(
+            query="ಕೀಟನಾಶಕ ಎಷ್ಟು ಹಾಕಬೇಕು?",
+            answer="Random pesticide advice.",
+            documents=sample_docs,
+            faithfulness=0.10,
+            relevance=0.20,
+        )
+        assert result.is_approved is False
+        assert any("\u0c80" <= char <= "\u0cff" for char in result.answer)
+
+    @pytest.mark.asyncio
     async def test_decline_response_matches_safety_level(self, gate, sample_docs):
         """Decline response should match the safety level template."""
         result = await gate.gate(

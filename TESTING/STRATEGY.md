@@ -1,6 +1,6 @@
 # 🧪 TESTING/STRATEGY.md — CropFresh AI Test Strategy
 
-> **Last Updated:** 2026-02-27
+> **Last Updated:** 2026-03-16
 > **Owner:** Solo founder + AI agents
 > **Philosophy:** Test-as-you-code. Every feature ships with tests.
 
@@ -31,7 +31,7 @@
 | Integration | Multiple components | `pytest` + `httpx` | `tests/integration/` |
 | API | Endpoint contracts | `httpx` + `FastAPI TestClient` | `tests/api/` |
 | E2E | Full flow (voice → response) | `pytest` + real services | `tests/e2e/` |
-| Agent Eval | Agent accuracy & quality | LangSmith + custom scripts | `ai/evaluations/` |
+| Agent Eval | Agent accuracy & quality | RAGAS + custom scripts | `src/evaluation/` |
 
 ---
 
@@ -80,7 +80,7 @@ uv run pytest tests/api/ -v
 uv run pytest --cov=src --cov-report=term-missing
 
 # Run agent evaluation scripts
-uv run python ai/evaluations/eval_agents.py
+uv run python -m src.evaluation.eval_runner
 
 # Run multi-agent test suite
 uv run python scripts/test_multi_agent.py
@@ -132,10 +132,11 @@ and any edge cases that might break the happy path."
 | Tool Use Rate | % queries using tools correctly | > 80% |
 
 ### Evaluation Sets
-- `ai/evaluations/datasets/agronomy_queries.json` — 50 sample farming questions
-- `ai/evaluations/datasets/commerce_queries.json` — 50 market/price questions
-- `ai/evaluations/datasets/platform_queries.json` — 30 app/support questions
-- `ai/evaluations/datasets/voice_samples/` — Audio samples for STT eval
+- `src/evaluation/datasets/agronomy_qa.json` — sample farming questions
+- `src/evaluation/datasets/commerce_qa.json` — market and price questions
+- `src/evaluation/datasets/platform_qa.json` — app and support questions
+- `src/evaluation/datasets/multilingual_qa.json` — multilingual query coverage
+- `tests/fixtures/audio/` — audio samples for STT eval
 
 ---
 

@@ -16,6 +16,7 @@ from typing import Any
 from loguru import logger
 
 from src.rag.agentic.models import Draft
+from src.rag.language_support import build_generation_language_instruction
 
 
 class SpeculativeDraftEngine:
@@ -41,6 +42,9 @@ Respond with ONLY valid JSON:
 Answer the following question based ONLY on the provided context documents.
 Be concise, practical, and use simple language suitable for farmers.
 
+Language instructions:
+{language_instruction}
+
 Context:
 {context}
 
@@ -57,6 +61,8 @@ Answer:"""
         self,
         documents: list[Any],
         query: str,
+        response_language: str = "en",
+        route: str = "",
     ) -> tuple[str, int]:
         """Generate N parallel drafts and select the best one."""
         if not documents:
@@ -75,7 +81,7 @@ Answer:"""
 
         start = time.perf_counter()
         drafts = await asyncio.gather(
-            *[self._generate_draft(subset, query, idx)
+            *[self._generate_draft(subset, query, idx, response_language, route)
               for idx, subset in enumerate(subsets)],
             return_exceptions=True,
         )
@@ -96,7 +102,7 @@ Answer:"""
         logger.info(f"SpeculativeDraftEngine: selected draft {best_idx}/{len(valid_drafts)}")
         return valid_drafts[best_idx].content, best_idx
 
-    async def _generate_draft(self, doc_subset, query, subset_idx):
+    async def _generate_draft(self, doc_subset, query, subset_idx, response_language, route):
         """Generate a single draft from a document subset."""
         start = time.perf_counter()
         try:
@@ -106,7 +112,13 @@ Answer:"""
                 getattr(doc, "text", str(doc)) for doc in doc_subset
             )
             prompt = self.DRAFTER_PROMPT.format(
-                context=context_text[:3000], query=query,
+                context=context_text[:3000],
+                query=query,
+                language_instruction=build_generation_language_instruction(
+                    query,
+                    route=route,
+                    language=response_language,
+                ),
             )
             messages = [LLMMessage(role="user", content=prompt)]
             response = await self.drafter_llm.generate(
