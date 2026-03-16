@@ -140,8 +140,15 @@ class QueryRewriter:
         if any(kw in q for kw in ("and", "versus", "compare", "difference")):
             return "multi_query"
 
-        # Specific location/crop queries → step-back for broader context
-        if re.search(r"(in|at|near)\s+\w+", q):
+        # Specific location/region queries → step-back for broader context
+        # Only match "in/at/near" followed by place-like words
+        location_indicators = (
+            "district", "taluk", "mandi", "village", "region",
+            "karnataka", "maharashtra", "andhra", "telangana",
+            "tamil", "kerala", "punjab", "rajasthan", "gujarat",
+            "kolar", "hubli", "mandya", "belgaum", "mysore",
+        )
+        if any(loc in q for loc in location_indicators):
             return "step_back"
 
         return "none"

@@ -1,6 +1,6 @@
 # CropFresh AI — Data Flow Diagrams
 
-> **Last Updated:** 2026-03-11
+> **Last Updated:** 2026-03-14
 > All diagrams reflect the **actual codebase** as of this date.
 
 ---
@@ -170,43 +170,125 @@ flowchart TD
 
 ---
 
-## 5. RAG Pipeline Flow
+## 5. Advanced Agentic RAG Pipeline (ADR-010)
 
-The RAG system uses 21 modules for production-grade retrieval.
+The RAG system uses a **LangGraph state machine** to orchestrate a self-correcting, anti-hallucination pipeline with 8 nodes and conditional routing.
+
+### 5.1 High-Level Flow
 
 ```mermaid
 flowchart TD
-    Q["User Query"] --> QP["QueryProcessor<br/>src/rag/query_processor.py"]
+    Q["👤 User Query"] --> DECOMP["QueryDecomposer<br/>ai/rag/retrieval/query_decomposer.py<br/>(split multi-part Qs)"]
 
-    QP --> HYDE["HyDE<br/>(Hypothetical<br/>Document)"]
-    QP --> MQ["Multi-Query<br/>(3 perspectives)"]
-    QP --> SB["Step-Back<br/>(abstract concepts)"]
-    QP --> DEC["Decomposition<br/>(sub-questions)"]
+    DECOMP --> REWRITE["QueryRewriter<br/>ai/rag/query_rewriter.py"]
 
-    HYDE & MQ & SB & DEC --> HS["HybridSearch<br/>src/rag/hybrid_search.py"]
-
-    HS --> BM25["BM25 Sparse Search"]
-    HS --> DENSE["Dense Vector Search<br/>(BGE-M3 / MiniLM embeddings)"]
-    BM25 & DENSE --> RRF["Reciprocal Rank Fusion<br/>(combine sparse + dense)"]
-
-    RRF --> GR["GraphRetriever<br/>src/rag/graph_retriever.py<br/>(Neo4j entity relationships)"]
-
-    GR --> RR["Reranker<br/>src/rag/reranker.py<br/>(Cross-Encoder)"]
-
-    RR --> GRADE["Grader<br/>src/rag/grader.py<br/>(relevance scoring)"]
-
-    GRADE --> LLM["LLM Generation<br/>(Groq / Bedrock)"]
-
-    LLM --> OBS["Observability<br/>src/rag/observability.py<br/>(LangSmith traces)"]
-
-    OBS --> RESP["📋 Grounded Response<br/>+ Sources + Confidence"]
-
-    subgraph "Indexing (Offline)"
-        DOC["Documents"] --> CHUNK["ContextualChunker<br/>src/rag/contextual_chunker.py"]
-        CHUNK --> RAP["RAPTOR<br/>src/rag/raptor.py<br/>(GMM hierarchical tree)"]
-        RAP --> EMB["Embeddings<br/>src/rag/embeddings.py<br/>(BGE-M3)"]
-        EMB --> QDB[("Qdrant<br/>agri_knowledge<br/>collection")]
+    subgraph "Query Enhancement"
+        REWRITE --> HYDE["HyDE<br/>(hypothetical doc)"]
+        REWRITE --> SB["Step-Back<br/>(abstract query)"]
+        REWRITE --> MQ["Multi-Query<br/>(3 perspectives)"]
     end
+
+    HYDE & SB & MQ --> RETRIEVE
+
+    subgraph "Advanced Retrieval"
+        RETRIEVE["AdvancedRetriever<br/>ai/rag/retrieval/advanced_retriever.py"]
+        RETRIEVE --> CTX_ENRICH["ContextualEnricher<br/>(Anthropic-style<br/>chunk context)"]
+        CTX_ENRICH --> HS["HybridSearch<br/>BM25 + Dense + RRF"]
+        HS --> TIME["TimeAwareRetriever<br/>(freshness decay)"]
+    end
+
+    TIME --> GRADE["DocumentGrader<br/>ai/rag/grader.py<br/>(continuous 0-1 scoring)"]
+
+    GRADE -->|"relevant docs ≥ 0.5"| GEN["SpeculativeDraftEngine<br/>ai/rag/agentic/speculative.py<br/>(parallel drafts)"]
+    GRADE -->|"no relevant docs"| WEB["WebSearch Fallback<br/>ai/rag/graph/nodes_safety.py"]
+    WEB --> GRADE
+
+    GEN --> CITE["CitationEngine<br/>ai/rag/citation_engine.py<br/>(inline [1],[2] refs)"]
+
+    CITE --> EVAL["SelfEvaluator<br/>ai/rag/agentic/evaluator.py<br/>(faithfulness × relevance)"]
+
+    EVAL -->|"confidence ≥ 0.75"| GATE["ConfidenceGate<br/>ai/rag/confidence_gate.py<br/>(safety + Kannada)"]
+    EVAL -->|"confidence < 0.75<br/>retry ≤ 2"| REWRITE
+
+    GATE --> RESP["📋 Grounded Answer<br/>+ Citations [1],[2]<br/>+ Confidence score"]
+    GATE -->|"unsafe query"| DECLINE["🚫 Decline response<br/>(medical/legal/financial)"]
+
+    style DECOMP fill:#4CAF50,color:white
+    style GRADE fill:#FF9800,color:white
+    style EVAL fill:#2196F3,color:white
+    style GATE fill:#f44336,color:white
+```
+
+### 5.2 LangGraph State Machine Nodes
+
+| Node | File | Purpose |
+|------|------|---------|
+| **rewrite** | `ai/rag/graph/nodes.py` | HyDE / step-back / multi-query expansion |
+| **retrieve** | `ai/rag/graph/nodes.py` | Qdrant hybrid search with deduplication |
+| **grade** | `ai/rag/graph/nodes.py` | Continuous 0–1 scoring + time-decay penalty |
+| **generate** | `ai/rag/graph/nodes.py` | Speculative parallel drafts + best selection |
+| **cite** | `ai/rag/graph/nodes.py` | Inline citation insertion |
+| **evaluate** | `ai/rag/graph/nodes_safety.py` | RAGAS-style faithfulness × relevance gate |
+| **gate** | `ai/rag/graph/nodes_safety.py` | Safety classifier (medical/legal/financial) |
+| **web_search** | `ai/rag/graph/nodes_safety.py` | Fallback when grading finds no relevant docs |
+
+### 5.3 Conditional Routing Logic
+
+```mermaid
+stateDiagram-v2
+    [*] --> rewrite
+    rewrite --> retrieve
+    retrieve --> grade
+
+    grade --> generate : relevant_ratio ≥ 0.5
+    grade --> web_search : relevant_ratio < 0.5
+
+    web_search --> grade : retry
+
+    generate --> cite
+    cite --> evaluate
+
+    evaluate --> gate : confidence ≥ 0.75
+    evaluate --> rewrite : confidence < 0.75 AND retry_count ≤ 2
+
+    gate --> [*]
+```
+
+### 5.4 Anti-Hallucination Techniques
+
+| Technique | Module | Impact |
+|-----------|--------|--------|
+| Contextual Enrichment | `retrieval/contextual_enricher.py` | Retrieval failure ↓ 15% → 5% |
+| Query Decomposition | `retrieval/query_decomposer.py` | Multi-part queries handled correctly |
+| Time-Aware Scoring | `retrieval/time_aware.py` | Stale market data penalized (24h decay) |
+| Document Grading | `grader.py` | Continuous 0–1 scoring filters weak docs |
+| Self-Evaluation | `evaluator.py` | Low-confidence answers retried (max 2×) |
+| Citation Engine | `citation_engine.py` | Every claim traced to source doc |
+| Confidence Gate | `confidence_gate.py` | Unsafe queries declined in user's language |
+
+### 5.5 Evaluation & CI Guardrail
+
+```mermaid
+flowchart LR
+    GD["Golden Dataset<br/>30 queries × 6 categories"] --> EVAL["RAGEvaluator<br/>(RAGAS metrics)"]
+    EVAL --> F["Faithfulness<br/>≥ 0.80"]
+    EVAL --> R["Relevancy<br/>≥ 0.70"]
+    EVAL --> P["Precision<br/>≥ 0.60"]
+    EVAL --> H["Hallucination<br/>≤ 0.20"]
+    F & R & P & H --> GATE{"CI Gate"}
+    GATE -->|"All pass"| GREEN["✅ Pipeline passes"]
+    GATE -->|"Any fail"| RED["❌ Pipeline blocked"]
+```
+
+### 5.6 Indexing Pipeline (Offline)
+
+```mermaid
+flowchart LR
+    DOC["Documents"] --> CHUNK["ContextualChunker<br/>(section-aware splitting)"]
+    CHUNK --> ENRICH["ContextualEnricher<br/>(prepend doc context)"]
+    ENRICH --> RAP["RAPTOR<br/>(hierarchical tree)"]
+    RAP --> EMB["BGE-M3 Embeddings"]
+    EMB --> QDB[("Qdrant<br/>agri_knowledge")]
 ```
 
 ---

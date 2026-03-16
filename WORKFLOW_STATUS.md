@@ -1,6 +1,6 @@
 # CropFresh AI — Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-03 (11:58 IST)
+> **Last Updated:** 2026-03-16 (10:48 IST)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -268,6 +268,133 @@ uv run ruff check src/
 ---
 
 ## 📝 File Changes Log
+
+### 2026-03-16 — Live RAG Benchmark Lift
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/routing/models.py`                     | Extracted routing enums and decision models from legacy `query_analyzer.py`  |
+| CREATE | `ai/rag/routing/prefilter.py`                  | Rule-based router prefilters and Kannada-aware fallback routing              |
+| CREATE | `ai/rag/routing/classifier.py`                 | LLM routing and query-analysis helpers                                       |
+| CREATE | `ai/rag/routing/router.py`                     | Thin router/analyzer orchestration layer                                     |
+| CREATE | `ai/rag/routing/__init__.py`                   | Routing package exports                                                      |
+| UPDATE | `ai/rag/query_analyzer.py`                     | Converted oversized module into compatibility re-export layer                |
+| CREATE | `src/agents/knowledge_models.py`               | Typed response models for user-facing and benchmark/debug knowledge output    |
+| CREATE | `src/agents/knowledge_mapping.py`              | Source-detail and citation extraction helpers for benchmark runs             |
+| CREATE | `src/agents/knowledge_runtime.py`              | Benchmark embedding toggle helper for `KnowledgeAgent`                       |
+| UPDATE | `src/agents/knowledge_agent.py`                | Added `answer_with_debug()` while keeping `answer()` contract stable         |
+| CREATE | `src/rag/export_map.py`                        | Added lazy export registry so `src.rag` submodules can load without cycles   |
+| UPDATE | `src/rag/__init__.py`                          | Replaced eager package imports with lazy export resolution                   |
+| UPDATE | `src/rag/query_analyzer.py`                    | Made `src.rag` the app-facing routing facade over the split adaptive router  |
+| UPDATE | `src/rag/grader.py`                            | Made `src.rag` the app-facing grading facade over enhanced benchmark grader  |
+| UPDATE | `src/rag/export_map.py`                        | Expanded lazy exports to include adaptive router and enhanced grader symbols |
+| UPDATE | `src/rag/graph.py`                             | Replaced monolith with compatibility facade over `ai.rag.graph`              |
+| CREATE | `ai/rag/export_map.py`                         | Added lazy export registry for combined `ai.rag` package exports             |
+| UPDATE | `ai/rag/__init__.py`                           | Replaced eager package imports with lazy export resolution                   |
+| UPDATE | `ai/rag/agri_embeddings.py`                    | Redirected embedding base import to `src.rag` before removing duplicate proxies |
+| UPDATE | `ai/rag/export_map.py`                         | Restricted `ai.rag` exports to true advanced modules only                   |
+| DELETE | `ai/rag/advanced_reranker.py`                  | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/contextual_chunker.py`                 | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/embeddings.py`                         | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/evaluation.py`                         | Removed shadowing module in favor of the real `ai/rag/evaluation/` package  |
+| DELETE | `ai/rag/graph.py`                              | Removed shadowing module in favor of the real `ai/rag/graph/` package       |
+| DELETE | `ai/rag/graph_constructor.py`                  | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/graph_retriever.py`                    | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/graph_store.py`                        | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/hybrid_search.py`                      | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/knowledge_base.py`                     | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/knowledge_injection.py`                | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/observability.py`                      | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/production.py`                         | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/raptor.py`                             | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/reranker.py`                           | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/retriever.py`                          | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| CREATE | `ai/rag/graph/services.py`                     | Shared retrieval/generation helpers for graph runtime                        |
+| UPDATE | `ai/rag/graph/state.py`                        | Added route, tool-call, and document fields for benchmark observability      |
+| UPDATE | `ai/rag/graph/nodes.py`                        | Routed retrieval through adaptive router and shared services                 |
+| UPDATE | `ai/rag/graph/nodes_safety.py`                 | Enabled injected web search and retained gate/evaluator flow                 |
+| UPDATE | `ai/rag/graph/builder.py`                      | Fixed final answer mapping so declined answers surface correctly             |
+| CREATE | `ai/rag/evaluation/models.py`                  | JSON dataset entry, resolved reference, and live-run extra models            |
+| CREATE | `ai/rag/evaluation/dataset_loader.py`          | Loader for `core_live` and `full` JSON benchmark datasets                    |
+| CREATE | `ai/rag/evaluation/reference_resolver.py`      | Static/live reference resolver with Agmarknet freshness checks               |
+| CREATE | `ai/rag/evaluation/pipeline_adapter.py`        | Benchmark adapter for the canonical `KnowledgeAgent` runtime path            |
+| CREATE | `ai/rag/evaluation/live_runner.py`             | Semantic benchmark runner using `src.evaluation.ragas_evaluator`             |
+| CREATE | `ai/rag/evaluation/runtime.py`                 | Benchmark runtime factory for `KnowledgeAgent` + configured LLM              |
+| UPDATE | `ai/rag/evaluation/golden_dataset.py`          | Converted dataset entrypoint to JSON-backed loader helpers                   |
+| UPDATE | `ai/rag/evaluation/guardrail.py`               | Added explicit `live` and `heuristic` guardrail modes over real pipeline     |
+| UPDATE | `ai/rag/evaluation/reporting.py`               | Writes semantic reports plus guardrail and extras artifacts                  |
+| UPDATE | `ai/rag/evaluation/__init__.py`                | Refreshed package exports for new benchmark modules                          |
+| CREATE | `ai/rag/evaluation/datasets/core_live.json`    | Phase-1 benchmark subset for market, agronomy, pest, scheme, and Kannada     |
+| CREATE | `ai/rag/evaluation/datasets/full.json`         | Full regression dataset including deferred weather and multi-hop items       |
+| UPDATE | `scripts/eval_guardrail.py`                    | Added ASCII-safe CLI with `--live`, `--heuristic`, `--subset`, and `--runs`  |
+| UPDATE | `docs/architecture/rag-benchmark-baseline.md`  | Reframed baseline doc around live vs heuristic benchmark modes               |
+| UPDATE | `tests/unit/test_evaluation.py`                | Replaced canned-answer tests with live guardrail and JSON dataset coverage   |
+| CREATE | `tests/unit/test_routing.py`                   | Routing regression tests for Kannada and compatibility exports               |
+| CREATE | `tests/unit/test_benchmark_dataset.py`         | Dataset loader and reference resolver unit tests                             |
+| CREATE | `tests/unit/test_knowledge_agent_debug.py`     | `KnowledgeAgent.answer_with_debug()` unit coverage                           |
+| CREATE | `tests/unit/test_rag_module_boundaries.py`     | Verifies `src.rag` is the public surface and duplicate `ai/rag` files stay removed |
+| CREATE | `tests/unit/test_rag_graph_edges_extra.py`     | Regression test for single-pass web-search fallback routing                  |
+| CREATE | `tests/unit/test_rag_graph_facade.py`          | Compatibility facade mapping tests for `src/rag/graph.py`                    |
+| CREATE | `tests/unit/test_guardrail_cli.py`             | CLI summary and ASCII-safety tests                                           |
+| UPDATE | `tests/integration/test_rag_integration.py`    | Canonical runtime integration tests with mocked KB and live source adapters  |
+
+### 2026-03-14 — Phase 1: Anti-Hallucination Pipeline (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/query_rewriter.py`                     | HyDE, step-back, and multi-query expansion strategies (178 LOC)              |
+| CREATE | `ai/rag/query_rewriter_prompts.py`             | Prompt templates for query rewriting (74 LOC)                                |
+| CREATE | `ai/rag/citation_engine.py`                    | Inline [1], [2] citation markers with source attribution (172 LOC)           |
+| CREATE | `ai/rag/confidence_gate.py`                    | "I don't know" safety gate with Kannada keywords (195 LOC)                   |
+| UPDATE | `ai/rag/grader.py`                             | Continuous 0–1 scoring, time-decay for stale market docs, Kannada keywords   |
+| CREATE | `tests/unit/test_query_rewriter.py`            | 12 tests: strategies, classification, edge cases, LLM fallback              |
+| CREATE | `tests/unit/test_citation_engine.py`           | 8 tests: heuristic/LLM citations, source extraction, formatting             |
+| CREATE | `tests/unit/test_confidence_gate.py`           | 9 tests: safety classification, grounding, gating, Kannada                   |
+| CREATE | `tests/unit/test_grader_enhanced.py`           | 11 tests: continuous scoring, time-decay, batch grading                      |
+| CREATE | `docs/planning/advanced-agentic-rag-plan.md`   | Comprehensive 4-phase implementation plan                                    |
+| CREATE | `docs/decisions/ADR-010.md`                    | Architecture Decision Record for Advanced Agentic RAG upgrade                |
+
+### 2026-03-14 — Phase 3: LangGraph State Machine (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/graph/state.py`                        | RAG state TypedDict + GraphRunResult Pydantic model (77 LOC)                 |
+| CREATE | `ai/rag/graph/nodes.py`                        | 5 pipeline nodes: rewrite, retrieve, grade, generate, cite (199 LOC)         |
+| CREATE | `ai/rag/graph/nodes_safety.py`                 | 3 safety nodes: gate, evaluate, web_search (175 LOC)                         |
+| CREATE | `ai/rag/graph/edges.py`                        | Conditional edge routing: after_grade, after_evaluate, after_gate (83 LOC)   |
+| CREATE | `ai/rag/graph/builder.py`                      | Graph assembly + `run_rag_graph()` public API (143 LOC)                      |
+| CREATE | `ai/rag/graph/__init__.py`                     | Package exports (15 LOC)                                                     |
+| CREATE | `tests/unit/test_rag_graph.py`                 | 17 tests: edge routing, node functions, graph compilation                    |
+
+### 2026-03-14 — Phase 4: Advanced Retrieval (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/retrieval/contextual_enricher.py`      | Anthropic-style chunk enrichment with section inference (155 LOC)             |
+| CREATE | `ai/rag/retrieval/query_decomposer.py`         | Multi-part query splitting with Kannada conjunctions (164 LOC)               |
+| CREATE | `ai/rag/retrieval/time_aware.py`               | Freshness-boosted scoring: market/weather/scheme/evergreen (175 LOC)         |
+| CREATE | `ai/rag/retrieval/advanced_retriever.py`       | Retrieval coordinator: decompose → retrieve → rerank (130 LOC)               |
+| CREATE | `ai/rag/retrieval/__init__.py`                 | Package exports (27 LOC)                                                     |
+| CREATE | `tests/unit/test_advanced_retrieval.py`        | 18 tests: enricher, decomposer, time-aware, edge cases                       |
+
+### 2026-03-14 — Phase 5: Evaluation & Guardrails (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/evaluation/metrics.py`                 | RAGAS multi-metric evaluator: faithfulness, relevancy, precision (196 LOC)   |
+| CREATE | `ai/rag/evaluation/golden_dataset.py`          | 30 golden queries: market, agronomy, pest, scheme, weather, Kannada          |
+| CREATE | `ai/rag/evaluation/guardrail.py`               | CI quality gate with configurable thresholds (154 LOC)                       |
+| CREATE | `ai/rag/evaluation/__init__.py`                | Package exports (31 LOC)                                                     |
+| CREATE | `scripts/eval_guardrail.py`                    | CLI entry point for CI/CD pipeline (85 LOC)                                  |
+| CREATE | `tests/unit/test_evaluation.py`                | 17 tests: evaluator, dataset integrity, guardrail logic                      |
+
+### 2026-03-14 — Phase 6: Documentation, Integration Tests & Benchmark (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| MODIFY | `docs/architecture/data-flow.md`               | Replaced Section 5 with Advanced Agentic RAG architecture (6 subsections)    |
+| CREATE | `docs/architecture/rag-benchmark-baseline.md`  | Evaluation benchmark baseline report with heuristic scores                   |
+| CREATE | `tests/integration/test_rag_integration.py`    | 10 integration tests: pipeline, LangGraph, evaluation, cross-module          |
 
 ### 2026-03-11 — LLM Provider Modular Refactoring
 

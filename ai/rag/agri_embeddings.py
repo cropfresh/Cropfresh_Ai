@@ -22,7 +22,7 @@ from typing import Optional
 
 from loguru import logger
 
-from ai.rag.embeddings import EmbeddingManager
+from src.rag.embeddings import EmbeddingManager
 
 
 class AgriEmbeddingWrapper(EmbeddingManager):
