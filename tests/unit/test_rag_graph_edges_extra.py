@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ai.rag.graph.edges import after_grade
+from src.rag.graph_runtime.edges import after_grade
 
 
 def test_after_grade_skips_second_web_search_attempt():

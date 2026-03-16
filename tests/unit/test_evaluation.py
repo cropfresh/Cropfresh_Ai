@@ -6,13 +6,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from ai.rag.evaluation.dataset_loader import BenchmarkDatasetLoader
-from ai.rag.evaluation.golden_dataset import get_golden_dataset
-from ai.rag.evaluation.guardrail import EvalGuardrail
-from ai.rag.evaluation.models import LiveRunExtras
-from ai.rag.evaluation.runtime import build_benchmark_agent
 from src.agents.knowledge_models import BenchmarkDebugResult, BenchmarkSourceDetail
 from src.evaluation.models import EvalResults, PerQuestionScore
+from src.rag.benchmark.dataset_loader import BenchmarkDatasetLoader
+from src.rag.benchmark.golden_dataset import get_golden_dataset
+from src.rag.benchmark.guardrail import EvalGuardrail
+from src.rag.benchmark.models import LiveRunExtras
+from src.rag.benchmark.runtime import build_benchmark_agent
 
 
 class FakeAgent:
@@ -64,7 +64,7 @@ async def test_live_guardrail_uses_semantic_runner(monkeypatch, tmp_path):
             LiveRunExtras(citation_coverage=1.0, freshness_compliance=1.0, per_category={"market": 0.92}),
         )
 
-    monkeypatch.setattr("ai.rag.evaluation.guardrail.LiveBenchmarkRunner.run", fake_run)
+    monkeypatch.setattr("src.rag.benchmark.guardrail.LiveBenchmarkRunner.run", fake_run)
     guardrail = EvalGuardrail(
         dataset_loader=BenchmarkDatasetLoader(datasets_dir=tmp_path),
         agent=FakeAgent(),
@@ -119,7 +119,7 @@ def test_build_benchmark_agent_disables_bedrock_by_default(monkeypatch):
         qdrant_api_key="",
     )
 
-    monkeypatch.setattr("ai.rag.evaluation.runtime._load_benchmark_settings", lambda: settings)
+    monkeypatch.setattr("src.rag.benchmark.runtime._load_benchmark_settings", lambda: settings)
     monkeypatch.delenv("RAG_BENCHMARK_DISABLE_LLM", raising=False)
     monkeypatch.delenv("RAG_BENCHMARK_ALLOW_BEDROCK", raising=False)
     called = {"value": False}
@@ -128,7 +128,7 @@ def test_build_benchmark_agent_disables_bedrock_by_default(monkeypatch):
         called["value"] = True
         return object()
 
-    monkeypatch.setattr("ai.rag.evaluation.runtime.create_llm_provider", fake_create_llm_provider)
+    monkeypatch.setattr("src.rag.benchmark.runtime.create_llm_provider", fake_create_llm_provider)
 
     agent = build_benchmark_agent()
 
@@ -151,12 +151,12 @@ def test_build_benchmark_agent_allows_bedrock_when_overridden(monkeypatch):
         qdrant_api_key="",
     )
 
-    monkeypatch.setattr("ai.rag.evaluation.runtime._load_benchmark_settings", lambda: settings)
+    monkeypatch.setattr("src.rag.benchmark.runtime._load_benchmark_settings", lambda: settings)
     monkeypatch.setenv("RAG_BENCHMARK_ALLOW_BEDROCK", "true")
     created = object()
 
     monkeypatch.setattr(
-        "ai.rag.evaluation.runtime.create_llm_provider",
+        "src.rag.benchmark.runtime.create_llm_provider",
         lambda **kwargs: created,
     )
 

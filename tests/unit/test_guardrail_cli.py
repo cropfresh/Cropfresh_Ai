@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from ai.rag.evaluation.guardrail import GuardrailResult
 from scripts.eval_guardrail import (
     _report_path,
     is_ascii_safe,
     render_result_block,
     summarize_results,
 )
+from src.rag.benchmark.guardrail import GuardrailResult
 
 
 def test_rendered_cli_block_is_ascii_safe():

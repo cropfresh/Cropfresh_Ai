@@ -18,8 +18,7 @@ os.environ["USE_ADAPTIVE_ROUTER"] = "true"
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from ai.rag.query_analyzer import AdaptiveQueryRouter, RetrievalRoute
-
+from src.rag.query_analyzer import AdaptiveQueryRouter, RetrievalRoute
 
 # ── Test cases: (query, has_image, expected_route) ───────────────────────────
 TEST_CASES = [
@@ -109,7 +108,7 @@ async def run_tests():
 
     # Print cost stats
     print("Cost Summary (by strategy):")
-    from ai.rag.query_analyzer import ROUTE_COST_MAP
+    from src.rag.query_analyzer import ROUTE_COST_MAP
     for route, cost in ROUTE_COST_MAP.items():
         print(f"  {route.value:<22} ₹{cost:.3f}/query")
 

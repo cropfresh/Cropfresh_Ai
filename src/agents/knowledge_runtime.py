@@ -8,7 +8,7 @@ def configure_benchmark_embeddings(agent) -> None:
     if os.getenv("RAG_BENCHMARK_USE_AGRI_EMBEDDINGS", "false").lower() != "true":
         return
 
-    from ai.rag.agri_embeddings import get_agri_embedding_manager
+    from src.rag.agri_embeddings import get_agri_embedding_manager
 
     # TODO: Point debug runs at a dedicated benchmark collection after reindexing.
     agent.knowledge_base._embedding_manager = get_agri_embedding_manager()

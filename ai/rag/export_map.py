@@ -6,8 +6,8 @@ from importlib import import_module
 from typing import Any
 
 MODULE_EXPORTS: dict[str, list[str]] = {
-    "ai.rag.agri_embeddings": ["AgriEmbeddingWrapper", "get_agri_embedding_manager"],
-    "ai.rag.agentic_orchestrator": [
+    "src.rag.agri_embeddings": ["AgriEmbeddingWrapper", "get_agri_embedding_manager"],
+    "src.rag.agentic_orchestrator": [
         "AgenticOrchestrator",
         "AgenticSelfEvaluator",
         "Draft",
@@ -18,7 +18,7 @@ MODULE_EXPORTS: dict[str, list[str]] = {
         "SpeculativeDraftEngine",
         "ToolCall",
     ],
-    "ai.rag.browser_rag": [
+    "src.rag.browser_rag": [
         "AgriSourceSelector",
         "BrowserRAGIntegration",
         "Citation",
@@ -28,7 +28,7 @@ MODULE_EXPORTS: dict[str, list[str]] = {
         "ScrapeIntent",
         "TargetSource",
     ],
-    "ai.rag.query_analyzer": [
+    "src.rag.query_analyzer": [
         "ROUTE_COST_MAP",
         "AdaptiveQueryRouter",
         "QueryAnalysis",
@@ -38,7 +38,7 @@ MODULE_EXPORTS: dict[str, list[str]] = {
         "RetrievalRoute",
         "RoutingDecision",
     ],
-    "ai.rag.grader": [
+    "src.rag.grader": [
         "DOC_GRADER_PROMPT",
         "DocumentGrader",
         "GradeResult",

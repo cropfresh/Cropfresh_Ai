@@ -1,6 +1,6 @@
 # CropFresh AI — Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-16 (10:48 IST)
+> **Last Updated:** 2026-03-16 (11:25 IST)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -286,18 +286,36 @@ uv run ruff check src/
 | CREATE | `src/rag/export_map.py`                        | Added lazy export registry so `src.rag` submodules can load without cycles   |
 | UPDATE | `src/rag/__init__.py`                          | Replaced eager package imports with lazy export resolution                   |
 | UPDATE | `src/rag/query_analyzer.py`                    | Made `src.rag` the app-facing routing facade over the split adaptive router  |
-| UPDATE | `src/rag/grader.py`                            | Made `src.rag` the app-facing grading facade over enhanced benchmark grader  |
+| UPDATE | `src/rag/grader.py`                            | Made `src.rag` the app-facing grading facade over the new `src/rag/grading/` package |
 | UPDATE | `src/rag/export_map.py`                        | Expanded lazy exports to include adaptive router and enhanced grader symbols |
 | UPDATE | `src/rag/graph.py`                             | Replaced monolith with compatibility facade over `ai.rag.graph`              |
+| MOVE   | `ai/rag/routing/` -> `src/rag/routing/`        | Consolidated adaptive router implementation into the canonical `src/rag` tree |
+| MOVE   | `ai/rag/retrieval/` -> `src/rag/retrieval/`    | Consolidated advanced retrieval helpers into `src/rag`                       |
+| MOVE   | `ai/rag/agentic/` -> `src/rag/agentic/`        | Consolidated agentic RAG internals into `src/rag`                            |
+| MOVE   | `ai/rag/browser_rag_pkg/` -> `src/rag/browser_rag_pkg/` | Consolidated browser-augmented RAG internals into `src/rag`          |
+| MOVE   | `ai/rag/graph/` -> `src/rag/graph_runtime/`    | Moved LangGraph runtime internals under `src/rag` without colliding with `src/rag/graph.py` |
+| MOVE   | `ai/rag/evaluation/` -> `src/rag/benchmark/`   | Moved live benchmark pipeline under `src/rag` without colliding with legacy `src/rag/evaluation.py` |
+| MOVE   | `ai/rag/agri_embeddings.py` -> `src/rag/agri_embeddings.py` | Moved AgriEmbeddingWrapper into canonical `src/rag` surface      |
+| MOVE   | `ai/rag/citation_engine.py` -> `src/rag/citation_engine.py` | Moved citation engine into canonical `src/rag` surface           |
+| MOVE   | `ai/rag/confidence_gate.py` -> `src/rag/confidence_gate.py` | Moved confidence gate into canonical `src/rag` surface           |
+| MOVE   | `ai/rag/query_rewriter.py` -> `src/rag/query_rewriter.py` | Moved query rewriting into canonical `src/rag` surface            |
+| MOVE   | `ai/rag/query_rewriter_prompts.py` -> `src/rag/query_rewriter_prompts.py` | Moved query rewriting prompts into `src/rag`        |
+| MOVE   | `ai/rag/browser_rag.py` -> `src/rag/browser_rag.py` | Moved browser RAG redirect into canonical `src/rag` surface     |
+| MOVE   | `ai/rag/agentic_orchestrator.py` -> `src/rag/agentic_orchestrator.py` | Moved agentic orchestrator redirect into `src/rag` |
+| MOVE   | `ai/rag/knowledge_base/` -> `src/rag/knowledge_base_data/` | Moved RAG knowledge assets under the canonical `src/rag` tree   |
+| CREATE | `src/rag/grading/models.py`                    | Extracted grading models and constants from the oversized enhanced grader     |
+| CREATE | `src/rag/grading/relevance.py`                 | Extracted relevance scoring and freshness-aware grading logic                  |
+| CREATE | `src/rag/grading/hallucination.py`             | Extracted hallucination checking logic                                         |
+| CREATE | `src/rag/grading/__init__.py`                  | Public package exports for the new canonical grading package                  |
+| CREATE | `src/rag/agri_terms.py`                        | Extracted the large bilingual agri term map from `agri_embeddings.py`         |
 | CREATE | `ai/rag/export_map.py`                         | Added lazy export registry for combined `ai.rag` package exports             |
-| UPDATE | `ai/rag/__init__.py`                           | Replaced eager package imports with lazy export resolution                   |
-| UPDATE | `ai/rag/agri_embeddings.py`                    | Redirected embedding base import to `src.rag` before removing duplicate proxies |
-| UPDATE | `ai/rag/export_map.py`                         | Restricted `ai.rag` exports to true advanced modules only                   |
+| UPDATE | `ai/rag/__init__.py`                           | Reduced `ai.rag` to a compatibility-only namespace over the canonical `src.rag` modules |
+| UPDATE | `ai/rag/export_map.py`                         | Redirected compatibility exports to `src.rag.*` instead of local `ai.rag` implementations |
 | DELETE | `ai/rag/advanced_reranker.py`                  | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
 | DELETE | `ai/rag/contextual_chunker.py`                 | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
 | DELETE | `ai/rag/embeddings.py`                         | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
-| DELETE | `ai/rag/evaluation.py`                         | Removed shadowing module in favor of the real `ai/rag/evaluation/` package  |
-| DELETE | `ai/rag/graph.py`                              | Removed shadowing module in favor of the real `ai/rag/graph/` package       |
+| DELETE | `ai/rag/evaluation.py`                         | Removed shadowing module in favor of the real moved benchmark package       |
+| DELETE | `ai/rag/graph.py`                              | Removed shadowing module in favor of the moved graph runtime package        |
 | DELETE | `ai/rag/graph_constructor.py`                  | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
 | DELETE | `ai/rag/graph_retriever.py`                    | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
 | DELETE | `ai/rag/graph_store.py`                        | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
@@ -309,6 +327,11 @@ uv run ruff check src/
 | DELETE | `ai/rag/raptor.py`                             | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
 | DELETE | `ai/rag/reranker.py`                           | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
 | DELETE | `ai/rag/retriever.py`                          | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/grader.py`                             | Removed the old enhanced grader module after moving logic into `src/rag/grading/` |
+| DELETE | `ai/rag/query_analyzer.py`                     | Removed the old query analyzer shim after moving routing ownership into `src/rag` |
+| DELETE | `ai/rag/query_processor.py`                    | Removed redundant query processor proxy after consolidating on `src/rag/query_processor/` |
+| DELETE | `ai/rag/enhanced/`                             | Removed unused duplicate enhanced RAG package after consolidating on `src/rag/enhanced/` |
+| DELETE | `ai/rag/enhanced_retriever/`                   | Removed unused duplicate enhanced retriever package after consolidating on `src/rag/enhanced_retriever/` |
 | CREATE | `ai/rag/graph/services.py`                     | Shared retrieval/generation helpers for graph runtime                        |
 | UPDATE | `ai/rag/graph/state.py`                        | Added route, tool-call, and document fields for benchmark observability      |
 | UPDATE | `ai/rag/graph/nodes.py`                        | Routed retrieval through adaptive router and shared services                 |

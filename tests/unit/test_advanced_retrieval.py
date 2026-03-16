@@ -12,20 +12,18 @@ from __future__ import annotations
 
 import time
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ai.rag.retrieval.contextual_enricher import (
+from src.rag.retrieval.contextual_enricher import (
     ContextualChunk,
     ContextualChunkEnricher,
 )
-from ai.rag.retrieval.query_decomposer import QueryDecomposer
-from ai.rag.retrieval.time_aware import (
+from src.rag.retrieval.query_decomposer import QueryDecomposer
+from src.rag.retrieval.time_aware import (
     FreshnessCategory,
     TimeAwareRetriever,
 )
-
 
 # ---------------------------------------------------------------------------
 # ContextualChunkEnricher Tests

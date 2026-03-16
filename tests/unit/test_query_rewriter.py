@@ -17,8 +17,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ai.rag.query_rewriter import QueryRewriter, RewriteResult, RewriteStrategy
-
+from src.rag.query_rewriter import QueryRewriter
 
 # ---------------------------------------------------------------------------
 # Fixtures

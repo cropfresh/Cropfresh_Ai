@@ -95,7 +95,7 @@ async def test_simple_orchestration():
     print("Test 1: Simple agronomy query orchestration")
     print("─" * 60)
 
-    from ai.rag.agentic_orchestrator import AgenticOrchestrator
+    from src.rag.agentic_orchestrator import AgenticOrchestrator
 
     orchestrator = AgenticOrchestrator(
         planner_llm=MockPlannerLLM("simple"),
@@ -130,7 +130,7 @@ async def test_complex_orchestration():
     print("Test 2: Complex decision query (price + knowledge plan)")
     print("─" * 60)
 
-    from ai.rag.agentic_orchestrator import AgenticOrchestrator
+    from src.rag.agentic_orchestrator import AgenticOrchestrator
 
     orchestrator = AgenticOrchestrator(
         planner_llm=MockPlannerLLM("complex"),
@@ -163,8 +163,9 @@ async def test_self_evaluator_retry():
     print("Test 3: Self-evaluator low confidence → retry flag")
     print("─" * 60)
 
-    from ai.rag.agentic_orchestrator import AgenticSelfEvaluator
     from types import SimpleNamespace
+
+    from src.rag.agentic_orchestrator import AgenticSelfEvaluator
 
     evaluator = AgenticSelfEvaluator(llm=MockEvaluatorLLM("fail"))
 
@@ -200,8 +201,9 @@ async def test_speculative_drafts():
     print("Test 4: Speculative draft engine — 3 parallel drafts")
     print("─" * 60)
 
-    from ai.rag.agentic_orchestrator import SpeculativeDraftEngine
     from types import SimpleNamespace
+
+    from src.rag.agentic_orchestrator import SpeculativeDraftEngine
 
     engine = SpeculativeDraftEngine(
         drafter_llm=MockDrafterLLM(),
@@ -237,7 +239,7 @@ async def test_retrieval_planner():
     print("Test 5: RetrievalPlanner — JSON plan parsing")
     print("─" * 60)
 
-    from ai.rag.agentic_orchestrator import RetrievalPlanner
+    from src.rag.agentic_orchestrator import RetrievalPlanner
 
     planner = RetrievalPlanner(llm=MockPlannerLLM("complex"))
     plan = await planner.plan("Should I sell tomatoes now in Hubli?")

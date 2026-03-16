@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from ai.rag.evaluation.dataset_loader import BenchmarkDatasetLoader
-from ai.rag.evaluation.models import GoldenEntry
-from ai.rag.evaluation.reference_resolver import ReferenceResolver
+from src.rag.benchmark.dataset_loader import BenchmarkDatasetLoader
+from src.rag.benchmark.models import GoldenEntry
+from src.rag.benchmark.reference_resolver import ReferenceResolver
 from src.tools.agmarknet import AgmarknetPrice
 
 

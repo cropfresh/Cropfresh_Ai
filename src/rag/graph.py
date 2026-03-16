@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai.rag.graph import GraphRunResult, RAGGraphState, build_rag_graph, run_rag_graph
+from src.rag.graph_runtime import GraphRunResult, RAGGraphState, build_rag_graph, run_rag_graph
 
 RAGState = RAGGraphState
 

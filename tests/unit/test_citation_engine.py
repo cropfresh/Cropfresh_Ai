@@ -16,8 +16,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ai.rag.citation_engine import CitationEngine, CitedAnswer, Source
-
+from src.rag.citation_engine import CitationEngine, CitedAnswer, Source
 
 # ---------------------------------------------------------------------------
 # Fixtures

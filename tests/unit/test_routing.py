@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from ai.rag.query_analyzer import AdaptiveQueryRouter, QueryAnalyzer, RetrievalRoute
-from ai.rag.routing.prefilter import rule_based_query_analysis
+from src.rag.query_analyzer import AdaptiveQueryRouter, QueryAnalyzer, RetrievalRoute
+from src.rag.routing.prefilter import rule_based_query_analysis
 
 
 @pytest.mark.asyncio

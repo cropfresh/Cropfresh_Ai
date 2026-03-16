@@ -16,13 +16,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ai.rag.confidence_gate import (
+from src.rag.confidence_gate import (
     ConfidenceGate,
-    GatedAnswer,
     SafetyLevel,
-    DECLINE_RESPONSES,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

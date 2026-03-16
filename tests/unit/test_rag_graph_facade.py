@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from ai.rag.graph.state import GraphRunResult
+from src.rag.graph_runtime.state import GraphRunResult
 
 
 @pytest.mark.asyncio

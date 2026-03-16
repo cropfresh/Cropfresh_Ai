@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from ai.rag.grader import DocumentGrader as AiDocumentGrader
-from ai.rag.query_analyzer import AdaptiveQueryRouter as AiAdaptiveQueryRouter
-from ai.rag.query_analyzer import QueryAnalyzer as AiQueryAnalyzer
+from src.rag.grader import DocumentGrader as AiDocumentGrader
 from src.rag.grader import DocumentGrader as SrcDocumentGrader
+from src.rag.query_analyzer import AdaptiveQueryRouter as AiAdaptiveQueryRouter
 from src.rag.query_analyzer import AdaptiveQueryRouter as SrcAdaptiveQueryRouter
+from src.rag.query_analyzer import QueryAnalyzer as AiQueryAnalyzer
 from src.rag.query_analyzer import QueryAnalyzer as SrcQueryAnalyzer
 
 ROOT = Path(__file__).resolve().parents[2]

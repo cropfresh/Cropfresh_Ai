@@ -11,14 +11,12 @@ Tests cover:
 
 from __future__ import annotations
 
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-from ai.rag.graph.edges import after_evaluate, after_gate, after_grade
-from ai.rag.graph.state import GraphRunResult, RAGGraphState
-
+from src.rag.graph_runtime.edges import after_evaluate, after_gate, after_grade
+from src.rag.graph_runtime.state import GraphRunResult, RAGGraphState
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -131,7 +129,7 @@ class TestAfterGate:
 class TestRewriteNode:
     @pytest.mark.asyncio
     async def test_rewrite_returns_queries(self, empty_state):
-        from ai.rag.graph.nodes import rewrite_node
+        from src.rag.graph_runtime.nodes import rewrite_node
 
         result = await rewrite_node(empty_state)
         assert "rewritten_queries" in result
@@ -139,7 +137,7 @@ class TestRewriteNode:
 
     @pytest.mark.asyncio
     async def test_empty_query_returns_empty(self):
-        from ai.rag.graph.nodes import rewrite_node
+        from src.rag.graph_runtime.nodes import rewrite_node
 
         result = await rewrite_node({"query": ""})
         assert result["rewritten_queries"] == []
@@ -148,7 +146,7 @@ class TestRewriteNode:
 class TestGradeNode:
     @pytest.mark.asyncio
     async def test_empty_docs_triggers_web_search(self):
-        from ai.rag.graph.nodes import grade_node
+        from src.rag.graph_runtime.nodes import grade_node
 
         state: RAGGraphState = {"documents": [], "query": "test"}
         result = await grade_node(state)
@@ -156,7 +154,7 @@ class TestGradeNode:
 
     @pytest.mark.asyncio
     async def test_grades_with_docs(self):
-        from ai.rag.graph.nodes import grade_node
+        from src.rag.graph_runtime.nodes import grade_node
         from src.rag.knowledge_base import Document
 
         docs = [
@@ -171,7 +169,7 @@ class TestGradeNode:
 class TestGateNode:
     @pytest.mark.asyncio
     async def test_gate_with_answer(self):
-        from ai.rag.graph.nodes_safety import gate_node
+        from src.rag.graph_runtime.nodes_safety import gate_node
 
         state: RAGGraphState = {
             "cited_answer": "Tomato leaf curl is caused by whiteflies.",
@@ -190,7 +188,7 @@ class TestGateNode:
 class TestEvaluateNode:
     @pytest.mark.asyncio
     async def test_evaluate_returns_scores(self):
-        from ai.rag.graph.nodes_safety import evaluate_node
+        from src.rag.graph_runtime.nodes_safety import evaluate_node
 
         state: RAGGraphState = {
             "answer": "Some answer text.",
@@ -206,7 +204,7 @@ class TestEvaluateNode:
 
     @pytest.mark.asyncio
     async def test_evaluate_skips_at_max_retries(self):
-        from ai.rag.graph.nodes_safety import evaluate_node
+        from src.rag.graph_runtime.nodes_safety import evaluate_node
 
         state: RAGGraphState = {
             "answer": "Some answer.",
@@ -226,7 +224,7 @@ class TestEvaluateNode:
 class TestGraphCompilation:
     def test_graph_compiles_successfully(self):
         """Graph should compile without errors."""
-        from ai.rag.graph.builder import build_rag_graph
+        from src.rag.graph_runtime.builder import build_rag_graph
 
         compiled = build_rag_graph()
         assert compiled is not None

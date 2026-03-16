@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from ai.rag.grader import GradingResult
 from src.agents.knowledge_agent import KnowledgeAgent
+from src.rag.grader import GradingResult
 from src.rag.knowledge_base import Document, SearchResult
 from src.tools.agmarknet import AgmarknetPrice
 
@@ -88,10 +88,10 @@ async def test_safety_critical_query_abstains_when_grounding_is_weak():
     ]
 
     with patch(
-        "ai.rag.graph.services.generate_answer",
+        "src.rag.graph_runtime.services.generate_answer",
         AsyncMock(return_value=("Spray pesticide X at 50 ml per litre and sell tomorrow.", "mocked")),
     ), patch(
-        "ai.rag.grader.DocumentGrader.grade_documents",
+        "src.rag.grader.DocumentGrader.grade_documents",
         AsyncMock(
             return_value=GradingResult(
                 relevant_documents=documents,

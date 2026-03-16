@@ -1,15 +1,12 @@
-"""Public routing facade for the canonical ``src.rag`` surface."""
-
-from src.rag.routing import (
+from src.rag.routing.models import (
     ROUTE_COST_MAP,
-    AdaptiveQueryRouter,
     QueryAnalysis,
-    QueryAnalyzer,
     QueryCategory,
     QueryType,
     RetrievalRoute,
     RoutingDecision,
 )
+from src.rag.routing.router import AdaptiveQueryRouter, QueryAnalyzer
 
 __all__ = [
     "ROUTE_COST_MAP",

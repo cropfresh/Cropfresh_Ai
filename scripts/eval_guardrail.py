@@ -7,7 +7,7 @@ from pathlib import Path
 from statistics import median
 from typing import Iterable
 
-from ai.rag.evaluation.guardrail import EvalGuardrail, GuardrailResult, GuardrailThresholds
+from src.rag.benchmark.guardrail import EvalGuardrail, GuardrailResult, GuardrailThresholds
 
 
 def build_parser() -> argparse.ArgumentParser:
