@@ -1,6 +1,6 @@
 # CropFresh AI — Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-16 (13:14 IST)
+> **Last Updated:** 2026-03-16 (17:41 IST)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -268,6 +268,23 @@ uv run ruff check src/
 ---
 
 ## 📝 File Changes Log
+
+### 2026-03-16 - Vision Training Accuracy Hardening
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `src/shared/logger.py` | Made shared logger setup idempotent so training scripts can use structured logging safely |
+| CREATE | `src/agents/quality_assessment/training/dinov2_artifacts.py` | Split DINO seed/export helpers into a small companion module to keep training orchestration under the 200-line rule |
+| UPDATE | `src/agents/quality_assessment/training/dinov2_model.py` | Added partial backbone unfreezing support for higher-accuracy DINO fine-tuning |
+| UPDATE | `src/agents/quality_assessment/training/dinov2_data.py` | Added deterministic loaders, inverse-frequency class weights, and balanced train sampling metadata |
+| CREATE | `src/agents/quality_assessment/training/dinov2_metrics.py` | Added exact per-grade/per-commodity metrics and JSON training report generation |
+| UPDATE | `src/agents/quality_assessment/training/dinov2_training.py` | Reworked DINO training to use balanced loss, deterministic seeds, early stopping, ONNX validation, and structured metrics reports |
+| CREATE | `src/agents/quality_assessment/training/yolo_reporting.py` | Added YOLO validation metric extraction, release gates, and JSON report writing |
+| UPDATE | `scripts/train_dinov2_classifier.py` | Added CLI controls for seed, patience, label smoothing, backbone fine-tuning, balancing, and report output |
+| UPDATE | `scripts/train_yolo_defects.py` | Added validation gates, report generation, and structured logging before exporting the detector |
+| CREATE | `tests/unit/test_dinov2_metrics.py` | Added unit coverage for exact DINO evaluation/report payloads |
+| CREATE | `tests/unit/test_yolo_reporting.py` | Added unit coverage for YOLO metric extraction, threshold failures, and report writing |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this entry and refreshed the last-updated timestamp |
 
 ### 2026-03-16 - Kannada-Aware RAG Prompting
 
