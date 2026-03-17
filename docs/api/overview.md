@@ -27,7 +27,7 @@
 - `/api/v1/prices` for rate-hub queries and source health
 - `/api/v1/adcl/weekly` for district-scoped weekly crop-demand intelligence
 - `/api/v1/listings` and `/api/v1/orders` for marketplace flows
-- `/api/v1/voice/*` and `/ws/voice/*` for voice interactions
+- `/api/v1/voice/*` and `/api/v1/voice/ws*` for voice interactions
 
 ## ADCL Weekly Report
 

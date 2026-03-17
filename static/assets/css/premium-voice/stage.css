@@ -1,0 +1,69 @@
+.orb-panel,
+.transcript-panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.orb-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.orb-rings {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(245, 185, 75, 0.24), rgba(245, 185, 75, 0.02) 58%, transparent 70%),
+    radial-gradient(circle, rgba(105, 211, 154, 0.18), transparent 65%);
+  box-shadow: inset 0 0 60px rgba(255, 255, 255, 0.04);
+}
+
+.voice-orb {
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.16);
+  transition: all 220ms ease;
+}
+
+.voice-orb.listening { animation: pulse-listen 2s infinite; background: rgba(105, 211, 154, 0.24); }
+.voice-orb.thinking { animation: spin-think 2s linear infinite; background: rgba(109, 184, 255, 0.24); }
+.voice-orb.speaking { animation: wave-speak 0.45s infinite ease-in-out; background: rgba(245, 185, 75, 0.22); }
+
+.orb-caption {
+  max-width: 24ch;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.transcript-line {
+  min-height: 70px;
+  margin-top: 8px;
+  font-size: 1.25rem;
+  line-height: 1.55;
+}
+
+.transcript-user {
+  color: var(--text-secondary);
+}
+
+.control-btn,
+.language-select,
+.feedback-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+}

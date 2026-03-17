@@ -1,10 +1,10 @@
-# AWS IAM Roles — CropFresh AI
+# AWS IAM Roles - CropFresh AI
 
 ---
 
 ## Role 1: `cropfresh-app-runner-role`
 
-**Used by:** AWS App Runner instances (task/instance role)
+**Used by:** AWS App Runner instances (task or instance role)
 
 ### Trust Policy
 
@@ -51,19 +51,6 @@
       "Resource": "arn:aws:secretsmanager:ap-south-1:*:secret:cropfresh/prod/*"
     },
     {
-      "Sid": "BedrockAccess",
-      "Effect": "Allow",
-      "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ],
-      "Resource": [
-        "arn:aws:bedrock:ap-south-1::foundation-model/anthropic.claude-3-sonnet*",
-        "arn:aws:bedrock:ap-south-1::foundation-model/anthropic.claude-3-haiku*",
-        "arn:aws:bedrock:ap-south-1::foundation-model/amazon.titan*"
-      ]
-    },
-    {
       "Sid": "CloudWatchLogs",
       "Effect": "Allow",
       "Action": [
@@ -76,6 +63,8 @@
   ]
 }
 ```
+
+Bedrock invoke permissions are intentionally absent from the recommended production path. If a private model service is added later, scope that access to the specific service instead of broad model-provider permissions.
 
 ---
 
@@ -123,9 +112,9 @@
 
 ## Role 3: `cropfresh-github-actions-role`
 
-**Used by:** GitHub Actions OIDC (no stored AWS credentials needed)
+**Used by:** GitHub Actions OIDC
 
-### Trust Policy (OIDC — no long-lived keys)
+### Trust Policy
 
 ```json
 {

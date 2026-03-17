@@ -1,138 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CropFresh RAG Lab</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/theme.css">
-  <link rel="stylesheet" href="./assets/css/rag-lab.css">
-</head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-logo">🧪</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropFresh RAG Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/suite.css" />
+    <link rel="stylesheet" href="./assets/css/lab-pages.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-logo">RAG</span>
+          <div>
+            <div class="brand-title">CropFresh RAG Lab</div>
+            <div class="brand-subtitle">Router, normalize, query, search, stats, and ingest</div>
+          </div>
+        </div>
+        <div class="status-pill online"><span class="dot"></span><span data-status-text>RAG Lab</span></div>
+      </header>
+
+      <nav class="nav-links">
+        <a href="./index.html" class="nav-link">Dashboard</a>
+        <a href="./rag_test.html" class="nav-link active">RAG Lab</a>
+        <a href="./voice_agent.html" class="nav-link">Voice Hub</a>
+        <a href="./premium_voice.html" class="nav-link">Premium Voice</a>
+        <a href="./voice_test_ui.html" class="nav-link">Voice UI</a>
+        <a href="./voice_realtime.html" class="nav-link">Realtime</a>
+        <a href="/docs" class="nav-link" target="_blank">Swagger</a>
+      </nav>
+
+      <section class="hero page-hero">
         <div>
-          <div class="brand-title">CropFresh RAG Lab</div>
-          <div class="brand-subtitle">Adaptive Router · Normalizer · Query · KB Operations</div>
+          <p class="eyebrow">Knowledge workflows</p>
+          <h1>Use one neat RAG lab instead of a scattered utility page.</h1>
+          <p>All the main knowledge routes stay here, but now the page matches the rest of the product suite.</p>
         </div>
-      </div>
-      <div class="status-pill online">
-        <span class="dot"></span>
-        <span data-status-text>RAG Lab</span>
-      </div>
-    </header>
+        <div class="hero-panel">
+          <span class="mini-stat">Adaptive routing</span>
+          <span class="mini-stat">Normalizer</span>
+          <span class="mini-stat">Query and search</span>
+          <span class="mini-stat">Knowledge ingest</span>
+        </div>
+      </section>
 
-    <nav class="nav-links">
-      <a href="./index.html" class="nav-link">🏠 Dashboard</a>
-      <a href="./rag_test.html" class="nav-link active">🧪 RAG Lab</a>
-      <a href="./voice_test_ui.html" class="nav-link">🎙 Voice UI</a>
-      <a href="./voice_realtime.html" class="nav-link">⚡ Voice Realtime</a>
-      <a href="/docs" target="_blank" class="nav-link">📘 Swagger</a>
-    </nav>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-router">Router</button>
+        <button class="tab-btn" data-tab="tab-normalize">Normalize</button>
+        <button class="tab-btn" data-tab="tab-query">Query</button>
+        <button class="tab-btn" data-tab="tab-kb">Knowledge base</button>
+      </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="tab-router">Router</button>
-      <button class="tab-btn" data-tab="tab-normalize">Normalize</button>
-      <button class="tab-btn" data-tab="tab-query">Query</button>
-      <button class="tab-btn" data-tab="tab-kb">Knowledge Base</button>
+      <section id="tab-router" class="tab-panel active"><article class="card"><h3 class="card-title">Adaptive router test</h3><label class="label" for="routerQuery">Query</label><textarea id="routerQuery" class="textarea">tomato price today in Hubli mandi</textarea><button id="btnRoute" class="btn btn-primary">Route query</button><div id="routerResult" class="result"></div></article></section>
+      <section id="tab-normalize" class="tab-panel"><article class="card"><h3 class="card-title">Bilingual normalizer</h3><label class="label" for="normalizeInput">Text</label><textarea id="normalizeInput" class="textarea">tamatar ki rabi kheti mein sinchai kaise kare</textarea><button id="btnNormalize" class="btn btn-primary">Normalize</button><div id="normalizeResult" class="result"></div></article></section>
+      <section id="tab-query" class="tab-panel"><article class="card stack"><div><label class="label" for="ragQuestion">Question</label><textarea id="ragQuestion" class="textarea">How to control late blight in tomato?</textarea></div><div><label class="label" for="ragContext">Context</label><input id="ragContext" class="input" placeholder="Optional prior context" /></div><button id="btnQuery" class="btn btn-primary">Run query</button><div id="queryResult" class="result"></div></article></section>
+
+      <section id="tab-kb" class="tab-panel stack">
+        <article class="card">
+          <h3 class="card-title">Semantic search</h3>
+          <div class="grid grid-2">
+            <div><label class="label" for="searchQuery">Search query</label><input id="searchQuery" class="input" value="pest management for beans" /></div>
+            <div><label class="label" for="searchTopK">Top K</label><input id="searchTopK" class="input" type="number" value="5" min="1" max="20" /></div>
+          </div>
+          <button id="btnSearch" class="btn btn-primary">Search</button>
+          <div id="searchResult" class="result"></div>
+        </article>
+        <article class="card"><h3 class="card-title">Knowledge base stats</h3><button id="btnStats" class="btn btn-secondary">Load stats</button><div id="statsResult" class="result"></div></article>
+        <article class="card stack">
+          <div class="grid grid-2">
+            <div><label class="label" for="ingestSource">Source</label><input id="ingestSource" class="input" value="manual-lab" /></div>
+            <div><label class="label" for="ingestCategory">Category</label><select id="ingestCategory" class="select"><option value="agronomy">agronomy</option><option value="market">market</option><option value="platform">platform</option><option value="regulatory">regulatory</option></select></div>
+          </div>
+          <div><label class="label" for="ingestText">Text</label><textarea id="ingestText" class="textarea">Tomato late blight risk increases during high humidity. Apply fungicide as recommended by local extension officer.</textarea></div>
+          <button id="btnIngest" class="btn btn-primary">Ingest</button>
+          <div id="ingestResult" class="result"></div>
+        </article>
+      </section>
     </div>
-
-    <section id="tab-router" class="tab-panel active">
-      <article class="card">
-        <h3 class="card-title">Adaptive Router Test</h3>
-        <p class="card-desc">Tests `/api/v1/rag/route` for strategy classification.</p>
-        <label class="label" for="routerQuery">Query</label>
-        <textarea id="routerQuery" class="textarea" rows="3">tomato price today in Hubli mandi</textarea>
-        <button id="btnRoute" class="btn btn-primary" style="margin-top: 10px;">Route Query</button>
-        <div id="routerResult" class="result"></div>
-      </article>
-    </section>
-
-    <section id="tab-normalize" class="tab-panel">
-      <article class="card">
-        <h3 class="card-title">Bilingual Normalizer</h3>
-        <p class="card-desc">Tests `/api/v1/rag/normalize` for Hindi/Kannada agri terms.</p>
-        <label class="label" for="normalizeInput">Text</label>
-        <textarea id="normalizeInput" class="textarea" rows="3">tamatar ki rabi kheti mein sinchai kaise kare</textarea>
-        <button id="btnNormalize" class="btn btn-primary" style="margin-top: 10px;">Normalize</button>
-        <div id="normalizeResult" class="result"></div>
-      </article>
-    </section>
-
-    <section id="tab-query" class="tab-panel">
-      <article class="card">
-        <h3 class="card-title">RAG Query</h3>
-        <p class="card-desc">Tests `/api/v1/rag/query` with optional context.</p>
-        <div class="stack">
-          <div>
-            <label class="label" for="ragQuestion">Question</label>
-            <textarea id="ragQuestion" class="textarea" rows="3">How to control late blight in tomato?</textarea>
-          </div>
-          <div>
-            <label class="label" for="ragContext">Context (optional)</label>
-            <input id="ragContext" class="input" placeholder="Previous conversation context...">
-          </div>
-        </div>
-        <button id="btnQuery" class="btn btn-primary" style="margin-top: 10px;">Run Query</button>
-        <div id="queryResult" class="result"></div>
-      </article>
-    </section>
-
-    <section id="tab-kb" class="tab-panel stack">
-      <article class="card">
-        <h3 class="card-title">Semantic Search</h3>
-        <p class="card-desc">Tests `/api/v1/rag/search` with top-k parameter.</p>
-        <div class="grid grid-2">
-          <div>
-            <label class="label" for="searchQuery">Search query</label>
-            <input id="searchQuery" class="input" value="pest management for beans">
-          </div>
-          <div>
-            <label class="label" for="searchTopK">Top K</label>
-            <input id="searchTopK" class="input" type="number" value="5" min="1" max="20">
-          </div>
-        </div>
-        <button id="btnSearch" class="btn btn-primary" style="margin-top: 10px;">Search</button>
-        <div id="searchResult" class="result"></div>
-      </article>
-
-      <article class="card">
-        <h3 class="card-title">Knowledge Base Stats</h3>
-        <p class="card-desc">Loads `/api/v1/rag/stats` data.</p>
-        <button id="btnStats" class="btn btn-secondary">Load Stats</button>
-        <div id="statsResult" class="result"></div>
-      </article>
-
-      <article class="card">
-        <h3 class="card-title">Ingest Document</h3>
-        <p class="card-desc">Posts one document to `/api/v1/rag/ingest`.</p>
-        <div class="grid grid-2">
-          <div>
-            <label class="label" for="ingestSource">Source</label>
-            <input id="ingestSource" class="input" value="manual-lab">
-          </div>
-          <div>
-            <label class="label" for="ingestCategory">Category</label>
-            <select id="ingestCategory" class="select">
-              <option value="agronomy">agronomy</option>
-              <option value="market">market</option>
-              <option value="platform">platform</option>
-              <option value="regulatory">regulatory</option>
-            </select>
-          </div>
-        </div>
-        <label class="label" for="ingestText" style="margin-top: 10px;">Text</label>
-        <textarea id="ingestText" class="textarea" rows="3">Tomato late blight risk increases during high humidity. Apply fungicide as recommended by local extension officer.</textarea>
-        <button id="btnIngest" class="btn btn-primary" style="margin-top: 10px;">Ingest</button>
-        <div id="ingestResult" class="result"></div>
-      </article>
-    </section>
-  </div>
-  <script src="./assets/js/shared.js"></script>
-  <script src="./assets/js/rag-lab.js"></script>
-</body>
+    <script src="./assets/js/shared.js"></script>
+    <script src="./assets/js/rag-lab.js"></script>
+  </body>
 </html>

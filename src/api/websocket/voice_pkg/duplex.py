@@ -51,13 +51,16 @@ async def process_duplex_speech(
             audio_wav, language=language
         ):
             # Send each audio chunk immediately
-            await send_msg("response_audio", {
+            payload = {
                 "audio_base64": audio_chunk.audio_base64,
                 "format": audio_chunk.format,
                 "sample_rate": audio_chunk.sample_rate,
                 "chunk_index": audio_chunk.chunk_index,
                 "is_last": audio_chunk.is_last,
-            })
+            }
+            if audio_chunk.timing:
+                payload["timing"] = audio_chunk.timing
+            await send_msg("response_audio", payload)
             chunk_count += 1
 
             # Track sentence text for transcript
@@ -68,10 +71,13 @@ async def process_duplex_speech(
                 })
 
         # Signal response complete
-        await send_msg("response_end", {
+        payload = {
             "chunks_sent": chunk_count,
             "full_text": " ".join(response_text_parts),
-        })
+        }
+        if pipeline.last_turn_timing:
+            payload["timing"] = pipeline.last_turn_timing
+        await send_msg("response_end", payload)
 
     except Exception as e:
         logger.error(f"Duplex speech processing error: {e}")

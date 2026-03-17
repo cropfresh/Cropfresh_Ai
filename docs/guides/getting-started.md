@@ -1,137 +1,149 @@
-# CropFresh AI — Getting Started Guide
+# CropFresh AI - Getting Started
 
-> **For beginners:** This guide walks you through setting up, running, and testing CropFresh AI from scratch.
+> **Last Updated:** 2026-03-17
+> **Audience:** New contributors and local developers who want the app running quickly
 
 ---
 
 ## Prerequisites
 
-| Requirement | Version | Installation |
-|-------------|---------|-------------|
-| Python | 3.11+ | [python.org](https://python.org) |
-| uv (package manager) | Latest | `pip install uv` |
-| Docker Desktop | Latest | [docker.com](https://docker.com) |
-| Git | Latest | [git-scm.com](https://git-scm.com) |
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Python | 3.11+ | Required |
+| uv | Latest | Preferred package manager |
+| Docker Desktop | Latest | For local infra services |
+| Git | Latest | Repository workflows |
+| One LLM option | Groq API key or local vLLM | Recommended starting point |
+
+AWS infrastructure is still used by the project, but new local setup should not start with Bedrock.
 
 ---
 
-## Step 1: Clone and Setup
+## 1. Clone and Install
 
 ```bash
-# Clone the repository
 git clone <your-repo-url> cropfresh-ai
 cd cropfresh-ai
-
-# Install Python dependencies with uv
 uv sync
+```
+
+If you need the voice extras immediately:
+
+```bash
+uv sync --extra voice
 ```
 
 ---
 
-## Step 2: Configure Environment
-
-Copy the example environment file and fill in your API keys:
+## 2. Configure `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your keys:
+### Recommended Option A: Groq
 
 ```env
-# Required for LLM (choose one)
-GROQ_API_KEY=gsk_...                    # Groq Cloud (free tier available)
-# OR
-AWS_ACCESS_KEY_ID=...                    # Amazon Bedrock
-AWS_SECRET_ACCESS_KEY=...
-AWS_REGION=us-east-1
+LLM_PROVIDER=groq
+LLM_MODEL=llama-3.3-70b-versatile
+GROQ_API_KEY=gsk_...
 
-# Optional but recommended
-QDRANT_HOST=localhost                    # Docker: localhost, Cloud: your-cluster.qdrant.io
-QDRANT_PORT=6333
-QDRANT_API_KEY=...                       # Only for Qdrant Cloud
+PG_HOST=localhost
+PG_PORT=5432
+PG_DATABASE=cropfresh
+PG_USER=cropfresh_app
+PG_PASSWORD=change_me
+
 REDIS_URL=redis://localhost:6379/0
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
 ```
 
-See [`docs/guides/environment-variables.md`](environment-variables.md) for all options.
+### Recommended Option B: Local vLLM
+
+```env
+LLM_PROVIDER=vllm
+LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+VLLM_BASE_URL=http://localhost:8001/v1
+```
+
+Migration note: Bedrock references still exist in code as of March 17, 2026, but Bedrock is no longer the recommended starting path and Sprint 07 removes it from runtime policy and docs.
+
+See `docs/guides/environment-variables.md` for the complete settings list.
 
 ---
 
-## Step 3: Start Infrastructure
+## 3. Start Local Infrastructure
 
-### Option A: Docker Compose (Recommended)
+### Minimal services for most development
 
 ```bash
-# Start all services (Qdrant, Redis, Neo4j)
 docker compose up -d qdrant redis neo4j
-
-# Verify services are healthy
-docker compose ps
 ```
 
-### Option B: Minimal (Qdrant only)
+### Notes
 
-```bash
-docker run -d -p 6333:6333 --name qdrant qdrant/qdrant
-```
+- If you are working on listings, orders, or ADCL, point `PG_*` to a real PostgreSQL or Aurora instance.
+- If you are only exercising chat, docs, or some voice flows, the local service mix above is enough to start.
 
 ---
 
-## Step 4: Populate Knowledge Base
+## 4. Populate the Knowledge Base
 
 ```bash
 uv run python scripts/populate_qdrant.py
 ```
 
-This loads agricultural knowledge documents into Qdrant for the RAG pipeline.
-
 ---
 
-## Step 5: Run the Server
+## 5. Run the API
 
 ```bash
 uv run uvicorn src.api.main:app --reload --port 8000
 ```
 
-You should see:
+Useful URLs:
 
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-INFO:     Connected to Qdrant
-INFO:     Agent system initialized (15 agents)
-INFO:     ✅ Ready to serve
-```
+- Swagger: `http://localhost:8000/docs`
+- Static live-test pages: `http://localhost:8000/static/voice_agent.html`
+- Duplex demo page: `http://localhost:8000/static/premium_voice.html`
 
 ---
 
-## Step 6: Test It
+## 6. Smoke Test the Stack
 
-### Open Swagger Docs
-
-Visit: **http://localhost:8000/docs**
-
-### Quick Chat Test
+### Chat API
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/chat \
   -H "Content-Type: application/json" \
-  -d '{"query": "What is the price of tomato in Mysore?"}'
+  -d "{\"message\":\"What is the tomato price in Mysore?\"}"
 ```
 
-### Run Tests
+### Voice REST
 
 ```bash
-uv run pytest -v
+curl -X POST http://localhost:8000/api/v1/voice/process \
+  -F "audio=@sample.wav" \
+  -F "user_id=demo" \
+  -F "language=auto"
+```
+
+### Focused tests
+
+```bash
+uv run pytest tests/unit/test_voice_agent.py -q
+uv run pytest tests/unit/test_pipecat_pipeline.py -q
 ```
 
 ---
 
-## What's Next?
+## 7. What to Read Next
 
-| Task | Document |
-|------|----------|
-| Understand the architecture | [`docs/architecture/system-architecture.md`](../architecture/system-architecture.md) |
-| Learn about agents | [`docs/agents/REGISTRY.md`](../agents/REGISTRY.md) |
-| Create a new agent | [`docs/agents/agent-design-guide.md`](../agents/agent-design-guide.md) |
-| API reference | [`docs/api/endpoints-reference.md`](../api/endpoints-reference.md) |
-| Day-to-day workflow | [`docs/guides/development-workflow.md`](development-workflow.md) |
+| Topic | Document |
+|-------|----------|
+| Current project state | `tracking/PROJECT_STATUS.md` |
+| Voice sprint handoff | `tracking/sprints/sprint-07-voice-duplex-productionization.md` |
+| Voice websocket contract | `docs/api/websocket-voice.md` |
+| Voice architecture | `docs/features/voice-pipeline.md` |
+| API reference | `docs/api/endpoints-reference.md` |

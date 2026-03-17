@@ -1,148 +1,127 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CropFresh AI Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/theme.css">
-  <link rel="stylesheet" href="./assets/css/dashboard.css">
-</head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-logo">🌾</span>
-        <div>
-          <div class="brand-title">CropFresh AI Dashboard</div>
-          <div class="brand-subtitle">Modular static UI · HTML + CSS + JavaScript split</div>
-        </div>
-      </div>
-      <div class="status-pill" id="apiStatusPill">
-        <span class="dot"></span>
-        <span data-status-text>Checking API...</span>
-      </div>
-    </header>
-
-    <nav class="nav-links">
-      <a href="./index.html" class="nav-link active">🏠 Dashboard</a>
-      <a href="./rag_test.html" class="nav-link">🧪 RAG Lab</a>
-      <a href="./voice_agent.html" class="nav-link">🎙 Voice Agent</a>
-      <a href="./voice_test_ui.html" class="nav-link">🎤 Voice UI</a>
-      <a href="./voice_realtime.html" class="nav-link">⚡ Realtime</a>
-      <a href="/docs" target="_blank" class="nav-link">📘 Swagger</a>
-    </nav>
-
-    <section class="hero card">
-      <h2>Advanced Static Frontend Foundation</h2>
-      <p>
-        This page now uses external CSS and JS assets, so you can scale the CropFresh UI cleanly by feature
-        instead of maintaining long inline blocks.
-      </p>
-    </section>
-
-    <section class="kpi">
-      <div class="kpi-item">
-        <div class="kpi-label">LLM</div>
-        <div class="kpi-value" id="kpiLlm">—</div>
-      </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Redis</div>
-        <div class="kpi-value" id="kpiRedis">—</div>
-      </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Supervisor</div>
-        <div class="kpi-value" id="kpiSupervisor">—</div>
-      </div>
-    </section>
-
-    <section class="grid grid-2" style="margin-top: 14px;">
-      <article class="card">
-        <h3 class="card-title">System Health</h3>
-        <p class="card-desc">Check `/health` and `/health/ready` endpoints.</p>
-        <button class="btn btn-primary" id="btnRefreshHealth">Refresh Health</button>
-        <div id="healthResult" class="result"></div>
-      </article>
-
-      <article class="card">
-        <h3 class="card-title">Quick RAG Query</h3>
-        <p class="card-desc">One-click validation against `/api/v1/rag/query`.</p>
-        <label class="label" for="quickRagQuestion">Question</label>
-        <textarea id="quickRagQuestion" class="textarea" rows="3">What organic fertilizers work best for tomatoes in Karnataka?</textarea>
-        <button class="btn btn-primary" id="btnQuickRag" style="margin-top: 10px;">Run Query</button>
-        <div id="quickRagResult" class="result"></div>
-      </article>
-    </section>
-
-    <section class="grid grid-2" style="margin-top: 14px;">
-      <article class="card">
-        <h3 class="card-title">Quick Pricing Check</h3>
-        <p class="card-desc">Ask current mandi pricing through chat route.</p>
-        <div class="grid grid-2">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropFresh AI Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/suite.css" />
+    <link rel="stylesheet" href="./assets/css/dashboard-suite.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-logo">CF</span>
           <div>
-            <label class="label" for="quickCommodity">Commodity</label>
-            <input id="quickCommodity" class="input" value="Tomato">
-          </div>
-          <div>
-            <label class="label" for="quickLocation">Location</label>
-            <input id="quickLocation" class="input" value="Kolar">
+            <div class="brand-title">CropFresh AI Suite</div>
+            <div class="brand-subtitle">Connected dashboard for voice, RAG, and live testing</div>
           </div>
         </div>
-        <button class="btn btn-primary" id="btnQuickPricing" style="margin-top: 10px;">Check Price</button>
-        <div id="quickPricingResult" class="result"></div>
-      </article>
+        <div class="status-pill offline" id="apiStatusPill">
+          <span class="dot"></span>
+          <span data-status-text>Checking API</span>
+        </div>
+      </header>
 
-      <article class="card">
-        <h3 class="card-title">Frontend Structure</h3>
-        <p class="card-desc">Now split by concern for advanced maintainability:</p>
-        <div class="result">/static/
-  index.html
-  rag_test.html
-  voice_test_ui.html
-  voice_realtime.html
-  assets/
-    css/
-      theme.css
-      dashboard.css
-      rag-lab.css
-      voice-ui.css
-      voice-realtime.css
-    js/
-      shared.js
-      dashboard.js
-      rag-lab.js
-      voice-ui.js
-      voice-realtime.js</div>
-      </article>
-    </section>
+      <nav class="nav-links">
+        <a href="./index.html" class="nav-link active">Dashboard</a>
+        <a href="./rag_test.html" class="nav-link">RAG Lab</a>
+        <a href="./voice_agent.html" class="nav-link">Voice Hub</a>
+        <a href="./premium_voice.html" class="nav-link">Premium Voice</a>
+        <a href="./voice_test_ui.html" class="nav-link">Voice UI</a>
+        <a href="./voice_realtime.html" class="nav-link">Realtime</a>
+        <a href="/docs" class="nav-link" target="_blank">Swagger</a>
+      </nav>
 
-    <section class="grid grid-2" style="margin-top: 14px;">
-      <article class="card">
-        <h3 class="card-title">Quick Buyer Matching</h3>
-        <p class="card-desc">Validate supervisor routing for buyer matching intent.</p>
-        <label class="label" for="quickMatchCommodity">Commodity</label>
-        <input id="quickMatchCommodity" class="input" value="Tomato">
-        <label class="label" for="quickMatchQuantity" style="margin-top: 8px;">Quantity (kg)</label>
-        <input id="quickMatchQuantity" class="input" value="120">
-        <button class="btn btn-primary" id="btnQuickMatch" style="margin-top: 10px;">Find Buyers</button>
-        <div id="quickMatchResult" class="result"></div>
-      </article>
+      <section class="hero dashboard-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">One clean entry point</p>
+          <h1>Make the static experience feel like one product, not five separate demos.</h1>
+          <p>
+            This dashboard now routes into the main live surfaces with consistent navigation,
+            premium styling, and fast checks for health, RAG, pricing, buyers, and quality flows.
+          </p>
+        </div>
+        <div class="launch-grid">
+          <a class="launch-card" href="./premium_voice.html"><span>Premium Voice</span><strong>Freemium duplex demo</strong></a>
+          <a class="launch-card" href="./voice_agent.html"><span>Voice Hub</span><strong>REST, WebSocket, TTS, inspector</strong></a>
+          <a class="launch-card" href="./rag_test.html"><span>RAG Lab</span><strong>Router, normalize, query, ingest</strong></a>
+        </div>
+      </section>
 
-      <article class="card">
-        <h3 class="card-title">Quick Quality Grading</h3>
-        <p class="card-desc">Send a grading request phrase through chat for CV-QG flow checks.</p>
-        <label class="label" for="quickQualityCommodity">Commodity</label>
-        <input id="quickQualityCommodity" class="input" value="Tomato">
-        <label class="label" for="quickQualityDescription" style="margin-top: 8px;">Condition Description</label>
-        <textarea id="quickQualityDescription" class="textarea" rows="3">Fresh, firm, uniform size, no visible defects</textarea>
-        <button class="btn btn-primary" id="btnQuickQuality" style="margin-top: 10px;">Run Quality Check</button>
-        <div id="quickQualityResult" class="result"></div>
-      </article>
-    </section>
-  </div>
-  <script src="./assets/js/shared.js"></script>
-  <script src="./assets/js/dashboard.js"></script>
-</body>
+      <section class="kpi-strip">
+        <article class="kpi-card"><span class="kpi-label">LLM</span><strong id="kpiLlm" class="kpi-value">-</strong></article>
+        <article class="kpi-card"><span class="kpi-label">Redis</span><strong id="kpiRedis" class="kpi-value">-</strong></article>
+        <article class="kpi-card"><span class="kpi-label">Supervisor</span><strong id="kpiSupervisor" class="kpi-value">-</strong></article>
+      </section>
+
+      <section class="grid grid-2">
+        <article class="card">
+          <h3 class="card-title">System health</h3>
+          <p class="card-desc">Check the base health and readiness endpoints before testing.</p>
+          <button class="btn btn-primary" id="btnRefreshHealth">Refresh health</button>
+          <div id="healthResult" class="result"></div>
+        </article>
+        <article class="card">
+          <h3 class="card-title">Quick RAG query</h3>
+          <label class="label" for="quickRagQuestion">Question</label>
+          <textarea id="quickRagQuestion" class="textarea">What organic fertilizers work best for tomatoes in Karnataka?</textarea>
+          <button class="btn btn-primary" id="btnQuickRag">Run query</button>
+          <div id="quickRagResult" class="result"></div>
+        </article>
+      </section>
+
+      <section class="grid grid-2">
+        <article class="card">
+          <h3 class="card-title">Quick pricing check</h3>
+          <div class="grid grid-2">
+            <div><label class="label" for="quickCommodity">Commodity</label><input id="quickCommodity" class="input" value="Tomato" /></div>
+            <div><label class="label" for="quickLocation">Location</label><input id="quickLocation" class="input" value="Kolar" /></div>
+          </div>
+          <button class="btn btn-primary" id="btnQuickPricing">Check price</button>
+          <div id="quickPricingResult" class="result"></div>
+        </article>
+        <article class="card">
+          <h3 class="card-title">Buyer matching</h3>
+          <div class="grid grid-2">
+            <div><label class="label" for="quickMatchCommodity">Commodity</label><input id="quickMatchCommodity" class="input" value="Tomato" /></div>
+            <div><label class="label" for="quickMatchQuantity">Quantity kg</label><input id="quickMatchQuantity" class="input" value="120" /></div>
+          </div>
+          <button class="btn btn-primary" id="btnQuickMatch">Find buyers</button>
+          <div id="quickMatchResult" class="result"></div>
+        </article>
+      </section>
+
+      <section class="grid grid-2">
+        <article class="card">
+          <h3 class="card-title">Quality grading</h3>
+          <label class="label" for="quickQualityCommodity">Commodity</label>
+          <input id="quickQualityCommodity" class="input" value="Tomato" />
+          <label class="label" for="quickQualityDescription">Condition description</label>
+          <textarea id="quickQualityDescription" class="textarea">Fresh, firm, uniform size, no visible defects</textarea>
+          <button class="btn btn-primary" id="btnQuickQuality">Run quality check</button>
+          <div id="quickQualityResult" class="result"></div>
+        </article>
+        <article class="card stack">
+          <div><h3 class="card-title">Static suite map</h3><p class="card-desc">These surfaces now share one cleaner visual system.</p></div>
+          <div class="badge-strip">
+            <span class="mini-stat">Dashboard</span>
+            <span class="mini-stat">RAG Lab</span>
+            <span class="mini-stat">Voice Hub</span>
+            <span class="mini-stat">Premium Voice</span>
+            <span class="mini-stat">Voice UI</span>
+            <span class="mini-stat">Realtime</span>
+          </div>
+        </article>
+      </section>
+    </div>
+    <script src="./assets/js/shared.js"></script>
+    <script src="./assets/js/dashboard.js"></script>
+  </body>
 </html>

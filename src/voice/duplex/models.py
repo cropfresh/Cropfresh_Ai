@@ -36,6 +36,7 @@ class AudioOutputChunk:
     chunk_index: int = 0
     is_last: bool = False
     text: str = ""  # The sentence that was synthesized
+    timing: dict[str, float | None] = field(default_factory=dict)
 
 
 @dataclass
@@ -47,3 +48,4 @@ class PipelineResult:
     audio_chunks_sent: int = 0
     was_interrupted: bool = False
     latency_ms: float = 0.0
+    timing: dict[str, float | None] = field(default_factory=dict)

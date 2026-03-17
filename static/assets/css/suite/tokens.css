@@ -1,0 +1,74 @@
+:root {
+  --bg: #08120f;
+  --bg-elevated: #10201a;
+  --bg-muted: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --text: #f4f4ee;
+  --text-soft: #c6d4cc;
+  --text-muted: #8ea499;
+  --accent: #f5b94b;
+  --accent-soft: rgba(245, 185, 75, 0.16);
+  --success: #69d39a;
+  --success-soft: rgba(105, 211, 154, 0.16);
+  --danger: #ff8a7a;
+  --danger-soft: rgba(255, 138, 122, 0.18);
+  --info: #7cc2ff;
+  --info-soft: rgba(124, 194, 255, 0.16);
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.26);
+  --shadow-card: 0 16px 42px rgba(0, 0, 0, 0.22);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --wave-color: #69d39a;
+  --font-body: "Sora", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(circle at top left, rgba(245, 185, 75, 0.13), transparent 24%),
+    radial-gradient(circle at 85% 12%, rgba(105, 211, 154, 0.15), transparent 20%),
+    linear-gradient(160deg, #08120f 0%, #10201a 42%, #091410 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black 45%, transparent 92%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}

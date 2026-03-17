@@ -1,77 +1,63 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CropFresh Voice UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/theme.css">
-  <link rel="stylesheet" href="./assets/css/voice-ui.css">
-</head>
-<body>
-  <div class="app-shell voice-layout">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-logo">🎙</span>
-        <div>
-          <div class="brand-title">Voice Test UI</div>
-          <div class="brand-subtitle">REST voice pipeline · STT + TTS validation</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropFresh Voice UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/suite.css" />
+    <link rel="stylesheet" href="./assets/css/lab-pages.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-logo">VU</span>
+          <div>
+            <div class="brand-title">Voice UI Test</div>
+            <div class="brand-subtitle">Fast REST checks for health, voice process, and synthesis</div>
+          </div>
         </div>
-      </div>
-      <div class="status-pill online">
-        <span class="dot"></span>
-        <span data-status-text>Voice Test</span>
-      </div>
-    </header>
+        <div class="status-pill online"><span class="dot"></span><span data-status-text>Voice UI</span></div>
+      </header>
 
-    <nav class="nav-links">
-      <a href="./index.html" class="nav-link">🏠 Dashboard</a>
-      <a href="./rag_test.html" class="nav-link">🧪 RAG Lab</a>
-      <a href="./voice_agent.html" class="nav-link">🎙 Voice Agent</a>
-      <a href="./voice_test_ui.html" class="nav-link active">🎤 Voice UI</a>
-      <a href="./voice_realtime.html" class="nav-link">⚡ Realtime</a>
-      <a href="/docs" target="_blank" class="nav-link">📘 Swagger</a>
-    </nav>
+      <nav class="nav-links">
+        <a href="./index.html" class="nav-link">Dashboard</a>
+        <a href="./rag_test.html" class="nav-link">RAG Lab</a>
+        <a href="./voice_agent.html" class="nav-link">Voice Hub</a>
+        <a href="./premium_voice.html" class="nav-link">Premium Voice</a>
+        <a href="./voice_test_ui.html" class="nav-link active">Voice UI</a>
+        <a href="./voice_realtime.html" class="nav-link">Realtime</a>
+        <a href="/docs" class="nav-link" target="_blank">Swagger</a>
+      </nav>
 
-    <article class="card">
-      <h3 class="card-title">Voice Health + Capture</h3>
-      <p class="card-desc">Record short voice queries and test `/api/v1/voice/process` response pipeline.</p>
-      <div class="input-row">
-        <select id="voiceLanguage" class="select">
-          <option value="auto">Auto</option>
-          <option value="hi">Hindi</option>
-          <option value="en">English</option>
-          <option value="kn">Kannada</option>
-          <option value="te">Telugu</option>
-          <option value="ta">Tamil</option>
-        </select>
-        <button id="btnVoiceHealth" class="btn btn-secondary">Check Health</button>
-        <button id="btnRecordToggle" class="btn btn-primary">Start Recording</button>
-      </div>
-      <p class="voice-meta" style="margin-top: 8px;">Recorder state: <span id="voiceState">Idle</span></p>
-      <div id="voiceHealthResult" class="result"></div>
-      <div id="voiceProcessResult" class="result"></div>
-    </article>
+      <section class="hero page-hero">
+        <div>
+          <p class="eyebrow">REST voice validation</p>
+          <h1>Use a cleaner utility page for quick voice health, processing, and synthesis checks.</h1>
+          <p>Everything here stays practical, but the layout now feels like part of the premium suite.</p>
+        </div>
+        <div class="hero-panel"><span class="mini-stat">Health</span><span class="mini-stat">Voice process</span><span class="mini-stat">Text to speech</span></div>
+      </section>
 
-    <article class="card">
-      <h3 class="card-title">Text to Speech</h3>
-      <p class="card-desc">Uses `/api/v1/voice/synthesize` with selected language.</p>
-      <label class="label" for="ttsText">Text</label>
-      <textarea id="ttsText" class="textarea" rows="3">ನಮಸ್ಕಾರ! CropFresh voice test is working.</textarea>
-      <button id="btnTts" class="btn btn-primary" style="margin-top: 10px;">Synthesize</button>
-      <audio id="ttsAudio" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
-      <div id="ttsResult" class="result"></div>
-    </article>
+      <section class="lab-grid">
+        <article class="card stack">
+          <div class="input-row"><select id="voiceLanguage" class="select"><option value="auto">Auto</option><option value="hi">Hindi</option><option value="en">English</option><option value="kn">Kannada</option><option value="te">Telugu</option><option value="ta">Tamil</option></select><button id="btnVoiceHealth" class="btn btn-secondary">Check health</button><button id="btnRecordToggle" class="btn btn-primary">Start recording</button></div>
+          <p class="voice-meta">Recorder state: <span id="voiceState">Idle</span></p>
+          <div id="voiceHealthResult" class="result"></div>
+          <div id="voiceProcessResult" class="result"></div>
+        </article>
+        <article class="card stack"><div><label class="label" for="ttsText">Text</label><textarea id="ttsText" class="textarea">Namaskara. CropFresh voice test is working.</textarea></div><button id="btnTts" class="btn btn-primary">Synthesize</button><audio id="ttsAudio" controls style="width: 100%; display: none"></audio><div id="ttsResult" class="result"></div></article>
+      </section>
 
-    <article class="card">
-      <h3 class="card-title">Voice Conversation Stream</h3>
-      <p class="card-desc">Displays transcription and assistant responses from processing result.</p>
-      <div id="voiceChatStream" class="chat-stream"></div>
-    </article>
-  </div>
-  <script src="./assets/js/shared.js"></script>
-  <script src="./assets/js/voice-ui.js"></script>
-</body>
+      <article class="card stack"><div><h3 class="card-title">Voice conversation stream</h3><p class="card-desc">Incoming transcription and response text appear here after each request.</p></div><div id="voiceChatStream" class="chat-stream"></div></article>
+    </div>
+    <script src="./assets/js/shared.js"></script>
+    <script src="./assets/js/voice-ui.js"></script>
+  </body>
 </html>

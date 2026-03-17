@@ -1,0 +1,73 @@
+:root {
+  --voice-bg: #08120f;
+  --voice-bg-accent: #12291f;
+  --surface-strong: rgba(10, 22, 18, 0.9);
+  --surface-soft: rgba(255, 255, 255, 0.06);
+  --surface-border: rgba(255, 255, 255, 0.12);
+  --text-primary: #f5f5ef;
+  --text-secondary: #c3d3ca;
+  --text-muted: #8ea499;
+  --accent-primary: #f5b94b;
+  --accent-secondary: #69d39a;
+  --accent-danger: #ff8274;
+  --accent-think: #6db8ff;
+  --shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.28);
+  --shadow-card: 0 16px 44px rgba(0, 0, 0, 0.24);
+  --font-body: "Sora", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body.voice-mode {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(circle at top left, rgba(245, 185, 75, 0.14), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(105, 211, 154, 0.18), transparent 22%),
+    linear-gradient(160deg, #09110f 0%, #10201a 45%, #08120f 100%);
+}
+
+body.voice-mode::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black 45%, transparent 92%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+select {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+svg {
+  display: block;
+}

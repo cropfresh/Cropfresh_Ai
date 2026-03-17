@@ -1,6 +1,6 @@
 ﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-17 (ADCL productionization implementation)
+> **Last Updated:** 2026-03-17 (docs-first voice duplex handoff)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -8,6 +8,27 @@ This document is the **single entry point** for understanding how CropFresh AI i
 ---
 
 ## Latest Session Snapshot
+
+**2026-03-17 - Docs-First Voice Duplex Sprint Handoff**
+
+- Added `tracking/sprints/sprint-07-voice-duplex-productionization.md` as the next voice sprint source of truth for duplex productionization, realistic latency targets, Bedrock removal, local-language quality, and live testing cleanup.
+- Updated the core voice docs so they now point to `/api/v1/voice/ws` and `/api/v1/voice/ws/duplex` instead of the removed legacy websocket path.
+- Reframed the model-provider docs around `groq`, `vllm`, and `together` while keeping Bedrock references explicit as legacy code paths still present on 2026-03-17.
+- Aligned the README, environment/setup guides, and AWS markdown with the actual current voice stack and planned Sprint 07 direction.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-07-voice-duplex-productionization.md`
+- Read `tracking/PROJECT_STATUS.md`
+- Read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md`
+- Review `src/api/websocket/voice_pkg/router.py` and `src/api/websocket/voice_pkg/duplex.py`
+- Open `static/premium_voice.html` before changing the live voice flow
+
+**2026-03-17 - Sprint 05 Retrospective Update**
+
+- Added `tracking/retros/sprint-05-retro.md` using the repo retro template headings so Sprint 05 now has a formal retrospective artifact.
+- Captured what shipped well, what slipped, and the carry-forward actions created by the Sprint 05 to Sprint 06 pivot.
+- Kept the retro honest about the mixed sprint outcome: strong docs/rate-hub/ADCL momentum, but original RAG sprint goals still need explicit carryover handling.
 
 **2026-03-17 - ADCL Productionization Implementation**
 
@@ -153,7 +174,8 @@ Format it into the sprint template at tracking/sprints/_template.md."
 ### âš™ï¸ Implement a Feature
 
 ```
-"Read PLAN.md, tracking/PROJECT_STATUS.md, and tracking/sprints/sprint-04-voice-pipeline.md.
+"Read PLAN.md, tracking/PROJECT_STATUS.md, and the relevant sprint file.
+For voice work, start with tracking/sprints/sprint-07-voice-duplex-productionization.md.
 Implement [feature/endpoint name] in [file path].
 Follow coding standards in docs/architecture/coding-standards.md.
 Generate unit tests in tests/unit/ as part of this change.
@@ -183,7 +205,8 @@ Reference TESTING/STRATEGY.md checklist and our coding standards."
 ### ðŸ“Š End-of-Sprint Summary
 
 ```
-"Read tracking/sprints/sprint-04-voice-pipeline.md and the last 5 daily logs.
+"Read the active sprint file and the last 5 daily logs.
+For voice work, start with tracking/sprints/sprint-07-voice-duplex-productionization.md.
 Summarize: what shipped, what slipped, 3 key learnings.
 Format as the Sprint Outcome section and also update tracking/PROJECT_STATUS.md."
 ```
@@ -243,10 +266,11 @@ git checkout main && git merge feature/sprint-04-apmc-scraper
 | Multi-Agent System                  | âœ… Complete    | 100%     | Sprint 01 |
 | Memory System (Redis)               | âœ… Complete    | 100%     | Sprint 01 |
 | Voice Agent v1 (Edge-TTS + Whisper) | âœ… Complete    | 90%      | Sprint 01 |
-| Pipecat Voice Pipeline              | ðŸŸ¡ In Progress | 40%      | Sprint 04 |
+| Duplex WebSocket Voice Path         | In Progress    | 80%      | Sprint 07 |
+| Pipecat Voice Pipeline              | ðŸŸ¡ In Progress | 40%      | Sprint 07 (experimental) |
 | APMC Mandi Scraper                  | âŒ Not Started | 0%       | Sprint 04 |
 | ADCL Service (district-first)      | In Progress    | 80%      | Sprint 06 |
-| Supabase/Auth Hardening            | âŒ Not Started | 0%       | Sprint 07 |
+| Supabase/Auth Hardening            | âŒ Not Started | 0%       | Sprint 08 |
 | Vision Agent (YOLOv12 + DINOv2)     | âŒ Not Started | 0%       | Phase 3   |
 | Evaluation Framework (LangSmith)    | âŒ Not Started | 0%       | Sprint 05 |
 | Flutter Mobile App                  | âŒ Not Started | 0%       | Phase 4   |
@@ -296,7 +320,8 @@ uv run ruff check src/
 | `/api/v1/voice/process`    | POST      | Full voice-in â†’ voice-out     |
 | `/api/v1/voice/transcribe` | POST      | Audio â†’ Text (STT)            |
 | `/api/v1/voice/synthesize` | POST      | Text â†’ Audio (TTS)            |
-| `/ws/voice/{user_id}`      | WebSocket | Real-time streaming (Pipecat) |
+| `/api/v1/voice/ws`         | WebSocket | Compatibility voice streaming |
+| `/api/v1/voice/ws/duplex`  | WebSocket | Canonical realtime duplex path |
 
 ### RAG API
 
@@ -316,6 +341,32 @@ uv run ruff check src/
 ---
 
 ## ðŸ“ File Changes Log
+
+### 2026-03-17 - Docs-First Voice Duplex Handoff
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/sprints/sprint-07-voice-duplex-productionization.md` | Added the next voice sprint source of truth for duplex productionization, latency targets, Bedrock removal, and live test cleanup |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Kept Sprint 06 current, added Sprint 07 next, and aligned the next-session entry with the voice handoff |
+| UPDATE | `tracking/tasks/backlog.md` | Promoted voice latency, Bedrock removal, Pipecat cleanup, and live-test work into explicit Sprint 07 backlog items |
+| UPDATE | `AGENTS.md` | Pointed startup guidance and prompts to Sprint 07 instead of the removed legacy voice sprint file |
+| UPDATE | `docs/api/websocket-voice.md` | Rewrote the websocket contract around `/api/v1/voice/ws` and `/api/v1/voice/ws/duplex` |
+| UPDATE | `docs/api/endpoints-reference.md` | Corrected the voice REST and websocket contract to match the current runtime |
+| UPDATE | `docs/features/voice-pipeline.md` | Rewrote the voice stack doc around duplex websocket, hybrid STT/TTS, and current latency reality |
+| UPDATE | `docs/architecture/system-architecture.md` | Aligned the architecture summary with the Bedrock-free provider direction and duplex-first voice path |
+| UPDATE | `docs/architecture/data-flow.md` | Corrected the voice and provider data flows to the current duplex contract |
+| UPDATE | `docs/guides/environment-variables.md` | Reframed provider setup around `groq`, `vllm`, and `together` |
+| UPDATE | `docs/guides/getting-started.md` | Replaced Bedrock-first onboarding with Groq and vLLM quick-start guidance |
+| UPDATE | `README.md` | Removed Bedrock-first positioning and described the current duplex voice stack accurately |
+| UPDATE | `infra/aws/iam-roles.md` | Removed Bedrock IAM guidance from the recommended production path |
+| UPDATE | `infra/aws/vpc-network.md` | Removed Bedrock-specific networking assumptions from the recommended path |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this handoff entry, refreshed prompts, and corrected the voice API summary |
+
+### 2026-03-17 - Sprint 05 Retrospective Update
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/retros/sprint-05-retro.md` | Added the Sprint 05 retrospective using the repo template and current sprint-pivot context |
 
 ### 2026-03-17 - ADCL Productionization Implementation
 
@@ -547,7 +598,7 @@ uv run ruff check src/
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
 | CREATE | `src/orchestrator/llm_provider/models.py`          | Extracted `LLMMessage` and `LLMResponse` models                              |
 | CREATE | `src/orchestrator/llm_provider/base.py`            | Extracted `BaseLLMProvider` interface                                        |
-| CREATE | `src/orchestrator/llm_provider/bedrock.py`         | Extracted Amazon Bedrock provider                                            |
+| CREATE | `src/orchestrator/llm_provider/bedrock.py`         | Extracted legacy Amazon Bedrock provider                                     |
 | CREATE | `src/orchestrator/llm_provider/groq.py`            | Extracted Groq provider                                                      |
 | CREATE | `src/orchestrator/llm_provider/together.py`        | Extracted Together AI provider                                               |
 | CREATE | `src/orchestrator/llm_provider/vllm.py`            | Extracted vLLM provider                                                      |
@@ -832,7 +883,7 @@ uv run ruff check src/
 | UPDATE | `src/agents/agronomy_prompt.py`                | Expanded Kannada-specific vocabulary mapping, tone, and grammar enforcement  |
 | CREATE | `scripts/test_llm_routing.py`                  | Standalone LLM prompt testing script to view agent routing visualizations    |
 | CREATE | `tests/unit/agents/test_supervisor_agent.py`   | Robust LLM parsing and keyword fallback unit tests for Supervisor Agent      |
-| UPDATE | `.env`                                         | Switched the active LLM provider from Bedrock to Groq (`llama-3.3-70b-versatile`) |
+| UPDATE | `.env`                                         | Switched the active LLM provider from legacy Bedrock to Groq (`llama-3.3-70b-versatile`) |
 | UPDATE | `src/orchestrator/llm_provider.py`             | Updated `GroqProvider` default arguments for `llama-3.3-70b-versatile`       |
 | UPDATE | `scripts/test_llm_routing.py`                  | Adjusted expected outputs to match exact routing prompt instructions; fixed Windows console Unicode display issues |
 
@@ -845,7 +896,7 @@ uv run ruff check src/
 | UPDATE | `AGENTS.md`                                    | Complete AI agent instructions: dev rules, file map, prompts, do-not-do list |
 | UPDATE | `WORKFLOW_STATUS.md`                           | This file â€” comprehensive dev workflow + methodology                         |
 | CREATE | `tracking/PROJECT_STATUS.md`                   | Always-current project state dashboard                                       |
-| CREATE | `tracking/sprints/sprint-04-voice-pipeline.md` | Current sprint: Pipecat + APMC scraping                                      |
+| CREATE | `tracking/sprints/(historical voice plan)`     | Initial voice sprint plan created during early repo setup                    |
 | CREATE | `tracking/daily/_template.md`                  | Daily log template                                                           |
 | CREATE | `tracking/daily/2026-02-27.md`                 | Today's session log                                                          |
 | CREATE | `TESTING/STRATEGY.md`                          | Test pyramid, philosophy, AI prompts for testing                             |

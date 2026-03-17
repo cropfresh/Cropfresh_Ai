@@ -3,490 +3,115 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CropFresh Voice Agent Hub</title>
-    <meta
-      name="description"
-      content="Complete test hub for CropFresh AI voice agent — REST, WebSocket, TTS Lab, and Tools Inspector."
-    />
+    <title>CropFresh Voice Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./assets/css/theme.css" />
-    <link rel="stylesheet" href="./assets/css/voice-agent.css" />
+    <link rel="stylesheet" href="./assets/css/suite.css" />
+    <link rel="stylesheet" href="./assets/css/voice-hub.css" />
   </head>
   <body>
-    <div class="va-layout">
-      <!-- ── Topbar ─────────────────────────────────────────────── -->
+    <div class="app-shell">
       <header class="topbar">
         <div class="brand">
-          <span class="brand-logo">🎙</span>
+          <span class="brand-logo">VH</span>
           <div>
-            <div class="brand-title">CropFresh Voice Agent</div>
-            <div class="brand-subtitle">
-              Complete testing hub · REST · WebSocket · TTS · Inspector
-            </div>
+            <div class="brand-title">CropFresh Voice Hub</div>
+            <div class="brand-subtitle">REST, duplex WebSocket, TTS lab, and inspector in one clean surface</div>
           </div>
         </div>
-        <div class="status-pill offline" id="wsStatusPill">
-          <span class="dot"></span>
-          <span data-status-text>Idle</span>
-        </div>
+        <div class="status-pill offline" id="wsStatusPill"><span class="dot"></span><span data-status-text>Idle</span></div>
       </header>
 
-      <!-- ── Nav ───────────────────────────────────────────────── -->
-      <nav class="nav-links" style="margin-bottom: 18px">
-        <a href="./index.html" class="nav-link">🏠 Dashboard</a>
-        <a href="./rag_test.html" class="nav-link">🧪 RAG Lab</a>
-        <a href="./voice_agent.html" class="nav-link active">🎙 Voice Agent</a>
-        <a href="./voice_test_ui.html" class="nav-link">🎤 Voice UI</a>
-        <a href="./voice_realtime.html" class="nav-link">⚡ Realtime</a>
-        <a href="/docs" target="_blank" class="nav-link">📘 Swagger</a>
+      <nav class="nav-links">
+        <a href="./index.html" class="nav-link">Dashboard</a>
+        <a href="./rag_test.html" class="nav-link">RAG Lab</a>
+        <a href="./voice_agent.html" class="nav-link active">Voice Hub</a>
+        <a href="./premium_voice.html" class="nav-link">Premium Voice</a>
+        <a href="./voice_test_ui.html" class="nav-link">Voice UI</a>
+        <a href="./voice_realtime.html" class="nav-link">Realtime</a>
+        <a href="/docs" class="nav-link" target="_blank">Swagger</a>
       </nav>
 
-      <!-- ── Tab bar ────────────────────────────────────────────── -->
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="tabRest">🎙 REST Voice</button>
-        <button class="tab-btn" data-tab="tabWs">⚡ WebSocket</button>
-        <button class="tab-btn" data-tab="tabTts">🔊 TTS Lab</button>
-        <button class="tab-btn" data-tab="tabTools">🔍 Tools Inspector</button>
+      <section class="hero hub-hero">
+        <div>
+          <p class="eyebrow">Voice testing, cleaned up</p>
+          <h1>Use one neat voice hub instead of a cluttered lab page.</h1>
+          <p>The core tools stay the same, but the static experience now feels connected to the premium voice demo and the rest of the suite.</p>
+        </div>
+        <div class="quick-prompts"><span class="mini-stat">REST process</span><span class="mini-stat">Duplex WebSocket</span><span class="mini-stat">Text to speech</span><span class="mini-stat">Voice inspector</span></div>
+      </section>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tabRest">REST Voice</button>
+        <button class="tab-btn" data-tab="tabWs">WebSocket</button>
+        <button class="tab-btn" data-tab="tabTts">TTS Lab</button>
+        <button class="tab-btn" data-tab="tabTools">Inspector</button>
       </div>
 
-      <!-- ══════════════════════════════════════════════════════════
-         TAB 1 — REST Voice
-    ═══════════════════════════════════════════════════════════ -->
-      <div id="tabRest" class="tab-panel active">
-        <div class="grid grid-2" style="gap: 18px">
-          <!-- Left: Mic + controls -->
-          <article class="card">
-            <h3 class="card-title">🎙 Voice Capture → Process</h3>
-            <p class="card-desc">
-              Record a voice query and send it through
-              <code>/api/v1/voice/process</code>.
-            </p>
-
-            <!-- Mic orb -->
-            <div class="mic-orb-wrap">
-              <div
-                class="mic-orb"
-                id="restMicOrb"
-                title="Click to record"
-                aria-label="Toggle recording"
-              >
-                🎤
-              </div>
-              <span class="mic-label" id="restMicLabel">Tap to record</span>
-            </div>
-
-            <!-- Waveform -->
+      <section id="tabRest" class="tab-panel active">
+        <div class="hub-grid">
+          <article class="card stack">
+            <div><h3 class="card-title">Voice capture and process</h3><p class="card-desc">Record and send audio through the REST processing route.</p></div>
+            <div class="mic-orb-wrap"><button class="mic-orb" id="restMicOrb" title="Toggle recording">Record</button><span id="restMicLabel" class="mic-label">Tap to record</span></div>
             <canvas class="waveform-canvas" id="restWaveform"></canvas>
-
-            <!-- Language + secondary btn -->
-            <div class="input-row" style="margin-top: 14px">
-              <select id="restLang" class="select" style="flex: 1">
-                <option value="auto">🌐 Auto-detect</option>
-                <option value="hi">🇮🇳 Hindi</option>
-                <option value="en">🇬🇧 English</option>
-                <option value="kn">Karnataka · kn</option>
-                <option value="te">Telugu · te</option>
-                <option value="ta">Tamil · ta</option>
-                <option value="mr">Marathi · mr</option>
-                <option value="gu">Gujarati · gu</option>
-                <option value="pa">Punjabi · pa</option>
-                <option value="bn">Bengali · bn</option>
-                <option value="ml">Malayalam · ml</option>
-              </select>
-              <button class="btn btn-secondary" id="btnTranscribeToggle">
-                🎙 Transcribe Only
-              </button>
-            </div>
-
-            <div
-              style="
-                margin-top: 12px;
-                font-size: 0.72rem;
-                color: var(--text-muted);
-              "
-            >
-              Latency: <span id="restLatency">—</span>
-            </div>
+            <div class="input-row"><select id="restLang" class="select"><option value="auto">Auto</option><option value="hi">Hindi</option><option value="en">English</option><option value="kn">Kannada</option><option value="te">Telugu</option><option value="ta">Tamil</option><option value="mr">Marathi</option><option value="gu">Gujarati</option><option value="pa">Punjabi</option><option value="bn">Bengali</option><option value="ml">Malayalam</option></select><button class="btn btn-secondary" id="btnTranscribeToggle">Transcribe only</button></div>
+            <div id="restStatus" class="rest-status">Tap the record orb to begin</div>
+            <div class="badge-strip"><span class="mini-stat">Latency <span id="restLatency" class="mono">-</span></span></div>
           </article>
-
-          <!-- Right: Conversation -->
-          <article class="card">
-            <h3 class="card-title">💬 Conversation</h3>
-
-            <!-- Status bar -->
-            <div id="restStatus" class="rest-status">
-              Tap the mic to start speaking
-            </div>
-
-            <!-- Chat thread -->
-            <div class="chat-thread" id="restChat">
-              <div class="chat-bubble-wrap system">
-                <div class="chat-bubble system">
-                  Record your voice query — results will appear here as a
-                  conversation.
-                </div>
-              </div>
-            </div>
-
-            <!-- Badges -->
-            <div
-              class="badge-strip"
-              id="restBadges"
-              style="margin-top: 10px"
-            ></div>
+          <article class="card stack">
+            <div><h3 class="card-title">Conversation</h3><p class="card-desc">Transcript, reply, and extracted metadata appear here.</p></div>
+            <div class="chat-thread" id="restChat"><div class="chat-bubble-wrap system"><div class="chat-bubble system">Record a short farmer question to start the session.</div></div></div>
+            <div class="badge-strip" id="restBadges"></div>
+            <div class="quick-prompts"><div class="quick-prompt">Tomato price in Kolar today</div><div class="quick-prompt">Hindi crop advisory for tomato</div><div class="quick-prompt">Kannada selling intent with quantity</div></div>
           </article>
         </div>
+      </section>
 
-        <!-- Quick test prompts -->
-        <article class="card" style="margin-top: 14px">
-          <h3 class="card-title">💡 Quick Prompts (copy and type/speak)</h3>
-          <div class="grid grid-3" style="gap: 8px; margin-top: 8px">
-            <div
-              class="result"
-              style="min-height: auto; font-size: 0.78rem; cursor: pointer"
-              onclick="navigator.clipboard.writeText(this.textContent)"
-            >
-              ಟೊಮೇಟೊ ಬೆಲೆ ಎಷ್ಟು? (Tomato price in Kannada)
-            </div>
-            <div
-              class="result"
-              style="min-height: auto; font-size: 0.78rem; cursor: pointer"
-              onclick="navigator.clipboard.writeText(this.textContent)"
-            >
-              टमाटर की खेती में कौन सा खाद अच्छा है? (Hindi agronomy)
-            </div>
-            <div
-              class="result"
-              style="min-height: auto; font-size: 0.78rem; cursor: pointer"
-              onclick="navigator.clipboard.writeText(this.textContent)"
-            >
-              What is the current mandi price for onion in Kolar?
-            </div>
-          </div>
-        </article>
-      </div>
+      <section id="tabWs" class="tab-panel">
+        <div class="hub-grid">
+          <article class="card stack">
+            <div><h3 class="card-title">Duplex WebSocket</h3><p class="card-desc">Connect, hold push-to-talk, and inspect live status updates.</p></div>
+            <div class="input-row"><input id="wsUserId" class="input" value="ws-test-user" /><select id="wsLang" class="select"><option value="auto">Auto</option><option value="hi">Hindi</option><option value="en">English</option><option value="kn">Kannada</option><option value="te">Telugu</option><option value="ta">Tamil</option></select></div>
+            <div class="input-row"><button class="btn btn-primary" id="btnWsConnect">Connect</button><button class="btn btn-secondary" id="btnWsDisconnect" disabled>Disconnect</button><button class="btn btn-secondary" id="btnWsClearTimeline">Clear</button></div>
+            <div class="ws-status-bar" id="wsLiveStatus">Click connect to begin</div>
+            <div class="badge-strip"><span id="wsDetectedLangBadge" class="badge d-none">EN</span></div>
+            <button class="btn btn-secondary btn-ptt" id="btnWsPtt" disabled>Hold to speak</button>
+          </article>
+          <article class="card stack"><div class="chat-thread" id="wsChat"></div><div class="event-timeline" id="wsTimeline"><div class="event-row"><span class="event-dot system"></span><span class="event-time">-</span><span class="event-text">Connect to start a live session.</span></div></div></article>
+        </div>
+      </section>
 
-      <!-- ══════════════════════════════════════════════════════════
-         TAB 2 — WebSocket Real-time
-    ═══════════════════════════════════════════════════════════ -->
-      <div id="tabWs" class="tab-panel">
-        <article class="card">
-          <h3 class="card-title">⚡ WebSocket PCM Streaming</h3>
-          <p class="card-desc">
-            Streams 16kHz mono PCM mic audio to <code>/api/v1/voice/ws</code> —
-            VAD, barge-in, response audio all handled.
-          </p>
+      <section id="tabTts" class="tab-panel">
+        <div class="hub-grid">
+          <article class="card stack">
+            <div><h3 class="card-title">Text to speech lab</h3><p class="card-desc">Synthesize sample text and inspect duration, output, and history.</p></div>
+            <div><label class="label" for="ttsTextInput">Text</label><textarea id="ttsTextInput" class="textarea">Namaskara. CropFresh voice should sound natural and clear.</textarea></div>
+            <div class="grid grid-3"><div><label class="label" for="ttsLang">Language</label><select id="ttsLang" class="select"><option value="hi">Hindi</option><option value="en">English</option><option value="kn">Kannada</option><option value="te">Telugu</option><option value="ta">Tamil</option></select></div><div><label class="label" for="ttsVoice">Voice</label><select id="ttsVoice" class="select"><option value="default">Default</option><option value="female">Female</option><option value="male">Male</option></select></div><div><label class="label" for="ttsEmotion">Emotion</label><select id="ttsEmotion" class="select"><option value="neutral">Neutral</option><option value="warm">Warm</option><option value="energetic">Energetic</option></select></div></div>
+            <button class="btn btn-primary" id="btnTtsSynthesize">Synthesize</button>
+            <canvas class="waveform-canvas" id="ttsWaveform"></canvas>
+            <div class="audio-shell audio-player--hidden"><audio id="ttsAudioPlayer" controls></audio></div>
+            <div id="ttsStatus" class="result"></div>
+          </article>
+          <article class="card stack"><div><h3 class="card-title">Recent outputs</h3><p class="card-desc">The last few synthesis runs stay visible here.</p></div><div id="ttsHistoryList" class="tts-history-list"></div></article>
+        </div>
+      </section>
 
-          <!-- Session controls -->
-          <div class="ws-session-row">
-            <input
-              id="wsUserId"
-              class="input"
-              style="max-width: 160px"
-              placeholder="User ID"
-              value="ws-test-user"
-            />
-            <select id="wsLang" class="select" style="max-width: 120px">
-              <option value="auto">🌐 Auto</option>
-              <option value="hi">Hindi</option>
-              <option value="en">English</option>
-              <option value="kn">Kannada</option>
-              <option value="te">Telugu</option>
-              <option value="ta">Tamil</option>
-            </select>
-            <button class="btn btn-primary" id="btnWsConnect">Connect</button>
-            <button class="btn btn-secondary" id="btnWsDisconnect" disabled>
-              Disconnect
-            </button>
-            <button class="btn btn-secondary" id="btnWsClearTimeline">
-              🗑 Clear
-            </button>
-          </div>
-
-          <!-- Live status bar -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div id="wsLiveStatus" class="ws-status-bar" style="flex: 1; margin: 0;">
-              Click Connect to begin
-            </div>
-            <div id="wsDetectedLangBadge" class="badge d-none" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: var(--event-lang); font-weight: 600; font-size: 0.8rem;">
-              EN
-            </div>
-          </div>
-
-          <!-- Push-to-Talk -->
-          <div style="margin: 12px 0; text-align: center">
-            <button
-              class="btn btn-ptt"
-              id="btnWsPtt"
-              disabled
-              title="Hold to speak (or hold Spacebar)"
-            >
-              🎤 Hold to Speak (PTT)
-            </button>
-            <div
-              style="
-                font-size: 0.7rem;
-                color: var(--text-muted);
-                margin-top: 6px;
-              "
-            >
-              Hold button or Spacebar · release to send
-            </div>
-          </div>
-
-          <!-- Event timeline -->
-          <label class="label">Event Timeline</label>
-          <div class="event-timeline" id="wsTimeline">
-            <div class="event-row">
-              <span class="event-dot system"></span>
-              <span class="event-time">—</span>
-              <span class="event-text"
-                >Click Connect to start a WebSocket session</span
-              >
-            </div>
-          </div>
-
-          <!-- Legend -->
-          <div class="badge-strip" style="margin-top: 10px">
-            <span
-              class="badge"
-              style="
-                background: rgba(34, 197, 94, 0.1);
-                border-color: rgba(34, 197, 94, 0.3);
-                color: var(--event-vad);
-              "
-              >● VAD</span
-            >
-            <span
-              class="badge"
-              style="
-                background: rgba(14, 165, 233, 0.1);
-                border-color: rgba(14, 165, 233, 0.3);
-                color: var(--event-transcript);
-              "
-              >● Transcript</span
-            >
-            <span
-              class="badge"
-              style="
-                background: rgba(168, 85, 247, 0.1);
-                border-color: rgba(168, 85, 247, 0.3);
-                color: var(--event-response);
-              "
-              >● Response</span
-            >
-            <span
-              class="badge"
-              style="
-                background: rgba(239, 68, 68, 0.1);
-                border-color: rgba(239, 68, 68, 0.3);
-                color: var(--event-bargein);
-              "
-              >● Barge-in</span
-            >
-            <span
-              class="badge"
-              style="
-                background: rgba(245, 158, 11, 0.1);
-                border-color: rgba(245, 158, 11, 0.3);
-                color: var(--event-lang);
-              "
-              >● Language</span
-            >
-          </div>
-
-          <!-- Conversation thread -->
-          <label class="label" style="margin-top: 16px">💬 Conversation</label>
-          <div class="chat-thread" id="wsChat">
-            <div class="chat-bubble-wrap system">
-              <div class="chat-bubble system">
-                Connect and hold PTT to start talking.
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <!-- ══════════════════════════════════════════════════════════
-         TAB 3 — TTS Lab
-    ═══════════════════════════════════════════════════════════ -->
-      <div id="tabTts" class="tab-panel">
-        <article class="card">
-          <h3 class="card-title">🔊 Text-to-Speech Lab</h3>
-          <p class="card-desc">
-            Test <code>/api/v1/voice/synthesize</code> with any text and
-            language.
-          </p>
-
-          <label class="label" for="ttsTextInput">Text</label>
-          <textarea
-            id="ttsTextInput"
-            class="textarea"
-            rows="4"
-            placeholder="Enter text to speak…"
-          >
-ನಮಸ್ಕಾರ! CropFresh AI ನಿಮ್ಮ ಕೃಷಿ ಸಹಾಯಕ. ಟೊಮೇಟೊ ಬೆಲೆ ₹35 ಕ್ಕೆ ಮಾರಾಟ ಮಾಡಿ.</textarea
-          >
-
-          <!-- Controls row -->
-          <div class="tts-controls-row" style="margin-top: 12px">
-            <div>
-              <label class="label" for="ttsLang">Language</label>
-              <select id="ttsLang" class="select">
-                <option value="kn">Kannada</option>
-                <option value="hi">Hindi</option>
-                <option value="en">English</option>
-                <option value="te">Telugu</option>
-                <option value="ta">Tamil</option>
-                <option value="mr">Marathi</option>
-                <option value="gu">Gujarati</option>
-                <option value="pa">Punjabi</option>
-                <option value="bn">Bengali</option>
-                <option value="ml">Malayalam</option>
-              </select>
-            </div>
-            <div>
-              <label class="label" for="ttsVoice">Voice</label>
-              <select id="ttsVoice" class="select">
-                <option value="default">Default</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-              </select>
-            </div>
-            <div>
-              <label class="label" for="ttsEmotion">Emotion</label>
-              <select id="ttsEmotion" class="select">
-                <option value="neutral">Neutral</option>
-                <option value="happy">Happy</option>
-                <option value="calm">Calm</option>
-              </select>
-            </div>
-          </div>
-
-          <button
-            class="btn btn-primary"
-            id="btnTtsSynthesize"
-            style="margin-top: 12px; width: 100%"
-          >
-            🔊 Synthesize Speech
-          </button>
-
-          <!-- Status + waveform -->
-          <div
-            id="ttsStatus"
-            class="result"
-            style="margin-top: 12px; min-height: 36px"
-          >
-            Ready — press Synthesize.
-          </div>
-          <canvas
-            class="waveform-canvas"
-            id="ttsWaveform"
-            style="margin-top: 10px; display: none"
-          ></canvas>
-
-          <!-- Native player -->
-          <div class="audio-player" id="ttsAudioWrap" style="margin-top: 10px">
-            <audio id="ttsAudioPlayer" controls></audio>
-          </div>
-
-          <!-- History -->
-          <div class="tts-history" id="ttsHistoryWrap">
-            <label class="label">History (last 5)</label>
-            <div id="ttsHistoryList"></div>
-          </div>
-        </article>
-      </div>
-
-      <!-- ══════════════════════════════════════════════════════════
-         TAB 4 — Tools Inspector
-    ═══════════════════════════════════════════════════════════ -->
-      <div id="tabTools" class="tab-panel">
-        <article class="card">
-          <h3 class="card-title">🔍 Tools Inspector</h3>
-          <p class="card-desc">
-            Voice service health, supported languages, and a live JSON view of
-            the last voice call payload.
-          </p>
-
-          <div
-            style="
-              display: flex;
-              gap: 8px;
-              margin-bottom: 14px;
-              flex-wrap: wrap;
-            "
-          >
-            <button class="btn btn-primary" id="btnRefreshInspector">
-              ↻ Refresh
-            </button>
-          </div>
-
-          <!-- Health row -->
-          <label class="label">Voice Service Health</label>
-          <div class="health-row" id="inspectorHealthRow">
-            <div class="health-chip">Loading…</div>
-          </div>
-
-          <!-- Language tables -->
-          <div class="inspector-grid">
-            <div class="inspector-section">
-              <h4>STT Languages</h4>
-              <table class="lang-table">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Name</th>
-                  </tr>
-                </thead>
-                <tbody id="inspectorSttTable">
-                  <tr>
-                    <td colspan="2">Loading…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="inspector-section">
-              <h4>TTS Languages</h4>
-              <table class="lang-table">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Name</th>
-                  </tr>
-                </thead>
-                <tbody id="inspectorTtsTable">
-                  <tr>
-                    <td colspan="2">Loading…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- JSON viewer -->
-          <label class="label" style="margin-top: 18px"
-            >Last Voice Call Payload</label
-          >
-          <div
-            class="json-viewer"
-            id="inspectorJsonView"
-            style="position: relative"
-          >
-            <button class="json-copy-btn" id="btnCopyJson">Copy</button>
-            // No voice call yet — make a REST request on the 🎙 tab first.
-          </div>
-        </article>
-      </div>
+      <section id="tabTools" class="tab-panel">
+        <div class="tool-grid">
+          <article class="card stack">
+            <div class="input-row"><h3 class="card-title" style="margin:0">Voice inspector</h3><button class="btn btn-secondary" id="btnRefreshInspector">Refresh</button></div>
+            <div id="inspectorHealthRow" class="badge-strip"></div>
+            <div class="tools-table-wrap"><table class="data-table"><thead><tr><th>STT code</th><th>Name</th></tr></thead><tbody id="inspectorSttTable"></tbody></table></div>
+            <div class="tools-table-wrap"><table class="data-table"><thead><tr><th>TTS code</th><th>Name</th></tr></thead><tbody id="inspectorTtsTable"></tbody></table></div>
+          </article>
+          <article class="card stack"><div class="input-row"><h3 class="card-title" style="margin:0">Last voice payload</h3><button class="json-copy-btn" id="btnCopyJson">Copy</button></div><div class="json-viewer" id="inspectorJsonView">// No voice call yet - run a REST or WebSocket request first.</div></article>
+        </div>
+      </section>
     </div>
-    <!-- /.va-layout -->
-
-    <!-- ── Scripts (order matters: shared → core → feature tabs) -->
     <script src="./assets/js/shared.js"></script>
     <script src="./assets/js/voice-agent-core.js"></script>
     <script src="./assets/js/voice-agent-rest.js"></script>
@@ -495,18 +120,5 @@
     <script src="./assets/js/voice-agent-ws.js"></script>
     <script src="./assets/js/voice-agent-tts.js"></script>
     <script src="./assets/js/voice-agent-tools.js"></script>
-
-    <!-- Show TTS waveform canvas when audio src is set -->
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const tp = document.getElementById("ttsAudioPlayer");
-        if (tp) {
-          tp.addEventListener("play", () => {
-            const canvas = document.getElementById("ttsWaveform");
-            if (canvas) canvas.style.display = "block";
-          });
-        }
-      });
-    </script>
   </body>
 </html>

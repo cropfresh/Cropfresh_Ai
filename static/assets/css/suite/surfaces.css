@@ -1,0 +1,143 @@
+.hero-grid {
+  align-items: stretch;
+}
+
+.chat-stream,
+.chat-thread,
+.event-timeline,
+.json-viewer {
+  max-height: 360px;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.chat-message,
+.msg,
+.event-row,
+.chat-bubble {
+  border-radius: var(--radius-md);
+  line-height: 1.55;
+}
+
+.chat-message,
+.msg {
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.chat-message.user,
+.msg.user,
+.chat-bubble.user {
+  background: rgba(105, 211, 154, 0.12);
+}
+
+.chat-message.assistant,
+.msg.assistant,
+.chat-bubble.agent {
+  background: rgba(124, 194, 255, 0.12);
+}
+
+.chat-message.system,
+.chat-bubble.system {
+  background: rgba(245, 185, 75, 0.12);
+}
+
+.chat-bubble-wrap {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.chat-bubble-wrap.user {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  max-width: 92%;
+  padding: 12px 14px;
+}
+
+.event-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.event-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.event-dot.vad {
+  background: var(--success);
+}
+
+.event-dot.response {
+  background: var(--accent);
+}
+
+.event-dot.system,
+.event-dot.bargein {
+  background: var(--info);
+}
+
+.event-time {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+.event-text,
+.voice-meta,
+.stream-metadata {
+  color: var(--text-soft);
+}
+
+.waveform-canvas,
+.tts-waveform {
+  width: 100%;
+  height: 84px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.json-viewer {
+  position: relative;
+  min-height: 220px;
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+}
+
+.json-copy-btn {
+  position: sticky;
+  top: 0;
+  float: right;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}

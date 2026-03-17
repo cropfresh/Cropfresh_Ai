@@ -5,28 +5,28 @@
 
 ---
 
-## P0 - Critical (Sprint 05)
+## P0 - Critical (Sprint 06 carryover)
 
-- [ ] AgriEmbeddingWrapper with domain prefix and Hindi/Kannada normalization
-- [ ] Adaptive Query Router (8 strategies, cost optimization)
-- [ ] RAGAS evaluation baseline (20 golden queries)
-- [ ] Multi-source rate-hub live-source validation and smoke tests
-- [ ] Multi-source rate-hub CI hardening for repo-wide Ruff and mypy blockers
-- [ ] eNAM API registration
+- [ ] Historical ADCL backtest artifact using a real district order snapshot
+- [ ] ADCL golden-set review against Aurora-backed live data
+- [ ] eNAM credential validation for gated ADCL and rate-hub paths
 
-## P1 - High Priority (Sprint 06)
+## P1 - High Priority (Sprint 07 - Voice Duplex Productionization)
 
-- [x] Canonical `ADCLService` contract and compatibility shims for REST, wrapper, listings, and voice
-- [x] Aurora repo methods and `adcl_reports` schema updates for `(week_start, district)` persistence
-- [x] Remove mock-order and mock live-source runtime fallbacks from production ADCL paths
-- [x] Live data wiring for internal demand, shared rate hub, IMD/Agromet, and gated eNAM support
-- [x] `GET /api/v1/adcl/weekly` plus app-state wiring for shared ADCL, listing, and voice services
-- [x] APScheduler refresh jobs, structured logs, metrics, freshness tracking, and source-health reporting
-- [ ] Historical backtest artifact and 20-query ADCL golden set
+- [ ] Canonicalize `/api/v1/voice/ws/duplex` as the production realtime interface
+- [ ] Add stage-level timing for VAD, STT, first LLM output, first TTS chunk, first audio sent, and full response completion
+- [ ] Tune duplex VAD and interruption thresholds for short farmer utterances and barge-in
+- [ ] Reduce duplex response buffering so TTS can start on safe partial text boundaries
+- [ ] Remove Bedrock from recommended provider policy, docs, fallbacks, and runtime defaults
+- [ ] Standardize the provider order as `groq -> vllm -> together`
+- [ ] Benchmark STT/TTS quality for `kn`, `hi`, `te`, and `ta`
+- [ ] Lock the production TTS fallback strategy for local-language voices
+- [ ] Consolidate static voice test pages around `static/voice_agent.html` and `static/premium_voice.html`
+- [ ] Fix the focused Pipecat test slice enough to keep the experimental path honest
 
-## P2 - Medium Priority (Sprint 07)
+## P2 - Medium Priority (Sprint 08 follow-up)
 
-- [ ] Supabase/auth hardening follow-up after Sprint 06
+- [ ] Supabase/auth hardening follow-up after Sprint 07
 - [ ] Expand rate-hub health monitoring and source diagnostics
 - [ ] Broaden Karnataka rate-hub coverage beyond the initial query tuples and schedules
 - [ ] Crop listings and order workflow hardening against the real database
@@ -34,9 +34,7 @@
 
 ## P3 - Nice-to-Have (Phase 3+)
 
-- [ ] Speculative RAG for voice latency reduction
-- [ ] Voice pipeline optimization (target: <2s)
-- [ ] Pipecat WebRTC full integration
+- [ ] Speculative RAG for later voice latency experiments
 - [ ] WhatsApp integration (Business API)
 - [ ] Browser RAG (14+ ag-specific gov/news sources)
 - [ ] Rate limiter for production
