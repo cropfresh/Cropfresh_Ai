@@ -1,6 +1,6 @@
 # CropFresh AI — Project Status
 
-> **Last Updated:** 2026-03-11
+> **Last Updated:** 2026-03-17
 > **Phase:** Phase 1 — Foundation & Data Pipeline
 > **Sprint:** Sprint 05 (current)
 
@@ -16,13 +16,14 @@
 | Memory System (Redis + in-memory) | ✅ Complete | 100% | Sprint 01 |
 | Voice Agent v1 (10 languages) | ✅ Complete | 95% | Sprint 01-04 |
 | VoiceAgent Multi-turn Flows | ✅ Complete | 90% | Sprint 04 |
-| Tool Registry (16 tools) | ✅ Complete | 100% | Sprint 01 |
+| Tool Registry + Shared Tools | ✅ Complete | 100% | Sprint 01-05 |
 | Agmarknet APMC Scraper | ✅ Complete | 100% | Sprint 04 |
 | WebSocket Voice Streaming | ✅ Complete | 85% | Sprint 04 |
 | Pipecat Voice Pipeline | 🟡 In Progress | 60% | Sprint 04 |
-| Documentation System | 🟡 In Progress | 80% | Sprint 05 |
+| Documentation System | 🟡 In Progress | 90% | Sprint 05 |
+| Multi-Source Rate Hub | 🟡 In Progress | 85% | Sprint 05 |
 | AgriEmbeddingWrapper (L1) | ❌ Not Started | 0% | Sprint 05 |
-| Agentic RAG Orchestrator | ❌ Not Started | 0% | Sprint 05 |
+| Agentic RAG Orchestrator | 🟡 In Progress | 35% | Sprint 05 |
 | Adaptive Query Router | ❌ Not Started | 0% | Sprint 05 |
 | RAGAS Evaluation Baseline | ❌ Not Started | 0% | Sprint 05 |
 | Supabase Schema | ❌ Not Started | 0% | Sprint 06 |
@@ -35,6 +36,7 @@
 
 | Date | Accomplishment |
 |------|----------------|
+| 2026-03-17 | Multi-source Karnataka rate hub added across API, tools, planner, scheduler, tests, and docs |
 | 2026-03-11 | Full documentation system created (15+ docs) |
 | 2026-03-09 | Multilingual memory + language state for voice |
 | 2026-03-09 | Agmarknet potato scraper verified |
@@ -49,8 +51,9 @@
 
 1. **Sprint 05:** Adaptive Query Router + AgriEmbeddingWrapper
 2. **Sprint 05:** RAGAS evaluation baseline (20 golden queries)
-3. **Sprint 06:** Supabase schema + user management
-4. **Ongoing:** Voice pipeline optimization (target: <2s latency)
+3. **Sprint 05:** Live validation and hardening for the multi-source Karnataka rate hub
+4. **Sprint 06:** Supabase schema + user management
+5. **Ongoing:** Voice pipeline optimization (target: <2s latency)
 
 ---
 
@@ -60,6 +63,7 @@
 |---------|--------|-----------|
 | eNAM API registration pending | Cannot verify eNAM live data | Use Agmarknet as primary source |
 | BGE-M3 requires 1GB RAM | Slow on low-memory machines | MiniLM-L6-v2 fallback available |
+| Repo-wide Ruff and mypy backlog | CI is noisy and full-repo checks fail outside this feature slice | Track cleanup separately from feature delivery; keep feature-level verification explicit |
 
 ---
 
@@ -71,6 +75,7 @@
 | ADR-008 | 8-strategy adaptive query router | Approved |
 | ADR-009 | Two-layer agri embedding strategy | Approved |
 | ADR-010 | Browser-augmented RAG via Scrapling | Approved |
+| ADR-011 | Multi-source Karnataka rate hub with official-first precedence | Approved |
 
 ---
 

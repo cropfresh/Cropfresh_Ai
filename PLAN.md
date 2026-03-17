@@ -1,9 +1,9 @@
 # 🔥 PLAN.md — CropFresh AI Master Living Plan
 
-> **Last Updated:** 2026-02-27
+> **Last Updated:** 2026-03-17
 > **Status:** Active Development
 > **Current Phase:** Phase 1 — Foundation & Data Pipeline
-> **Current Sprint:** Sprint 04 — Voice Pipeline & Scraping
+> **Current Sprint:** Sprint 05 — Advanced RAG & Documentation
 > **Owner:** CropFresh team (solo founder + AI agents)
 
 ---
@@ -48,13 +48,22 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 
 ---
 
+## Current Architecture Focus (March 2026)
+
+- Sprint 05 is still centered on advanced RAG and documentation, but the platform now also includes a shared rate-intelligence layer for Karnataka market data.
+- The new `src/rates/` domain provides one official-first aggregation path for mandi wholesale prices, support/reference prices, fuel, gold, and selected retail/validator feeds.
+- One `multi_source_rates` capability is now reused by API routes, agent tools, the agentic planner/orchestrator, graph-runtime live retrieval, and APScheduler refresh jobs.
+- This keeps price discovery logic in one place and makes it easier to compare sources, track freshness, and add new data connectors without duplicating business rules.
+
+---
+
 ## ✅ Core User Flows
 
 ### 1. Farmer Onboarding (Priority 1)
 `Farmer installs app → registers via OTP/Aadhaar → sets up profile → creates first crop listing`
 
 ### 2. Price Discovery (Priority 1)
-`Farmer asks (voice/text): "Tomato price in Mysore today?" → AI retrieves APMC data → responds in Kannada`
+`Farmer asks (voice/text): "Tomato price in Mysore today?" → planner calls multi_source_rates → official-first rates + comparison evidence are retrieved → response is returned in Kannada`
 
 ### 3. Buyer Order (Priority 2)
 `Buyer browses listings → matches with the farmer → places order → escrow → delivery → payment released`

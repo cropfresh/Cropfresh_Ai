@@ -1,9 +1,28 @@
 # CropFresh AI — Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-17 (13:05 IST)
+> **Last Updated:** 2026-03-17 (session wrap-up)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
+
+---
+
+## Latest Session Snapshot
+
+**2026-03-17 — Multi-Source Karnataka Rate Hub**
+
+- Added a shared `src/rates/` domain for official-first aggregation of mandi, support/reference, fuel, gold, and validator/retail rate sources.
+- Refactored agentic orchestration and tool registration so `multi_source_rates` can be reused by agents, API routes, planner fallback, graph-runtime retrieval, and scheduler jobs.
+- Added `POST /api/v1/prices/query` and `GET /api/v1/prices/source-health` plus scheduled refresh jobs for the main Karnataka data categories.
+- Added focused tests, sprint notes, daily log entries, and ADR-011 so the slice is reviewable without reopening every code diff.
+- Verification snapshot: targeted rate-hub tests passed, targeted Ruff passed, and full-repo Ruff/mypy still have older unrelated backlog that should be cleaned up separately.
+
+**Fastest way to review this session**
+
+- Read `docs/decisions/ADR-011-multi-source-rate-hub.md` for the architecture decision and precedence model.
+- Read `tracking/daily/2026-03-17.md` for the execution log and `tracking/sprints/sprint-05-advanced-rag.md` for sprint-level impact.
+- Use the `2026-03-17 - Multi-Source Karnataka Rate Hub` section in the file log below when you want the full touched-file inventory.
+- Open `tests/unit/rates/` if you want concrete examples of connector normalization, comparison behavior, and service fan-out expectations.
 
 ---
 

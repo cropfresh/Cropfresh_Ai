@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Shared `src/rates/` domain for multi-source Karnataka rate aggregation, normalization, caching, precedence, and persistence
+- `multi_source_rates` tool wiring for agent orchestration plus new price query and source-health API support
+- Scheduler-backed refresh jobs for official mandi, support/reference, validator/retail, fuel, and gold rate data
+- ADR-011 and fixture-driven test coverage for the new rate-hub slice
+
+### Changed
+
+- Refactored agentic orchestration and tool registration so the new rate hub is reused instead of duplicating price-fetch logic
+- Updated planning and status docs to reflect the new shared rate-intelligence architecture and current verification state
+
 ## [0.9.2] - 2026-03-03
 
 ### Added
