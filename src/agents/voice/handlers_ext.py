@@ -9,6 +9,16 @@ from src.agents.voice.contextual_handlers import (
 )
 from src.voice.entity_extractor import VoiceIntent
 
+__all__ = [
+    "handle_check_weather",
+    "handle_dispute_status",
+    "handle_find_buyer",
+    "handle_get_advisory",
+    "handle_quality_check",
+    "handle_register",
+    "handle_weekly_demand",
+]
+
 
 async def handle_find_buyer(agent, template, entities, session):
     """Handle find_buyer until commodity and quantity are collected."""

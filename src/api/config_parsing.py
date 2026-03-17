@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 _TRUE_VALUES = {"1", "true", "yes", "on", "debug", "dev", "development", "local"}
 _FALSE_VALUES = {"0", "false", "no", "off", "release", "prod", "production", "staging"}
 
