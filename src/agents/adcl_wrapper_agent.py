@@ -1,26 +1,16 @@
 """
-ADCL Wrapper Agent
-==================
-Bridges the standalone ADCLAgent engine into the BaseAgent
-interface so the Supervisor can route 'crop recommendation'
-and 'what to sow' queries to the ADCL pipeline.
-
-The ADCLAgent (src/agents/adcl/engine.py) does NOT inherit
-BaseAgent — this lightweight wrapper adapts its API.
-
-Author: CropFresh AI Team
-Version: 2.1.0
+ADCL wrapper agent for supervisor compatibility.
 """
 
 from typing import Any, Optional
 
 from loguru import logger
 
+from src.agents.adcl.presentation import format_weekly_report
 from src.agents.base_agent import AgentConfig, AgentResponse, BaseAgent
 from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState
 
-# * District extraction keywords (Karnataka focus)
 DISTRICTS = [
     "bangalore", "bengaluru", "kolar", "mysore", "mysuru",
     "tumkur", "tumakuru", "mandya", "hassan", "shimoga",
@@ -31,15 +21,7 @@ DISTRICTS = [
 
 
 class ADCLWrapperAgent(BaseAgent):
-    """
-    Wrapper for ADCL engine — routes demand/sowing queries
-    to generate_weekly_report() and formats the output.
-
-    Usage via Supervisor:
-        "What should I sow this season?"
-        "Which crops have highest demand?"
-        "Weekly crop recommendation for Kolar"
-    """
+    """Wrap the canonical ADCL service in the BaseAgent interface."""
 
     def __init__(self, llm: Any = None, **kwargs: Any) -> None:
         config = AgentConfig(
@@ -52,20 +34,19 @@ class ADCLWrapperAgent(BaseAgent):
             max_tokens=600,
         )
         super().__init__(config=config, llm=llm, **kwargs)
-
-        # * Lazy-init the engine to avoid import errors at module level
         self._engine = None
 
     async def initialize(self) -> bool:
-        """Create the underlying ADCL engine."""
+        """Create the shared ADCL service."""
         try:
-            from src.agents.adcl.engine import get_adcl_agent
-            self._engine = get_adcl_agent(llm=self.llm)
+            from src.agents.adcl import get_adcl_service
+
+            self._engine = get_adcl_service(llm=self.llm)
             self._initialized = True
             logger.info("ADCLWrapperAgent initialized")
         except Exception as exc:
             logger.warning("ADCL engine init failed: {}", exc)
-            self._initialized = True  # * Don't block startup
+            self._initialized = True
         return True
 
     def _get_system_prompt(self, context: Optional[dict] = None) -> str:
@@ -74,10 +55,7 @@ class ADCLWrapperAgent(BaseAgent):
             domain_prompt=(
                 "Help farmers decide what to sow based on market demand, "
                 "seasonality, and price forecasts for Karnataka. "
-                "Use the ADCL (Adaptive Demand-driven Crop Lifecycle) engine "
-                "to generate data-backed recommendations. "
-                "Always specify the district, top 3-5 crops, demand scores, "
-                "and reasoning for each recommendation."
+                "Use the ADCL engine to generate data-backed recommendations."
             ),
             context=context,
         )
@@ -88,22 +66,14 @@ class ADCLWrapperAgent(BaseAgent):
         context: Optional[dict] = None,
         execution: Optional[AgentExecutionState] = None,
     ) -> AgentResponse:
-        """
-        Generate crop recommendations from the ADCL engine.
-
-        Falls back to LLM-only advice if the engine isn't available.
-        """
+        """Generate crop recommendations or fall back to the LLM."""
+        del execution
         district = self._extract_district(query, context)
-
-        # * Try the ADCL engine first
         if self._engine:
             try:
-                report = await self._engine.generate_weekly_report(
-                    district=district,
-                )
-                content = self._format_report(report, district)
+                report = await self._engine.generate_weekly_report(district=district)
                 return AgentResponse(
-                    content=content,
+                    content=format_weekly_report(report, district),
                     agent_name=self.name,
                     confidence=0.85,
                     steps=["adcl_report_generated"],
@@ -115,7 +85,6 @@ class ADCLWrapperAgent(BaseAgent):
             except Exception as exc:
                 logger.warning("ADCL engine failed, using LLM fallback: {}", exc)
 
-        # * Fallback: LLM-only advice
         if self.llm:
             messages = [
                 {"role": "system", "content": self._get_system_prompt()},
@@ -139,50 +108,19 @@ class ADCLWrapperAgent(BaseAgent):
             steps=["no_engine_no_llm"],
         )
 
-    # ─────────────────────────────────────────────────────────
-    # * Helpers
-    # ─────────────────────────────────────────────────────────
-
     def _extract_district(
         self,
         query: str,
         context: Optional[dict] = None,
     ) -> str:
-        """Extract district from query text or user context."""
-        # * Check context first
+        """Extract district from query text or user profile."""
         if context:
             profile = context.get("user_profile", {})
             if profile.get("district"):
                 return profile["district"]
 
-        # * Keyword match in query
         query_lower = query.lower()
         for district in DISTRICTS:
             if district in query_lower:
                 return district.title()
-
-        return "Bangalore"  # * Default Karnataka metro
-
-    def _format_report(self, report: Any, district: str) -> str:
-        """Format ADCL WeeklyReport into a readable response."""
-        lines = [f"📊 **Weekly Crop Recommendations — {district}**\n"]
-
-        if not hasattr(report, "crops") or not report.crops:
-            lines.append("No crop recommendations available this week.")
-            return "\n".join(lines)
-
-        for i, crop in enumerate(report.crops[:5], 1):
-            label = getattr(crop, "label", "")
-            emoji = "🟢" if label == "green" else "🟡" if label == "yellow" else "🔴"
-            name = getattr(crop, "commodity", "Unknown")
-            score = getattr(crop, "demand_score", 0)
-            summary = getattr(crop, "summary", "")
-
-            lines.append(f"{emoji} **{i}. {name}** (Score: {score:.1f})")
-            if summary:
-                lines.append(f"   {summary}")
-
-        if hasattr(report, "generated_at"):
-            lines.append(f"\n_Generated: {report.generated_at}_")
-
-        return "\n".join(lines)
+        return "Bangalore"

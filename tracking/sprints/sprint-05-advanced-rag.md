@@ -106,3 +106,13 @@
 - Live network smoke tests for the public sources once unrestricted verification is available
 - Full strict-mypy cleanup across older adjacent modules (`src/tools/registry.py`, legacy agentic files, and connector wrappers)
 - Deeper scheduler target coverage beyond the initial Karnataka refresh tuples
+
+## 2026-03-17 Forward Planning Note
+
+- Sprint 06 planning is now captured in `tracking/sprints/sprint-06-adcl-productionization.md`
+- ADCL productionization has been pulled forward as the next sprint so the next build session can start from one service contract and one live-data plan
+- Supabase and user-management follow-up work has moved behind that sprint in roadmap and backlog references
+- Next implementation session should start with:
+  - `tracking/sprints/sprint-06-adcl-productionization.md`
+  - `docs/decisions/ADR-012-adcl-district-first-service-contract.md`
+  - `docs/decisions/ADR-013-adcl-source-precedence-and-evidence.md`

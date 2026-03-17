@@ -10,6 +10,8 @@ from typing import Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.api.config_parsing import normalize_environment, parse_env_bool
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -142,10 +144,12 @@ class Settings(BaseSettings):
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
-        allowed = {"development", "staging", "production"}
-        if v.lower() not in allowed:
-            raise ValueError(f"environment must be one of {allowed}")
-        return v.lower()
+        return normalize_environment(v)
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def validate_debug(cls, v):
+        return parse_env_bool(v)
 
     @property
     def allowed_origins_list(self) -> list[str]:

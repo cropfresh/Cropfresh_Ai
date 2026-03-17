@@ -1,49 +1,35 @@
-"""
-ADCL Agent — Data Models
-========================
-Data structures for the Adaptive Demand Crop List weekly report.
-
-ADCLCrop    : per-commodity demand + price + green label.
-WeeklyReport: full weekly output stored in adcl_reports table.
-"""
-
-# * ADCL MODELS MODULE
-# NOTE: Dataclasses for lightweight serialisation, matching task12.md schema.
+"""Dataclasses for the ADCL service contract."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import date
+from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import Any
 
-# * ═══════════════════════════════════════════════════════════════
-# * Crop-level record
-# * ═══════════════════════════════════════════════════════════════
+from src.agents.adcl.time_utils import utc_now
+
 
 @dataclass
 class ADCLCrop:
-    """
-    Single commodity entry in the weekly demand list.
-
-    Produced by scoring.score_and_label() and consumed by
-    summary.SummaryGenerator and ADCLAgent.generate_weekly_report().
-    """
+    """Canonical crop-level ADCL payload reused across callers."""
 
     commodity: str
-    demand_score: float              # 0.0–1.0 (percentile-rank normalised)
-    predicted_price_per_kg: float    # From PricePredictionAgent (₹/kg)
-    price_trend: str                 # 'rising' | 'stable' | 'falling' — actual price movement
-    seasonal_fit: str                # 'in_season' | 'off_season' | 'year_round' (harvest)
-    green_label: bool                # True = recommended to grow
-    buyer_count: int                 # Unique buyers who ordered this
-    total_demand_kg: float           # Estimated weekly demand (kg)
-    recommendation: str = ""         # Farmer-friendly advice (English)
-    #! New fields added in upgrade (task35)
-    demand_trend: str = "stable"     # 'rising' | 'stable' | 'falling' — order volume trend
-    sow_season_fit: str = "year_round"  # 'ideal_sow' | 'possible_sow' | 'not_sow_season'
+    demand_score: float
+    predicted_price_per_kg: float
+    price_trend: str
+    seasonal_fit: str
+    green_label: bool
+    buyer_count: int
+    total_demand_kg: float
+    recommendation: str = ""
+    demand_trend: str = "stable"
+    sow_season_fit: str = "year_round"
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+    freshness: dict[str, Any] = field(default_factory=dict)
+    source_health: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialise to JSON-safe dict."""
+        """Serialize one crop recommendation into a JSON-safe payload."""
         return {
             "commodity": self.commodity,
             "demand_score": round(self.demand_score, 3),
@@ -56,36 +42,87 @@ class ADCLCrop:
             "buyer_count": self.buyer_count,
             "total_demand_kg": round(self.total_demand_kg, 1),
             "recommendation": self.recommendation,
+            "evidence": self.evidence,
+            "freshness": self.freshness,
+            "source_health": self.source_health,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ADCLCrop":
+        """Build an ADCLCrop from persisted JSON data."""
+        return cls(
+            commodity=str(data.get("commodity", "")),
+            demand_score=float(data.get("demand_score", 0.0)),
+            predicted_price_per_kg=float(data.get("predicted_price_per_kg", 0.0)),
+            price_trend=str(data.get("price_trend", "stable")),
+            seasonal_fit=str(data.get("seasonal_fit", "year_round")),
+            green_label=bool(data.get("green_label", False)),
+            buyer_count=int(data.get("buyer_count", 0)),
+            total_demand_kg=float(data.get("total_demand_kg", 0.0)),
+            recommendation=str(data.get("recommendation", "")),
+            demand_trend=str(data.get("demand_trend", "stable")),
+            sow_season_fit=str(data.get("sow_season_fit", "year_round")),
+            evidence=list(data.get("evidence", [])),
+            freshness=dict(data.get("freshness", {})),
+            source_health=dict(data.get("source_health", {})),
+        )
 
-# * ═══════════════════════════════════════════════════════════════
-# * Weekly report
-# * ═══════════════════════════════════════════════════════════════
 
 @dataclass
 class WeeklyReport:
-    """
-    Full ADCL weekly report output.
-
-    Stored in adcl_reports table; consumed by farmer-facing API.
-    """
+    """Weekly district ADCL report persisted in `adcl_reports`."""
 
     week_start: date
     crops: list[ADCLCrop]
-    generated_by: str = "adcl_agent"
-    summary_en: str = ""            # English narrative
-    summary_hi: str = ""            # Hindi narrative
-    summary_kn: str = ""            # Kannada narrative
+    district: str = "Bangalore"
+    generated_by: str = "adcl_service"
+    generated_at: datetime = field(default_factory=utc_now)
+    summary_en: str = ""
+    summary_hi: str = ""
+    summary_kn: str = ""
+    freshness: dict[str, Any] = field(default_factory=dict)
+    source_health: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialise to JSON-safe dict."""
+        """Serialize the full report into a JSON-safe payload."""
         return {
             "week_start": self.week_start.isoformat(),
+            "district": self.district,
             "generated_by": self.generated_by,
+            "generated_at": self.generated_at.isoformat(),
             "summary_en": self.summary_en,
             "summary_hi": self.summary_hi,
             "summary_kn": self.summary_kn,
-            "crops": [c.to_dict() for c in self.crops],
-            "green_count": sum(1 for c in self.crops if c.green_label),
+            "freshness": self.freshness,
+            "source_health": self.source_health,
+            "metadata": self.metadata,
+            "crops": [crop.to_dict() for crop in self.crops],
+            "green_count": sum(1 for crop in self.crops if crop.green_label),
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WeeklyReport":
+        """Rebuild a report from the persisted DB/API payload."""
+        crops = [ADCLCrop.from_dict(item) for item in data.get("crops", [])]
+        generated_at = data.get("generated_at")
+        if isinstance(generated_at, str):
+            generated_at = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+        if not isinstance(generated_at, datetime):
+            generated_at = utc_now()
+        week_start = data.get("week_start", date.today().isoformat())
+        if isinstance(week_start, str):
+            week_start = date.fromisoformat(week_start)
+        return cls(
+            week_start=week_start,
+            district=str(data.get("district", "Bangalore")),
+            crops=crops,
+            generated_by=str(data.get("generated_by", "adcl_service")),
+            generated_at=generated_at,
+            summary_en=str(data.get("summary_en", "")),
+            summary_hi=str(data.get("summary_hi", "")),
+            summary_kn=str(data.get("summary_kn", "")),
+            freshness=dict(data.get("freshness", {})),
+            source_health=dict(data.get("source_health", {})),
+            metadata=dict(data.get("metadata", {})),
+        )

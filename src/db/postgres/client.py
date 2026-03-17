@@ -18,6 +18,7 @@ from src.db.postgres.digital_twins import DigitalTwinOperationsMixin
 from src.db.postgres.listings import ListingOperationsMixin
 from src.db.postgres.orders import OrderOperationsMixin
 from src.db.postgres.prices import PriceOperationsMixin
+from src.db.postgres.adcl import ADCLOperationsMixin
 from src.db.postgres.users import UserOperationsMixin
 from src.db.postgres.vectors import VectorOperationsMixin
 
@@ -30,6 +31,7 @@ class AuroraPostgresClient(
     OrderOperationsMixin,
     DigitalTwinOperationsMixin,
     PriceOperationsMixin,
+    ADCLOperationsMixin,
 ):
     """
     Amazon Aurora PostgreSQL client with pgvector support.

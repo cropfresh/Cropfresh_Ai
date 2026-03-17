@@ -1,49 +1,49 @@
-# 🔥 PLAN.md — CropFresh AI Master Living Plan
+﻿# ðŸ”¥ PLAN.md â€” CropFresh AI Master Living Plan
 
 > **Last Updated:** 2026-03-17
 > **Status:** Active Development
-> **Current Phase:** Phase 1 — Foundation & Data Pipeline
-> **Current Sprint:** Sprint 05 — Advanced RAG & Documentation
+> **Current Phase:** Phase 2 â€” Business Services
+> **Current Sprint:** Sprint 05 â€” Advanced RAG & Documentation
 > **Owner:** CropFresh team (solo founder + AI agents)
 
 ---
 
-## 🎯 Vision
+## ðŸŽ¯ Vision
 
 Build India's most intelligent agricultural marketplace, connecting Karnataka farmers directly with buyers using AI agents, voice-first interaction in Kannada, and real-time market intelligence.
 
 **Target Users:**
-- **Farmers** (primary) — smallholder farmers in Karnataka, primarily Kannada-speaking
-- **Buyers** — mandis, FPOs, exporters, retail chains
-- **Platform operators** — CropFresh team managing listings, logistics, payments
+- **Farmers** (primary) â€” smallholder farmers in Karnataka, primarily Kannada-speaking
+- **Buyers** â€” mandis, FPOs, exporters, retail chains
+- **Platform operators** â€” CropFresh team managing listings, logistics, payments
 
 ---
 
-## 🏗️ System Architecture Overview
+## ðŸ—ï¸ System Architecture Overview
 
 ```
-                    ┌─────────────────────────┐
-                    │      Mobile App          │
-                    │  (Flutter - Kannada UI)  │
-                    └──────────┬──────────────┘
-                               │ REST / WebSocket
-                    ┌──────────▼──────────────┐
-                    │     FastAPI Backend       │
-                    │  Multi-Agent Supervisor   │
-                    └──┬────┬────┬────┬───────┘
-                       │    │    │    │
-             ┌─────────┘    │    │    └──────────┐
-             ▼              ▼    ▼               ▼
-     ┌────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-     │  Agronomy  │ │Commerce  │ │  Voice   │ │  Vision  │
-     │   Agent   │ │  Agent   │ │  Agent   │ │  Agent   │
-     └────────────┘ └──────────┘ └──────────┘ └──────────┘
-             │              │
-    ┌────────┴──────────────┴───────────┐
-    │     Knowledge Layer               │
-    │  Qdrant (RAG) │ Neo4j (Graph) │  │
-    │  Supabase (DB) │ Redis (Cache) │  │
-    └───────────────────────────────────┘
+                    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                    â”‚      Mobile App          â”‚
+                    â”‚  (Flutter - Kannada UI)  â”‚
+                    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                               â”‚ REST / WebSocket
+                    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                    â”‚     FastAPI Backend       â”‚
+                    â”‚  Multi-Agent Supervisor   â”‚
+                    â””â”€â”€â”¬â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜
+                       â”‚    â”‚    â”‚    â”‚
+             â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜    â”‚    â”‚    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+             â–¼              â–¼    â–¼               â–¼
+     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+     â”‚  Agronomy  â”‚ â”‚Commerce  â”‚ â”‚  Voice   â”‚ â”‚  Vision  â”‚
+     â”‚   Agent   â”‚ â”‚  Agent   â”‚ â”‚  Agent   â”‚ â”‚  Agent   â”‚
+     â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+             â”‚              â”‚
+    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+    â”‚     Knowledge Layer               â”‚
+    â”‚  Qdrant (RAG) â”‚ Neo4j (Graph) â”‚  â”‚
+    â”‚  Supabase (DB) â”‚ Redis (Cache) â”‚  â”‚
+    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
@@ -54,26 +54,27 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 - The new `src/rates/` domain provides one official-first aggregation path for mandi wholesale prices, support/reference prices, fuel, gold, and selected retail/validator feeds.
 - One `multi_source_rates` capability is now reused by API routes, agent tools, the agentic planner/orchestrator, graph-runtime live retrieval, and APScheduler refresh jobs.
 - This keeps price discovery logic in one place and makes it easier to compare sources, track freshness, and add new data connectors without duplicating business rules.
+- The next planned sprint is `Sprint 06 - ADCL Productionization & Full Hardening`, with district-first live demand intelligence, persistence, and app wiring now pulled ahead of Supabase/auth follow-up work.
 
 ---
 
-## ✅ Core User Flows
+## âœ… Core User Flows
 
 ### 1. Farmer Onboarding (Priority 1)
-`Farmer installs app → registers via OTP/Aadhaar → sets up profile → creates first crop listing`
+`Farmer installs app â†’ registers via OTP/Aadhaar â†’ sets up profile â†’ creates first crop listing`
 
 ### 2. Price Discovery (Priority 1)
-`Farmer asks (voice/text): "Tomato price in Mysore today?" → planner calls multi_source_rates → official-first rates + comparison evidence are retrieved → response is returned in Kannada`
+`Farmer asks (voice/text): "Tomato price in Mysore today?" â†’ planner calls multi_source_rates â†’ official-first rates + comparison evidence are retrieved â†’ response is returned in Kannada`
 
 ### 3. Buyer Order (Priority 2)
-`Buyer browses listings → matches with the farmer → places order → escrow → delivery → payment released`
+`Buyer browses listings â†’ matches with the farmer â†’ places order â†’ escrow â†’ delivery â†’ payment released`
 
 ### 4. AI Advisory (Priority 2)
-`Farmer describes crop problem (voice/photo) → Vision + Agronomy Agent diagnoses → advice returned`
+`Farmer describes crop problem (voice/photo) â†’ Vision + Agronomy Agent diagnoses â†’ advice returned`
 
 ---
 
-## 🧠 AI Agents in the System
+## ðŸ§  AI Agents in the System
 
 ### 5 Core Agents (Business-Aligned, from PDF Business Model)
 
@@ -95,11 +96,11 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 | Commerce | Market | AISP, mandi prices, sell/hold decisions | Stable |
 | Platform | App Support | Registration, FAQ, order tracking | Stable |
 | General | Fallback | Greetings, unclear queries | Stable |
-| ADCL | Crop Demand | Weekly assured demand crop list generator | TODO |
+| ADCL | Crop Demand | Weekly assured demand crop list generator | Partial |
 
 ---
 
-## 🔑 Non-Functional Requirements
+## ðŸ”‘ Non-Functional Requirements
 
 | Requirement | Target |
 |-------------|--------|
@@ -107,13 +108,13 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 | API response latency | < 500ms P95 |
 | Agent routing accuracy | > 90% |
 | Multi-language support | Kannada (primary), Hindi, English |
-| API cost per query | < ₹0.50 |
+| API cost per query | < â‚¹0.50 |
 | Uptime (Phase 6+) | > 99.5% |
 | Data privacy | No farmer data used for LLM training |
 
 ---
 
-## 🚩 Current Risks & Open Questions
+## ðŸš© Current Risks & Open Questions
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
@@ -125,7 +126,7 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 
 ---
 
-## 📐 Tech Stack
+## ðŸ“ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -144,18 +145,18 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 
 ---
 
-## 📊 Key Metrics to Track
+## ðŸ“Š Key Metrics to Track
 
 - Agent routing accuracy (target: > 90%)
 - Voice round-trip latency (target: < 3s)
-- API cost per query (target: < ₹0.50)
+- API cost per query (target: < â‚¹0.50)
 - Farmer adoption rate (target: 50 active in Phase 6)
 - Successful transaction percent (target: > 80%)
 - Test coverage (target: > 60%)
 
 ---
 
-## 📎 Key Links
+## ðŸ“Ž Key Links
 
 | Purpose | Path |
 |---------|------|
@@ -173,3 +174,4 @@ Build India's most intelligent agricultural marketplace, connecting Karnataka fa
 
 > **Update this file only when direction, architecture, or user personas change materially.**
 > For daily progress, use `tracking/daily/`. For sprint goals, use `tracking/sprints/`.
+

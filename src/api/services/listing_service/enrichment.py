@@ -38,10 +38,19 @@ class ListingEnrichmentMixin:
         if not self.adcl_agent:
             return False
         try:
-            result = await self.adcl_agent.get_weekly_demand()
+            district = "Bangalore"
+            if hasattr(self.adcl_agent, "is_recommended_crop"):
+                result = await self.adcl_agent.is_recommended_crop(
+                    commodity=commodity,
+                    district=district,
+                )
+                if isinstance(result, bool):
+                    return result
+
+            result = await self.adcl_agent.get_weekly_demand(district=district)
             crops = result.get("crops", [])
             return any(
-                c.get("crop", "").lower() == commodity.lower()
+                c.get("commodity", c.get("crop", "")).lower() == commodity.lower()
                 for c in crops
             )
         except Exception as exc:

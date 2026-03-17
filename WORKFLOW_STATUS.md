@@ -1,6 +1,6 @@
-# CropFresh AI — Development Workflow & Status Guide
+﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-17 (session wrap-up)
+> **Last Updated:** 2026-03-17 (ADCL productionization implementation)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -9,7 +9,35 @@ This document is the **single entry point** for understanding how CropFresh AI i
 
 ## Latest Session Snapshot
 
-**2026-03-17 — Multi-Source Karnataka Rate Hub**
+**2026-03-17 - ADCL Productionization Implementation**
+
+- Implemented the canonical `ADCLService` and split it into smaller helper modules to keep the source files reviewable and below the 200-line target.
+- Added Aurora ADCL persistence helpers, the `(week_start, district)` migration, listing persistence updates, and shared app-state wiring for ADCL, listings, and voice.
+- Shipped `GET /api/v1/adcl/weekly`, voice/listing compatibility updates, APScheduler refresh jobs, and focused tests for the ADCL slice.
+- Added ADCL API docs, a 20-query golden set, and a live backtest runbook so the next session can move from fixture validation to Aurora validation.
+
+**Fastest way to resume from this implementation**
+
+- Read `tracking/sprints/sprint-06-adcl-productionization.md`
+- Read `tracking/daily/2026-03-17.md`
+- Review `src/agents/adcl/service.py`, `src/api/routes/adcl.py`, and `src/api/runtime/services.py`
+- Use `src/evaluation/reports/adcl_backtest_2026-03-17.md` for the live validation checklist
+
+**2026-03-17 - Sprint 06 ADCL Planning Handoff**
+
+- Created `tracking/sprints/sprint-06-adcl-productionization.md` as the next sprint source of truth for ADCL productionization.
+- Added `docs/decisions/ADR-012-adcl-district-first-service-contract.md` and `docs/decisions/ADR-013-adcl-source-precedence-and-evidence.md` to lock the service contract and live-data policy before coding starts.
+- Updated `ROADMAP.md`, `tracking/PROJECT_STATUS.md`, `tracking/tasks/backlog.md`, and the Sprint 05 file so Sprint 06 consistently points to ADCL and the Supabase/auth follow-up sits behind it.
+- Kept Sprint 05 as the active sprint; this was a docs-first handoff so the next session can start implementation without re-planning scope.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-06-adcl-productionization.md`
+- Read `docs/decisions/ADR-012-adcl-district-first-service-contract.md`
+- Read `docs/decisions/ADR-013-adcl-source-precedence-and-evidence.md`
+- Read the ADCL handoff addendum in `tracking/daily/2026-03-17.md`
+
+**2026-03-17 â€” Multi-Source Karnataka Rate Hub**
 
 - Added a shared `src/rates/` domain for official-first aggregation of mandi, support/reference, fuel, gold, and validator/retail rate sources.
 - Refactored agentic orchestration and tool registration so `multi_source_rates` can be reused by agents, API routes, planner fallback, graph-runtime retrieval, and scheduler jobs.
@@ -26,37 +54,37 @@ This document is the **single entry point** for understanding how CropFresh AI i
 
 ---
 
-## 📂 Documentation Map
+## ðŸ“‚ Documentation Map
 
 ```
 / (repo root)
-  PLAN.md                      ← Master product + architecture plan (start here)
-  ROADMAP.md                   ← Phase milestones (Feb–Aug 2026)
-  AGENTS.md                    ← AI agent rules, prompts, file structure map
-  WORKFLOW_STATUS.md           ← This file: dev workflow + file changes log
-  CHANGELOG.md                 ← Version history
+  PLAN.md                      â† Master product + architecture plan (start here)
+  ROADMAP.md                   â† Phase milestones (Febâ€“Aug 2026)
+  AGENTS.md                    â† AI agent rules, prompts, file structure map
+  WORKFLOW_STATUS.md           â† This file: dev workflow + file changes log
+  CHANGELOG.md                 â† Version history
 
   tracking/
-    PROJECT_STATUS.md          ← Current state (update every sprint)
-    sprints/sprint-0X-*.md     ← Each sprint's goals + outcomes
-    daily/YYYY-MM-DD.md        ← Per-session work logs
-    milestones/                ← Phase completion records
-    retros/                    ← Sprint retrospective notes
+    PROJECT_STATUS.md          â† Current state (update every sprint)
+    sprints/sprint-0X-*.md     â† Each sprint's goals + outcomes
+    daily/YYYY-MM-DD.md        â† Per-session work logs
+    milestones/                â† Phase completion records
+    retros/                    â† Sprint retrospective notes
 
   docs/
-    decisions/ADR-*.md         ← Architecture Decision Records
-    agents/REGISTRY.md         ← Agent specs and prompt versions
-    api/                       ← API reference docs
-    architecture/              ← System architecture docs
+    decisions/ADR-*.md         â† Architecture Decision Records
+    agents/REGISTRY.md         â† Agent specs and prompt versions
+    api/                       â† API reference docs
+    architecture/              â† System architecture docs
 
   TESTING/
-    STRATEGY.md                ← Test philosophy, pyramid, AI prompts
-    CHECKLISTS.md              ← Per-feature done checklists
+    STRATEGY.md                â† Test philosophy, pyramid, AI prompts
+    CHECKLISTS.md              â† Per-feature done checklists
 ```
 
 ---
 
-## 🧭 Core Development Principles
+## ðŸ§­ Core Development Principles
 
 **1. Specs Before Code**  
 Always read `PLAN.md`, `tracking/PROJECT_STATUS.md`, and the active sprint file before writing any code. Context-first development produces better results with AI agents.
@@ -75,54 +103,54 @@ After each sprint, update goals, outcomes, and documents so AI has the latest co
 
 ---
 
-## 🔄 Sprint Workflow Loop
+## ðŸ”„ Sprint Workflow Loop
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    CropFresh Dev Loop                           │
-│                                                                 │
-│  Step 1: Refine PLAN.md + ROADMAP.md (once per phase)          │
-│    └─→ AI prompt: "Act as senior architect, review my plan…"   │
-│                                                                 │
-│  Step 2: Create sprint-XXX.md (start of each sprint)           │
-│    └─→ AI prompt: "Based on PLAN.md + last sprint, plan 2-wk…" │
-│                                                                 │
-│  Step 3: Daily Execution                                        │
-│    ├─→ Update tracking/daily/YYYY-MM-DD.md each session        │
-│    ├─→ Implement with AI: spec → code → tests → docs           │
-│    └─→ Commit with message: "Sprint-04: [task name]"           │
-│                                                                 │
-│  Step 4: Testing in Loop                                        │
-│    ├─→ AI generates tests for every function/endpoint           │
-│    └─→ AI reviews diff for bugs before merging                 │
-│                                                                 │
-│  Step 5: End-of-Sprint Review                                   │
-│    ├─→ Fill sprint-XXX.md "Outcome" section                    │
-│    ├─→ Update PROJECT_STATUS.md                                │
-│    ├─→ Create ADRs for any architecture decisions              │
-│    └─→ Git tag milestone releases                              │
-│                                                                 │
-│  Step 6: Refine Next Sprint                                     │
-│    ├─→ Move unfinished but important tasks forward             │
-│    ├─→ Adjust ROADMAP.md if macro milestones slip              │
-│    └─→ Start back at Step 2                                    │
-└─────────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    CropFresh Dev Loop                           â”‚
+â”‚                                                                 â”‚
+â”‚  Step 1: Refine PLAN.md + ROADMAP.md (once per phase)          â”‚
+â”‚    â””â”€â†’ AI prompt: "Act as senior architect, review my planâ€¦"   â”‚
+â”‚                                                                 â”‚
+â”‚  Step 2: Create sprint-XXX.md (start of each sprint)           â”‚
+â”‚    â””â”€â†’ AI prompt: "Based on PLAN.md + last sprint, plan 2-wkâ€¦" â”‚
+â”‚                                                                 â”‚
+â”‚  Step 3: Daily Execution                                        â”‚
+â”‚    â”œâ”€â†’ Update tracking/daily/YYYY-MM-DD.md each session        â”‚
+â”‚    â”œâ”€â†’ Implement with AI: spec â†’ code â†’ tests â†’ docs           â”‚
+â”‚    â””â”€â†’ Commit with message: "Sprint-04: [task name]"           â”‚
+â”‚                                                                 â”‚
+â”‚  Step 4: Testing in Loop                                        â”‚
+â”‚    â”œâ”€â†’ AI generates tests for every function/endpoint           â”‚
+â”‚    â””â”€â†’ AI reviews diff for bugs before merging                 â”‚
+â”‚                                                                 â”‚
+â”‚  Step 5: End-of-Sprint Review                                   â”‚
+â”‚    â”œâ”€â†’ Fill sprint-XXX.md "Outcome" section                    â”‚
+â”‚    â”œâ”€â†’ Update PROJECT_STATUS.md                                â”‚
+â”‚    â”œâ”€â†’ Create ADRs for any architecture decisions              â”‚
+â”‚    â””â”€â†’ Git tag milestone releases                              â”‚
+â”‚                                                                 â”‚
+â”‚  Step 6: Refine Next Sprint                                     â”‚
+â”‚    â”œâ”€â†’ Move unfinished but important tasks forward             â”‚
+â”‚    â”œâ”€â†’ Adjust ROADMAP.md if macro milestones slip              â”‚
+â”‚    â””â”€â†’ Start back at Step 2                                    â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
 
-## 💬 Standard AI Prompts (Copy-Paste Ready)
+## ðŸ’¬ Standard AI Prompts (Copy-Paste Ready)
 
-### 🏗️ Start of Sprint
+### ðŸ—ï¸ Start of Sprint
 
 ```
 "Here is my PLAN.md and ROADMAP.md. Based on last sprint's outcome in
 tracking/sprints/sprint-03-*.md, propose a 2-week sprint plan with
-5–7 concrete, testable tasks focused on [theme].
+5â€“7 concrete, testable tasks focused on [theme].
 Format it into the sprint template at tracking/sprints/_template.md."
 ```
 
-### ⚙️ Implement a Feature
+### âš™ï¸ Implement a Feature
 
 ```
 "Read PLAN.md, tracking/PROJECT_STATUS.md, and tracking/sprints/sprint-04-voice-pipeline.md.
@@ -132,7 +160,7 @@ Generate unit tests in tests/unit/ as part of this change.
 Update WORKFLOW_STATUS.md with the new file in the changes log."
 ```
 
-### 🧪 Generate Tests
+### ðŸ§ª Generate Tests
 
 ```
 "Read TESTING/STRATEGY.md for our test philosophy.
@@ -142,7 +170,7 @@ Mock all external dependencies (Qdrant, Groq, Redis).
 Add descriptive docstrings to each test."
 ```
 
-### 🔍 Pre-merge Review
+### ðŸ” Pre-merge Review
 
 ```
 "Analyze this diff and identify:
@@ -152,7 +180,7 @@ Add descriptive docstrings to each test."
 Reference TESTING/STRATEGY.md checklist and our coding standards."
 ```
 
-### 📊 End-of-Sprint Summary
+### ðŸ“Š End-of-Sprint Summary
 
 ```
 "Read tracking/sprints/sprint-04-voice-pipeline.md and the last 5 daily logs.
@@ -160,7 +188,7 @@ Summarize: what shipped, what slipped, 3 key learnings.
 Format as the Sprint Outcome section and also update tracking/PROJECT_STATUS.md."
 ```
 
-### 📐 Architecture Decision
+### ðŸ“ Architecture Decision
 
 ```
 "I need to decide [decision topic]. Context: [brief context].
@@ -171,7 +199,7 @@ Format your recommendation as an ADR using docs/decisions/_template.md."
 
 ---
 
-## 🗂️ Keeping History (Git-Centric Approach)
+## ðŸ—‚ï¸ Keeping History (Git-Centric Approach)
 
 The user expressed concern about AI overwriting and losing history. Here is how this is prevented:
 
@@ -206,25 +234,26 @@ git checkout main && git merge feature/sprint-04-apmc-scraper
 
 ---
 
-## 📊 Current Component Status
+## ðŸ“Š Current Component Status
 
 | Component                           | Status         | Progress | Sprint    |
 | ----------------------------------- | -------------- | -------- | --------- |
-| Project Structure                   | ✅ Complete    | 100%     | Sprint 01 |
-| RAG Pipeline (RAPTOR + Hybrid)      | ✅ Complete    | 100%     | Sprint 01 |
-| Multi-Agent System                  | ✅ Complete    | 100%     | Sprint 01 |
-| Memory System (Redis)               | ✅ Complete    | 100%     | Sprint 01 |
-| Voice Agent v1 (Edge-TTS + Whisper) | ✅ Complete    | 90%      | Sprint 01 |
-| Pipecat Voice Pipeline              | 🟡 In Progress | 40%      | Sprint 04 |
-| APMC Mandi Scraper                  | ❌ Not Started | 0%       | Sprint 04 |
-| Supabase Schema                     | ❌ Not Started | 0%       | Sprint 05 |
-| Vision Agent (YOLOv12 + DINOv2)     | ❌ Not Started | 0%       | Phase 3   |
-| Evaluation Framework (LangSmith)    | ❌ Not Started | 0%       | Sprint 05 |
-| Flutter Mobile App                  | ❌ Not Started | 0%       | Phase 4   |
+| Project Structure                   | âœ… Complete    | 100%     | Sprint 01 |
+| RAG Pipeline (RAPTOR + Hybrid)      | âœ… Complete    | 100%     | Sprint 01 |
+| Multi-Agent System                  | âœ… Complete    | 100%     | Sprint 01 |
+| Memory System (Redis)               | âœ… Complete    | 100%     | Sprint 01 |
+| Voice Agent v1 (Edge-TTS + Whisper) | âœ… Complete    | 90%      | Sprint 01 |
+| Pipecat Voice Pipeline              | ðŸŸ¡ In Progress | 40%      | Sprint 04 |
+| APMC Mandi Scraper                  | âŒ Not Started | 0%       | Sprint 04 |
+| ADCL Service (district-first)      | In Progress    | 80%      | Sprint 06 |
+| Supabase/Auth Hardening            | âŒ Not Started | 0%       | Sprint 07 |
+| Vision Agent (YOLOv12 + DINOv2)     | âŒ Not Started | 0%       | Phase 3   |
+| Evaluation Framework (LangSmith)    | âŒ Not Started | 0%       | Sprint 05 |
+| Flutter Mobile App                  | âŒ Not Started | 0%       | Phase 4   |
 
 ---
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ```bash
 # 1. Start Qdrant
@@ -249,7 +278,7 @@ uv run ruff check src/
 
 ---
 
-## 🌐 API Endpoints Reference
+## ðŸŒ API Endpoints Reference
 
 ### Chat API
 
@@ -264,9 +293,9 @@ uv run ruff check src/
 
 | Endpoint                   | Method    | Description                   |
 | -------------------------- | --------- | ----------------------------- |
-| `/api/v1/voice/process`    | POST      | Full voice-in → voice-out     |
-| `/api/v1/voice/transcribe` | POST      | Audio → Text (STT)            |
-| `/api/v1/voice/synthesize` | POST      | Text → Audio (TTS)            |
+| `/api/v1/voice/process`    | POST      | Full voice-in â†’ voice-out     |
+| `/api/v1/voice/transcribe` | POST      | Audio â†’ Text (STT)            |
+| `/api/v1/voice/synthesize` | POST      | Text â†’ Audio (TTS)            |
 | `/ws/voice/{user_id}`      | WebSocket | Real-time streaming (Pipecat) |
 
 ### RAG API
@@ -286,7 +315,45 @@ uv run ruff check src/
 
 ---
 
-## 📝 File Changes Log
+## ðŸ“ File Changes Log
+
+### 2026-03-17 - ADCL Productionization Implementation
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/agents/adcl/service.py` | Canonical district-first ADCL service contract for REST, voice, listings, and wrappers |
+| CREATE | `src/agents/adcl/report_utils.py` | Shared ADCL evidence, metadata, and empty-report helpers |
+| CREATE | `src/agents/adcl/price_runtime.py` | Shared rate-hub-backed price signal builder for ADCL |
+| CREATE | `src/agents/adcl/scheduler.py` | APScheduler wrapper for weekly report generation and source refresh |
+| CREATE | `src/api/routes/adcl.py` | `GET /api/v1/adcl/weekly` endpoint |
+| CREATE | `src/api/runtime/` | Shared startup wiring for DB, ADCL, listings, voice, and scheduler state |
+| CREATE | `src/db/postgres/adcl.py` | Aurora ADCL read/write helpers |
+| CREATE | `src/db/migrations/004_adcl_reports_district_persistence.sql` | Composite-key ADCL report migration with freshness and source health |
+| UPDATE | `src/api/services/listing_service/enrichment.py` | Listing ADCL checks now prefer `is_recommended_crop(...)` |
+| UPDATE | `src/agents/voice/handlers_ext.py` | Voice weekly-demand flow now uses the canonical ADCL contract |
+| UPDATE | `src/api/rest/voice.py` | Voice REST routes now resolve shared runtime services |
+| UPDATE | `src/api/main.py` | Thin FastAPI entrypoint with shared runtime lifespan and router setup |
+| CREATE | `tests/api/test_adcl_routes.py` | API coverage for `/api/v1/adcl/weekly` |
+| UPDATE | `tests/unit/test_adcl_agent.py` | Focused tests for the canonical ADCL service behavior |
+| CREATE | `tests/unit/test_api_config.py` | Regression coverage for tolerant debug env parsing |
+| CREATE | `src/evaluation/datasets/adcl_golden_queries.json` | 20-query ADCL golden set |
+| CREATE | `src/evaluation/reports/adcl_backtest_2026-03-17.md` | Execution-ready ADCL backtest runbook and verification snapshot |
+| UPDATE | `docs/api/overview.md` | Added the ADCL weekly-report surface to the API overview |
+| UPDATE | `docs/api/endpoints-reference.md` | Added the ADCL route contract and caller-facing response shape |
+
+### 2026-03-17 - Sprint 06 ADCL Planning Handoff
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `tracking/sprints/sprint-06-adcl-productionization.md` | Added the next sprint plan for ADCL productionization, live data wiring, and hardening |
+| CREATE | `docs/decisions/ADR-012-adcl-district-first-service-contract.md` | Locked the canonical district-first ADCL service contract for Sprint 06 |
+| CREATE | `docs/decisions/ADR-013-adcl-source-precedence-and-evidence.md` | Locked the marketplace-first source precedence and evidence policy for ADCL |
+| UPDATE | `tracking/sprints/sprint-05-advanced-rag.md` | Added a forward-planning note pointing the next session at Sprint 06 ADCL work |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Added the Sprint 06 ADCL handoff, next-session reading order, and ADR references |
+| UPDATE | `ROADMAP.md` | Re-sequenced Sprint 06 around ADCL and moved Supabase/auth follow-up behind it |
+| UPDATE | `tracking/tasks/backlog.md` | Re-prioritized Sprint 06 backlog items around ADCL productionization |
+| UPDATE | `tracking/daily/2026-03-17.md` | Added an ADCL implementation handoff note for the next working session |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this entry and refreshed the last-updated timestamp |
 
 ### 2026-03-16 - Vision Training Accuracy Hardening
 
@@ -416,7 +483,7 @@ uv run ruff check src/
 | UPDATE | `tests/unit/test_ragas_evaluator.py`           | Cleaned imports while keeping coverage on the canonical `src.evaluation` stack |
 | UPDATE | `TESTING/STRATEGY.md`                          | Replaced stale `ai/evaluations` references with `src/evaluation` datasets and commands |
 
-### 2026-03-14 — Phase 1: Anti-Hallucination Pipeline (ADR-010)
+### 2026-03-14 â€” Phase 1: Anti-Hallucination Pipeline (ADR-010)
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -424,7 +491,7 @@ uv run ruff check src/
 | CREATE | `ai/rag/query_rewriter_prompts.py`             | Prompt templates for query rewriting (74 LOC)                                |
 | CREATE | `ai/rag/citation_engine.py`                    | Inline [1], [2] citation markers with source attribution (172 LOC)           |
 | CREATE | `ai/rag/confidence_gate.py`                    | "I don't know" safety gate with Kannada keywords (195 LOC)                   |
-| UPDATE | `ai/rag/grader.py`                             | Continuous 0–1 scoring, time-decay for stale market docs, Kannada keywords   |
+| UPDATE | `ai/rag/grader.py`                             | Continuous 0â€“1 scoring, time-decay for stale market docs, Kannada keywords   |
 | CREATE | `tests/unit/test_query_rewriter.py`            | 12 tests: strategies, classification, edge cases, LLM fallback              |
 | CREATE | `tests/unit/test_citation_engine.py`           | 8 tests: heuristic/LLM citations, source extraction, formatting             |
 | CREATE | `tests/unit/test_confidence_gate.py`           | 9 tests: safety classification, grounding, gating, Kannada                   |
@@ -432,7 +499,7 @@ uv run ruff check src/
 | CREATE | `docs/planning/advanced-agentic-rag-plan.md`   | Comprehensive 4-phase implementation plan                                    |
 | CREATE | `docs/decisions/ADR-010.md`                    | Architecture Decision Record for Advanced Agentic RAG upgrade                |
 
-### 2026-03-14 — Phase 3: LangGraph State Machine (ADR-010)
+### 2026-03-14 â€” Phase 3: LangGraph State Machine (ADR-010)
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -444,18 +511,18 @@ uv run ruff check src/
 | CREATE | `ai/rag/graph/__init__.py`                     | Package exports (15 LOC)                                                     |
 | CREATE | `tests/unit/test_rag_graph.py`                 | 17 tests: edge routing, node functions, graph compilation                    |
 
-### 2026-03-14 — Phase 4: Advanced Retrieval (ADR-010)
+### 2026-03-14 â€” Phase 4: Advanced Retrieval (ADR-010)
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
 | CREATE | `ai/rag/retrieval/contextual_enricher.py`      | Anthropic-style chunk enrichment with section inference (155 LOC)             |
 | CREATE | `ai/rag/retrieval/query_decomposer.py`         | Multi-part query splitting with Kannada conjunctions (164 LOC)               |
 | CREATE | `ai/rag/retrieval/time_aware.py`               | Freshness-boosted scoring: market/weather/scheme/evergreen (175 LOC)         |
-| CREATE | `ai/rag/retrieval/advanced_retriever.py`       | Retrieval coordinator: decompose → retrieve → rerank (130 LOC)               |
+| CREATE | `ai/rag/retrieval/advanced_retriever.py`       | Retrieval coordinator: decompose â†’ retrieve â†’ rerank (130 LOC)               |
 | CREATE | `ai/rag/retrieval/__init__.py`                 | Package exports (27 LOC)                                                     |
 | CREATE | `tests/unit/test_advanced_retrieval.py`        | 18 tests: enricher, decomposer, time-aware, edge cases                       |
 
-### 2026-03-14 — Phase 5: Evaluation & Guardrails (ADR-010)
+### 2026-03-14 â€” Phase 5: Evaluation & Guardrails (ADR-010)
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -466,7 +533,7 @@ uv run ruff check src/
 | CREATE | `scripts/eval_guardrail.py`                    | CLI entry point for CI/CD pipeline (85 LOC)                                  |
 | CREATE | `tests/unit/test_evaluation.py`                | 17 tests: evaluator, dataset integrity, guardrail logic                      |
 
-### 2026-03-14 — Phase 6: Documentation, Integration Tests & Benchmark (ADR-010)
+### 2026-03-14 â€” Phase 6: Documentation, Integration Tests & Benchmark (ADR-010)
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -474,7 +541,7 @@ uv run ruff check src/
 | CREATE | `docs/architecture/rag-benchmark-baseline.md`  | Evaluation benchmark baseline report with heuristic scores                   |
 | CREATE | `tests/integration/test_rag_integration.py`    | 10 integration tests: pipeline, LangGraph, evaluation, cross-module          |
 
-### 2026-03-11 — LLM Provider Modular Refactoring
+### 2026-03-11 â€” LLM Provider Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -488,7 +555,7 @@ uv run ruff check src/
 | CREATE | `src/orchestrator/llm_provider/__init__.py`        | Initialized `llm_provider` package                                           |
 | UPDATE | `src/orchestrator/llm_provider.py`                 | Reduced (477 -> 24 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Real-Time Data Manager Modular Refactoring
+### 2026-03-11 â€” Real-Time Data Manager Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -500,7 +567,7 @@ uv run ruff check src/
 | UPDATE | `src/scrapers/realtime_data.py`                    | Reduced (480 -> 21 lines) by converting into an import proxy                 |
 | UPDATE | `src/tools/realtime_data.py`                       | Reduced (480 -> 21 lines) by converging to the same import proxy             |
 
-### 2026-03-11 — Deep Research Tool Modular Refactoring
+### 2026-03-11 â€” Deep Research Tool Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -513,7 +580,7 @@ uv run ruff check src/
 | CREATE | `src/tools/deep_research/__init__.py`              | Initialized tool package                                                     |
 | UPDATE | `src/tools/deep_research.py`                       | Reduced (484 -> 54 lines) by converting into an import proxy and registry    |
 
-### 2026-03-11 — Duplex Pipeline Modular Refactoring
+### 2026-03-11 â€” Duplex Pipeline Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -524,7 +591,7 @@ uv run ruff check src/
 | CREATE | `src/voice/duplex/__init__.py`                     | Created package public interface                                             |
 | UPDATE | `src/voice/duplex_pipeline.py`                     | Reduced (488 -> 17 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Price Prediction Agent Modular Refactoring
+### 2026-03-11 â€” Price Prediction Agent Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -534,7 +601,7 @@ uv run ruff check src/
 | CREATE | `src/agents/price_prediction/__init__.py`          | Provided a clean public interface for the agent                              |
 | UPDATE | `src/agents/price_prediction/agent.py`             | Reduced (514 -> 241 lines) by importing mixins and models                    |
 
-### 2026-03-11 — Base Agent Modular Refactoring (Protected File Compatible)
+### 2026-03-11 â€” Base Agent Modular Refactoring (Protected File Compatible)
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -546,7 +613,7 @@ uv run ruff check src/
 | CREATE | `src/agents/base/__init__.py`                      | Exposed base agent components                                                |
 | UPDATE | `src/agents/base_agent.py`                         | Reduced (516 -> 15 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — VAD Module Modular Refactoring
+### 2026-03-11 â€” VAD Module Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -557,7 +624,7 @@ uv run ruff check src/
 | CREATE | `src/voice/vad/__init__.py`                        | Exposed `SileroVAD`, `BargeinDetector`, models, and utils                    |
 | UPDATE | `src/voice/vad.py`                                 | Reduced (527 -> 20 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — AI Kosha Client Modular Refactoring
+### 2026-03-11 â€” AI Kosha Client Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -567,7 +634,7 @@ uv run ruff check src/
 | CREATE | `src/scrapers/aikosha/__init__.py`                 | Exposed `AIKoshaClient`, models, and catalog methods                        |
 | UPDATE | `src/scrapers/aikosha_client.py`                   | Reduced (530 -> 19 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — WebRTC Transport Modular Refactoring
+### 2026-03-11 â€” WebRTC Transport Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -578,13 +645,13 @@ uv run ruff check src/
 | CREATE | `src/voice/webrtc/__init__.py`                     | Exposed WebRTC transport models and classes                                  |
 | UPDATE | `src/voice/webrtc_transport.py`                    | Reduced (538 -> 24 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Agri Scrapers Tool Proxy
+### 2026-03-11 â€” Agri Scrapers Tool Proxy
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
 | UPDATE | `src/tools/agri_scrapers.py`                       | Reduced (539 -> 26 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Contextual Chunker Modular Refactoring
+### 2026-03-11 â€” Contextual Chunker Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -598,7 +665,7 @@ uv run ruff check src/
 | UPDATE | `src/rag/contextual_chunker.py`                    | Reduced (553 -> 20 lines) by converting into an import proxy file            |
 | UPDATE | `ai/rag/contextual_chunker.py`                     | Reduced (553 -> 20 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — TTS (Voice) Module Refactoring
+### 2026-03-11 â€” TTS (Voice) Module Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -609,7 +676,7 @@ uv run ruff check src/
 | CREATE | `src/voice/tts/__init__.py`                        | Exposed public interfaces for seamless imports                               |
 | DELETE | `src/voice/tts.py`                                 | Cleaned up monolithic (566 lines) file for <200 bounds compliance            |
 
-### 2026-03-11 — Buyer Matching Agent Modular Refactoring
+### 2026-03-11 â€” Buyer Matching Agent Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -621,7 +688,7 @@ uv run ruff check src/
 | UPDATE | `src/agents/buyer_matching/agent.py`               | Refactored `BuyerMatchingAgent` to consume core mixins (569 -> 167 lines)    |
 | CREATE | `src/agents/buyer_matching/__init__.py`            | Exposed public interfaces for seamless imports                               |
 
-### 2026-03-11 — Listing Service Modular Refactoring
+### 2026-03-11 â€” Listing Service Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -633,7 +700,7 @@ uv run ruff check src/
 | CREATE | `src/api/services/listing_service/__init__.py`     | Final backward-compatible API export point                                   |
 | DELETE | `src/api/services/listing_service.py`              | Cleaned up monolithic (571 lines) file for <200 bounds compliance            |
 
-### 2026-03-11 — Google AMED Modular Refactoring
+### 2026-03-11 â€” Google AMED Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -643,7 +710,7 @@ uv run ruff check src/
 | CREATE | `src/tools/google_amed/__init__.py`                | Re-exported `get_amed_client` factory ensuring backwards compatibility       |
 | DELETE | `src/tools/google_amed.py`                         | Dismantled monolithic file (579 lines) to respect 200-line modular rule      |
 
-### 2026-03-11 — Digital Twin Engine Modular Refactoring
+### 2026-03-11 â€” Digital Twin Engine Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -654,7 +721,7 @@ uv run ruff check src/
 | CREATE | `src/agents/digital_twin/engine/__init__.py`       | Exposed identically to original module structure API exports                 |
 | DELETE | `src/agents/digital_twin/engine.py`                | Swept monolithic file (586 lines) under the 200-line compliance rule         |
 
-### 2026-03-11 — Agri Scrapers Modular Refactoring
+### 2026-03-11 â€” Agri Scrapers Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -667,7 +734,7 @@ uv run ruff check src/
 | CREATE | `src/scrapers/agri_scrapers/__init__.py`           | Initialized the package identical to old file exports                        |
 | DELETE | `src/scrapers/agri_scrapers.py`                    | Deleted monolithic file (611 lines) replacing it with the new package        |
 
-### 2026-03-11 — Web Scraping Agent Modular Refactoring
+### 2026-03-11 â€” Web Scraping Agent Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -681,7 +748,7 @@ uv run ruff check src/
 | CREATE | `src/agents/web_scraping_agent/__init__.py`        | Exposed unified clean API representing the old monolithic file               |
 | DELETE | `src/agents/web_scraping_agent.py`                 | Removed monolithic file (624 lines) fulfilling the 200-line rule             |
 
-### 2026-03-11 — State Manager Modular Refactoring
+### 2026-03-11 â€” State Manager Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -694,7 +761,7 @@ uv run ruff check src/
 | CREATE | `src/shared/memory/state_manager/__init__.py`      | Exposed identical API replacing the old module                               |
 | DELETE | `src/shared/memory/state_manager.py`               | Removed monolithic file (630 lines) to comply with 200-line limit            |
 
-### 2026-03-11 — Query Processor Modular Refactoring
+### 2026-03-11 â€” Query Processor Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -710,7 +777,7 @@ uv run ruff check src/
 | DELETE | `src/rag/query_processor.py`                   | Deleted monolithic file to comply with 200-line rule                         |
 | UPDATE | `ai/rag/query_processor.py`                    | Converted duplicate file to an import proxy for the new package              |
 
-### 2026-03-11 — IMD Weather Client Modular Refactoring
+### 2026-03-11 â€” IMD Weather Client Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -724,7 +791,7 @@ uv run ruff check src/
 | DELETE | `src/scrapers/imd_weather.py`                  | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
 | UPDATE | `src/tools/imd_weather.py`                     | Replaced duplicate monolithic code with an import proxy to the new package   |
 
-### 2026-03-11 — eNAM Client Modular Refactoring
+### 2026-03-11 â€” eNAM Client Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -739,7 +806,7 @@ uv run ruff check src/
 | DELETE | `src/scrapers/enam_client.py`                  | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
 | UPDATE | `src/tools/enam_client.py`                     | Replaced duplicate monolithic code with an import proxy to the new package   |
 
-### 2026-03-11 — Supervisor Agent Modular Refactoring
+### 2026-03-11 â€” Supervisor Agent Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -754,7 +821,7 @@ uv run ruff check src/
 | DELETE | `src/agents/supervisor_agent.py`               | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
 | UPDATE | `src/agents/__init__.py`                       | Updated imports to use the new `src.agents.supervisor` package               |
 
-### 2026-03-11 — Agronomy Agent Multilingual Accuracy Improvements
+### 2026-03-11 â€” Agronomy Agent Multilingual Accuracy Improvements
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -769,14 +836,14 @@ uv run ruff check src/
 | UPDATE | `src/orchestrator/llm_provider.py`             | Updated `GroqProvider` default arguments for `llama-3.3-70b-versatile`       |
 | UPDATE | `scripts/test_llm_routing.py`                  | Adjusted expected outputs to match exact routing prompt instructions; fixed Windows console Unicode display issues |
 
-### 2026-02-27 — Workflow Documentation System
+### 2026-02-27 â€” Workflow Documentation System
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
-| CREATE | `ROADMAP.md`                                   | 6-phase milestone roadmap (Feb–Aug 2026)                                     |
+| CREATE | `ROADMAP.md`                                   | 6-phase milestone roadmap (Febâ€“Aug 2026)                                     |
 | UPDATE | `PLAN.md`                                      | Full architecture diagram, user flows, NFRs, risk register, tech stack       |
 | UPDATE | `AGENTS.md`                                    | Complete AI agent instructions: dev rules, file map, prompts, do-not-do list |
-| UPDATE | `WORKFLOW_STATUS.md`                           | This file — comprehensive dev workflow + methodology                         |
+| UPDATE | `WORKFLOW_STATUS.md`                           | This file â€” comprehensive dev workflow + methodology                         |
 | CREATE | `tracking/PROJECT_STATUS.md`                   | Always-current project state dashboard                                       |
 | CREATE | `tracking/sprints/sprint-04-voice-pipeline.md` | Current sprint: Pipecat + APMC scraping                                      |
 | CREATE | `tracking/daily/_template.md`                  | Daily log template                                                           |
@@ -784,7 +851,7 @@ uv run ruff check src/
 | CREATE | `TESTING/STRATEGY.md`                          | Test pyramid, philosophy, AI prompts for testing                             |
 | CREATE | `TESTING/CHECKLISTS.md`                        | Per-feature-type done checklists                                             |
 
-### 2026-02-27 — Production Scraping Upgrade (Earlier Session)
+### 2026-02-27 â€” Production Scraping Upgrade (Earlier Session)
 
 | Action | File                           | Description                                           |
 | ------ | ------------------------------ | ----------------------------------------------------- |
@@ -792,7 +859,7 @@ uv run ruff check src/
 | UPDATE | `src/scrapers/apmc/`           | Production-grade APMC scraper upgrade                 |
 | UPDATE | `src/pipelines/`               | Data pipeline with caching + APScheduler              |
 
-### 2026-02-26 — Voice Domain Separation
+### 2026-02-26 â€” Voice Domain Separation
 
 | Action | File                               | Description                           |
 | ------ | ---------------------------------- | ------------------------------------- |
@@ -803,7 +870,7 @@ uv run ruff check src/
 | CREATE | `src/voice/pipecat_bot.py`         | Main Pipecat bot entry point          |
 | CREATE | `src/api/websocket/voice_ws.py`    | WebSocket handler for Pipecat stream  |
 
-### 2026-02-26 — Domain Separation (RAG, Vision, Voice)
+### 2026-02-26 â€” Domain Separation (RAG, Vision, Voice)
 
 | Action      | File             | Description                                            |
 | ----------- | ---------------- | ------------------------------------------------------ |
@@ -812,7 +879,7 @@ uv run ruff check src/
 | RESTRUCTURE | `src/voice/`     | Voice domain with dedicated agent                      |
 | UPDATE      | `ai/__init__.py` | Unified exports for all AI domains                     |
 
-### 2026-02-27 — Advanced Folder Structure (Earliest Session)
+### 2026-02-27 â€” Advanced Folder Structure (Earliest Session)
 
 | Action | File                   | Description                                              |
 | ------ | ---------------------- | -------------------------------------------------------- |
@@ -820,9 +887,9 @@ uv run ruff check src/
 | CREATE | `tracking/`            | Development tracking (goals, sprints, daily, milestones) |
 | CREATE | `infra/`               | Deployment & monitoring configs                          |
 | CREATE | `config/`              | Database & service configurations                        |
-| MOVE   | `src/rag/` → `ai/rag/` | RAG pipeline moved to ai/                                |
+| MOVE   | `src/rag/` â†’ `ai/rag/` | RAG pipeline moved to ai/                                |
 
-### January 10, 2026 — Advanced RAG Phase 1–4
+### January 10, 2026 â€” Advanced RAG Phase 1â€“4
 
 | Action | File                            | Description                                           |
 | ------ | ------------------------------- | ----------------------------------------------------- |
@@ -837,7 +904,7 @@ uv run ruff check src/
 | CREATE | `src/rag/graph_retriever.py`    | Neo4j Graph RAG with entity extraction                |
 | CREATE | `src/rag/observability.py`      | LangSmith tracing + RAG eval metrics                  |
 
-### January 9, 2026 — Multi-Agent System + Voice v1
+### January 9, 2026 â€” Multi-Agent System + Voice v1
 
 | Action | File                             | Description                                       |
 | ------ | -------------------------------- | ------------------------------------------------- |
@@ -853,7 +920,7 @@ uv run ruff check src/
 
 ---
 
-## ⚠️ Known Issues & Workarounds
+## âš ï¸ Known Issues & Workarounds
 
 ### BGE-M3 Embedding Model Memory
 
@@ -879,7 +946,7 @@ asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 ---
 
-## 🛠️ Common Commands
+## ðŸ› ï¸ Common Commands
 
 ```bash
 # Start all required services
@@ -913,7 +980,7 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 
 ---
 
-### 2026-02-27 — RAG 2027: Advanced Agentic RAG Research & Documentation (Sprint 05 Prep)
+### 2026-02-27 â€” RAG 2027: Advanced Agentic RAG Research & Documentation (Sprint 05 Prep)
 
 **Research conducted**: Comprehensive RAG paradigm shift analysis for 2027 competitiveness. Identified 10 major innovation areas. Created sprint-integrated implementation roadmap.
 
@@ -922,7 +989,7 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | Action | File                                                 | Description                                                                                          |
 | ------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | CREATE | `docs/decisions/ADR-007-agentic-rag-orchestrator.md` | Decision: Replace fixed 4-node pipeline with autonomous retrieval planner + speculative draft engine |
-| CREATE | `docs/decisions/ADR-008-adaptive-query-router.md`    | Decision: 8-strategy adaptive router with explicit cost signals (₹0.03–₹0.55/query)                  |
+| CREATE | `docs/decisions/ADR-008-adaptive-query-router.md`    | Decision: 8-strategy adaptive router with explicit cost signals (â‚¹0.03â€“â‚¹0.55/query)                  |
 | CREATE | `docs/decisions/ADR-009-agri-embeddings.md`          | Decision: Two-layer agri embedding strategy (wrapper L1 Sprint 05 + fine-tuned L2 Phase 4)           |
 | CREATE | `docs/decisions/ADR-010-browser-scraping-rag.md`     | Decision: Browser-augmented RAG using Scrapling for live gov/news data                               |
 
@@ -930,7 +997,7 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 
 | Action | File                                         | Description                                                                           |
 | ------ | -------------------------------------------- | ------------------------------------------------------------------------------------- |
-| CREATE | `docs/architecture/agentic_rag_system.md`    | Full architecture: Retrieval Planner → Speculative Engine → Verifier → Self-Evaluator |
+| CREATE | `docs/architecture/agentic_rag_system.md`    | Full architecture: Retrieval Planner â†’ Speculative Engine â†’ Verifier â†’ Self-Evaluator |
 | CREATE | `docs/architecture/adaptive_query_router.md` | 8-strategy router: decision tree, cost table, A/B rollout plan                        |
 | CREATE | `docs/architecture/agri_embeddings.md`       | Layer 1 (AgriEmbeddingWrapper) + Layer 2 (fine-tuned model) architecture              |
 | CREATE | `docs/architecture/browser_scraping_rag.md`  | Source registry, SourceSelector, ContentExtractor, TTL lifecycle, fallbacks           |
@@ -944,8 +1011,8 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 
 #### Key Design Decisions (Sprint 05-06)
 
-- **Adaptive Router** reduces avg query cost ₹0.44 → ₹0.21 (–52%) by routing simple queries to `DIRECT_LLM`
-- **Speculative RAG** reduces voice latency –51% via 3 parallel Groq 8B drafts + Gemini Flash verifier
+- **Adaptive Router** reduces avg query cost â‚¹0.44 â†’ â‚¹0.21 (â€“52%) by routing simple queries to `DIRECT_LLM`
+- **Speculative RAG** reduces voice latency â€“51% via 3 parallel Groq 8B drafts + Gemini Flash verifier
 - **AgriEmbeddingWrapper** wraps BGE-M3 with domain instruction prefix + 50-term Hindi/Kannada normalization map
 - **Browser RAG** extends Scrapling infrastructure to 14+ ag-specific gov/news sources with TTL-gated Qdrant live collection
 - All new components are **feature-flagged** to allow A/B testing and gradual rollout
@@ -962,7 +1029,7 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 [ ] Establish RAGAS evaluation baseline (20 golden queries)
 ```
 
-### 2026-03-16 — Vision Training Contracts Slice
+### 2026-03-16 â€” Vision Training Contracts Slice
 
 | Action | File | Description |
 | ------ | ---- | ----------- |
@@ -1063,3 +1130,4 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | CREATE | `tracking/daily/2026-03-17.md` | Daily implementation log for the rate-hub slice |
 | CREATE | `docs/decisions/ADR-011-multi-source-rate-hub.md` | Architecture decision for the generic rate hub and conflict policy |
 | UPDATE | `WORKFLOW_STATUS.md` | Added this log entry and refreshed the timestamp |
+

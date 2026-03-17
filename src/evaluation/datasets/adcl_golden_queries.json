@@ -1,0 +1,162 @@
+[
+  {
+    "id": "adcl-001",
+    "query": "What should I sow in Kolar this week?",
+    "district": "Kolar",
+    "language": "en",
+    "expected_commodities": ["Tomato", "Onion", "Beans"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-002",
+    "query": "Show the weekly demand crops for Bangalore district",
+    "district": "Bangalore",
+    "language": "en",
+    "expected_commodities": ["Tomato", "Coriander", "Spinach"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-003",
+    "query": "Is onion recommended in Mysore right now?",
+    "district": "Mysore",
+    "language": "en",
+    "expected_commodities": ["Onion"],
+    "intent": "recommendation_check"
+  },
+  {
+    "id": "adcl-004",
+    "query": "Should I list okra from Bangalore this week?",
+    "district": "Bangalore",
+    "language": "en",
+    "expected_commodities": ["Okra"],
+    "intent": "listing_adcl_check"
+  },
+  {
+    "id": "adcl-005",
+    "query": "Weekly demand crops in Hubli",
+    "district": "Hubli",
+    "language": "en",
+    "expected_commodities": ["Onion", "Tomato", "Green Chilli"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-006",
+    "query": "Which crops have a green label in Mandya?",
+    "district": "Mandya",
+    "language": "en",
+    "expected_commodities": ["Tomato", "Beans"],
+    "intent": "green_label_lookup"
+  },
+  {
+    "id": "adcl-007",
+    "query": "Tell me the top demand crops for Hassan with price context",
+    "district": "Hassan",
+    "language": "en",
+    "expected_commodities": ["Potato", "Tomato", "Cabbage"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-008",
+    "query": "Should I sow coriander in Bangalore this week?",
+    "district": "Bangalore",
+    "language": "en",
+    "expected_commodities": ["Coriander"],
+    "intent": "recommendation_check"
+  },
+  {
+    "id": "adcl-009",
+    "query": "Give me the district weekly crop demand report for Tumakuru",
+    "district": "Tumakuru",
+    "language": "en",
+    "expected_commodities": ["Tomato", "Onion", "Brinjal"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-010",
+    "query": "Can ADCL help me decide if beans are in demand in Kolar?",
+    "district": "Kolar",
+    "language": "en",
+    "expected_commodities": ["Beans"],
+    "intent": "recommendation_check"
+  },
+  {
+    "id": "adcl-011",
+    "query": "saptaahik demand crops for Mysuru",
+    "district": "Mysuru",
+    "language": "en",
+    "expected_commodities": ["Tomato", "Onion", "Chilli"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-012",
+    "query": "Kolar mein is hafte kaunsi fasal demand mein hai?",
+    "district": "Kolar",
+    "language": "hi",
+    "expected_commodities": ["Tomato", "Beans", "Onion"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-013",
+    "query": "Bangalore ke liye weekly demand report dikhao",
+    "district": "Bangalore",
+    "language": "hi",
+    "expected_commodities": ["Tomato", "Coriander", "Spinach"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-014",
+    "query": "Mysore mein bhindi recommend hai kya?",
+    "district": "Mysore",
+    "language": "hi",
+    "expected_commodities": ["Okra"],
+    "intent": "recommendation_check"
+  },
+  {
+    "id": "adcl-015",
+    "query": "Kolar nalli ee vara yaava bele demand ide?",
+    "district": "Kolar",
+    "language": "kn",
+    "expected_commodities": ["Tomato", "Beans", "Onion"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-016",
+    "query": "Bengaluru district weekly demand list kodi",
+    "district": "Bengaluru",
+    "language": "kn",
+    "expected_commodities": ["Tomato", "Coriander", "Spinach"],
+    "intent": "weekly_demand"
+  },
+  {
+    "id": "adcl-017",
+    "query": "Mandya nalli beans green label ideya?",
+    "district": "Mandya",
+    "language": "kn",
+    "expected_commodities": ["Beans"],
+    "intent": "green_label_lookup"
+  },
+  {
+    "id": "adcl-018",
+    "query": "Use live data and refresh the weekly demand crops for Bangalore",
+    "district": "Bangalore",
+    "language": "en",
+    "expected_commodities": ["Tomato", "Coriander", "Spinach"],
+    "intent": "weekly_demand_force_live"
+  },
+  {
+    "id": "adcl-019",
+    "query": "Which crop should I prioritize for listing in Hubli mandi this week?",
+    "district": "Hubli",
+    "language": "en",
+    "expected_commodities": ["Onion", "Tomato"],
+    "intent": "listing_adcl_check"
+  },
+  {
+    "id": "adcl-020",
+    "query": "Check whether brinjal is still a recommended crop in Tumakuru",
+    "district": "Tumakuru",
+    "language": "en",
+    "expected_commodities": ["Brinjal"],
+    "intent": "recommendation_check"
+  }
+]
