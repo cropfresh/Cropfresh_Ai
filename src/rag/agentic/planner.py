@@ -11,27 +11,32 @@ from __future__ import annotations
 from loguru import logger
 
 from src.rag.agentic.models import RetrievalPlan, ToolCall
+from src.rag.routing.prefilter import extract_entities
 
 PLANNER_SYSTEM_PROMPT = """You are a retrieval orchestrator for CropFresh, an Indian agricultural AI assistant.
 
 Available tools (use ONLY these exact names):
-- "vector_search"  : Search the agricultural knowledge base (crop guides, schemes, agronomy)
-- "graph_rag"      : Query Neo4j for farmer/buyer/crop relationships and supply chain
-- "price_api"      : Fetch live mandi prices from eNAM for today
-- "weather_api"    : Get IMD weather forecast for next 3-5 days
-- "browser_scrape" : Scrape live government/news websites for scheme updates
-- "direct_llm"     : Answer directly without retrieval (for simple sub-questions)
+- "vector_search"     : Search the agricultural knowledge base (crop guides, schemes, agronomy)
+- "graph_rag"         : Query Neo4j for farmer/buyer/crop relationships and supply chain
+- "multi_source_rates": Fetch Karnataka mandi, support price, fuel, or gold rates from multiple sources
+- "price_api"         : Backward-compatible mandi-only alias of multi_source_rates
+- "weather_api"       : Get IMD weather forecast for next 3-5 days
+- "browser_scrape"    : Scrape live government/news websites for scheme updates
+- "direct_llm"        : Answer directly without retrieval (for simple sub-questions)
 
 Rules:
 - Use MINIMUM tools necessary to answer accurately
 - Mark independent tools as can_parallelize: true for speed
 - Set confidence_threshold higher (0.85) for safety-critical advice (pesticides, loans)
 - Set confidence_threshold lower (0.70) for general agronomy knowledge
+- Use "multi_source_rates" for price, fuel, gold, mandi, MSP, or support-price queries
+- Set "rate_kinds" to one or more of: mandi_wholesale, retail_produce, fuel, gold, support_price
+- Use "market" for a specific mandi/APMC and "district" for district-wide filters
 
 Respond with ONLY valid JSON (no markdown):
 {
   "plan": [
-    {"tool_name": "price_api", "params": {"commodity": "tomato", "location": "Hubli"}, "can_parallelize": true, "priority": 1},
+    {"tool_name": "multi_source_rates", "params": {"rate_kinds": ["mandi_wholesale"], "commodity": "tomato", "market": "Hubli"}, "can_parallelize": true, "priority": 1},
     {"tool_name": "vector_search", "params": {"query": "tomato sell vs hold strategy"}, "can_parallelize": true, "priority": 1}
   ],
   "confidence_threshold": 0.75,
@@ -113,7 +118,73 @@ class RetrievalPlanner:
             return self._fallback_plan(query)
 
     def _fallback_plan(self, query: str) -> RetrievalPlan:
-        """Simple fallback plan when LLM is unavailable: just vector search."""
+        """Rule-based fallback plan when the planner LLM is unavailable."""
+        query_lower = query.lower()
+        entities = extract_entities(query)
+        crop = entities["crops"][0] if entities["crops"] else None
+        location = entities["locations"][0] if entities["locations"] else None
+
+        if any(token in query_lower for token in ("fuel", "petrol", "diesel")):
+            return RetrievalPlan(
+                plan=[
+                    ToolCall(
+                        tool_name="multi_source_rates",
+                        params={"rate_kinds": ["fuel"], "state": "Karnataka", "market": location},
+                        can_parallelize=False,
+                    )
+                ],
+                confidence_threshold=0.75,
+                query=query,
+                plan_reasoning="Fallback plan detected a fuel price request",
+            )
+
+        if "gold" in query_lower:
+            return RetrievalPlan(
+                plan=[
+                    ToolCall(
+                        tool_name="multi_source_rates",
+                        params={"rate_kinds": ["gold"], "state": "Karnataka", "market": location},
+                        can_parallelize=False,
+                    )
+                ],
+                confidence_threshold=0.75,
+                query=query,
+                plan_reasoning="Fallback plan detected a gold price request",
+            )
+
+        if any(token in query_lower for token in ("msp", "support price", "floor price")) and crop:
+            return RetrievalPlan(
+                plan=[
+                    ToolCall(
+                        tool_name="multi_source_rates",
+                        params={"rate_kinds": ["support_price"], "commodity": crop, "state": "Karnataka"},
+                        can_parallelize=False,
+                    )
+                ],
+                confidence_threshold=0.75,
+                query=query,
+                plan_reasoning="Fallback plan detected a support-price request",
+            )
+
+        if any(token in query_lower for token in ("price", "rate", "mandi", "market", "apmc")) and crop:
+            return RetrievalPlan(
+                plan=[
+                    ToolCall(
+                        tool_name="multi_source_rates",
+                        params={
+                            "rate_kinds": ["mandi_wholesale"],
+                            "commodity": crop,
+                            "state": "Karnataka",
+                            "market": location,
+                        },
+                        can_parallelize=False,
+                    )
+                ],
+                confidence_threshold=0.75,
+                query=query,
+                plan_reasoning="Fallback plan detected a mandi-price request",
+            )
+
         return RetrievalPlan(
             plan=[
                 ToolCall(

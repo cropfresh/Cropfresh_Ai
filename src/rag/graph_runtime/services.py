@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from src.rag.language_support import detect_response_language, get_localized_message
 from src.rag.routing.prefilter import extract_entities
+from src.rates.settings import get_agmarknet_api_key
 
 
 def _first_value(values: list[str], default: str = "") -> str:
@@ -33,31 +35,40 @@ async def retrieve_vector_documents(
 async def retrieve_live_price_documents(query: str) -> list[Any]:
     """Retrieve live mandi prices for price-centric queries."""
     from src.rag.knowledge_base import Document
-    from src.tools.agmarknet import AgmarknetTool
+    from src.rates import RateKind
+    from src.rates.factory import get_rate_service
+    from src.rates.query_builder import normalize_rate_query
 
     entities = extract_entities(query)
     commodity = _first_value(entities["crops"], "Tomato").title()
     district = _first_value(entities["locations"], "Kolar")
-    tool = AgmarknetTool()
-    prices = await tool.get_prices(commodity=commodity, state="Karnataka", district=district)
-    if not prices:
-        prices = tool.get_mock_prices(commodity=commodity, district=district)
+    service = await get_rate_service(agmarknet_api_key=get_agmarknet_api_key())
+    result = await service.query(
+        normalize_rate_query(
+            rate_kinds=[RateKind.MANDI_WHOLESALE.value],
+            commodity=commodity,
+            state="Karnataka",
+            district=district,
+        )
+    )
+    prices = result.canonical_rates or result.comparison_quotes
     return [
         Document(
-            id=f"price_{price.market}_{idx}",
+            id=f"price_{price.location_label}_{idx}",
             text=(
-                f"{price.commodity} mandi price in {price.market}, {price.district}: "
-                f"min Rs.{price.min_price:.0f}, max Rs.{price.max_price:.0f}, "
-                f"modal Rs.{price.modal_price:.0f} per quintal as of {price.date.date()}."
+                f"{price.commodity} mandi price in {price.location_label}: "
+                f"min Rs.{(price.min_price or 0):.0f}, max Rs.{(price.max_price or 0):.0f}, "
+                f"modal Rs.{(price.modal_price or price.price_value or 0):.0f} per quintal "
+                f"as of {price.price_date}."
             ),
-            source="agmarknet",
+            source=getattr(price, "source", "multi_source_rates"),
             metadata={
-                "source": "agmarknet",
-                "market": price.market,
-                "district": price.district,
+                "source": getattr(price, "source", "multi_source_rates"),
+                "market": getattr(price, "location_label", district),
+                "district": district,
                 "commodity": price.commodity,
-                "timestamp": price.date.timestamp(),
-                "as_of": price.date.isoformat(),
+                "timestamp": datetime.combine(price.price_date, datetime.min.time()).timestamp(),
+                "as_of": price.price_date.isoformat(),
             },
             score=1.0,
         )
