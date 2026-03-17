@@ -76,3 +76,16 @@
 - `docs/decisions/ADR-008-adaptive-query-router.md`
 - `docs/decisions/ADR-009-agri-embeddings.md`
 - `docs/architecture/agentic_rag_system.md`
+
+## 2026-03-17 Progress Update — Multi-Source Rate Hub
+
+**What shipped in this slice:**
+- Added a generic `src/rates/` domain with normalized records, precedence rules, caching, persistence, and multi-source comparison
+- Added 16 public connectors plus pending-access metadata for gated sources
+- Wired `multi_source_rates` into the API, agent tool registries, planner fallback, graph-runtime live price retrieval, and APScheduler refresh jobs
+- Added fixture-driven tests for rate normalization, comparison, connectors, API endpoints, planner fallback, and scheduler jobs
+
+**Still open:**
+- Live network smoke tests for the public sources once unrestricted verification is available
+- Full strict-mypy cleanup across older adjacent modules (`src/tools/registry.py`, legacy agentic files, and connector wrappers)
+- Deeper scheduler target coverage beyond the initial Karnataka refresh tuples

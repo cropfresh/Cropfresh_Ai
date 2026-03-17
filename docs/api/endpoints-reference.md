@@ -1,6 +1,6 @@
 # CropFresh AI — API Endpoints Reference
 
-> **Last Updated:** 2026-03-11
+> **Last Updated:** 2026-03-17
 > **Base URL:** `http://localhost:8000` (dev) / `https://api.cropfresh.in` (prod)
 > **Auth:** API Key (`X-API-Key` header) — skipped in dev mode
 > **Content-Type:** `application/json`
@@ -263,3 +263,45 @@ All errors follow this format:
 | 429 | Rate limited |
 | 500 | Internal server error |
 | 503 | Service unavailable (DB connection lost) |
+
+### 2026-03-17 Update � Multi-Source Rate Hub
+
+The Prices API now supports the shared rate hub in addition to the legacy mocked endpoints.
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/prices/latest` | GET | Legacy transparent aggregation mock kept for backward compatibility |
+| `/api/v1/prices/history` | GET | Legacy history mock |
+| `/api/v1/prices/summary` | GET | Legacy summary mock |
+| `/api/v1/prices/query` | POST | Official-first multi-source Karnataka rate query |
+| `/api/v1/prices/source-health` | GET | Health, freshness, and pending-source metadata for rate connectors |
+
+#### POST `/api/v1/prices/query`
+
+**Request:**
+```json
+{
+  "rate_kinds": ["mandi_wholesale"],
+  "commodity": "tomato",
+  "state": "Karnataka",
+  "district": null,
+  "market": "Kolar",
+  "date": "2026-03-17",
+  "include_reference": true,
+  "force_live": false,
+  "comparison_depth": "all_sources"
+}
+```
+
+**Response fields:**
+- `query_target`
+- `canonical_rates`
+- `comparison_quotes`
+- `source_health`
+- `warnings`
+- `pending_sources`
+- `fetched_at`
+
+#### GET `/api/v1/prices/source-health`
+
+Returns enabled source health snapshots plus metadata-only pending sources such as eNAM official API access, NCDEX, and app-only sources that are not executed automatically.

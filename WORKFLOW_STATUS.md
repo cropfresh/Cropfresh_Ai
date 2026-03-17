@@ -1,6 +1,6 @@
 # CropFresh AI — Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-16 (17:41 IST)
+> **Last Updated:** 2026-03-17 (13:05 IST)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -974,3 +974,73 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | CREATE | `tests/unit/test_vision_model_contracts.py` | Rejects placeholder ONNX artifacts, accepts valid mocked contracts |
 | CREATE | `tests/unit/test_resnet_similarity_contract.py` | Runtime contract enforcement coverage for ResNet similarity |
 | UPDATE | `tests/unit/test_vision_dinov2.py` | Verifies commodity_id is passed into DINO inference |
+
+### 2026-03-17 - Multi-Source Karnataka Rate Hub
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/rates/__init__.py` | Public exports for the shared multi-source rate hub |
+| CREATE | `src/rates/enums.py` | RateKind, authority tier, fetch mode, and comparison depth enums |
+| CREATE | `src/rates/models.py` | Shared query, record, health, and response models |
+| CREATE | `src/rates/precedence.py` | Official-first source precedence, TTLs, and discrepancy thresholds |
+| CREATE | `src/rates/query_builder.py` | Request normalization and deterministic cache keys |
+| CREATE | `src/rates/cache.py` | Redis or in-memory TTL cache for rate responses |
+| CREATE | `src/rates/repository.py` | Raw and normalized rate persistence with mandi dual-write support |
+| CREATE | `src/rates/service.py` | Parallel fan-out, retries, caching, circuit breaker, and aggregation |
+| CREATE | `src/rates/factory.py` | Shared service factory for API, tools, and scheduler consumers |
+| CREATE | `src/rates/settings.py` | Safe Agmarknet API-key helper for partially configured environments |
+| CREATE | `src/db/schema_rates.sql` | `normalized_rates` schema for the generic rate hub |
+| CREATE | `src/rates/connectors/base.py` | Base connector contract and HTTP/browser fallback helpers |
+| CREATE | `src/rates/connectors/html_utils.py` | Shared HTML parsing helpers for table and text sources |
+| CREATE | `src/rates/connectors/pending_sources.py` | Metadata-only pending-access sources |
+| CREATE | `src/rates/connectors/registry.py` | Enabled connector registry for all public sources |
+| CREATE | `src/rates/connectors/agmarknet_ogd.py` | Official AGMARKNET OGD connector |
+| CREATE | `src/rates/connectors/agmarknet_scrape.py` | Official AGMARKNET scrape connector |
+| CREATE | `src/rates/connectors/enam_dashboard.py` | Public eNAM dashboard connector |
+| CREATE | `src/rates/connectors/krama_daily.py` | KRAMA daily mandi connector |
+| CREATE | `src/rates/connectors/krama_floor_price.py` | KRAMA support-price connector |
+| CREATE | `src/rates/connectors/kapricom_reference.py` | KAPRICOM reference-price connector |
+| CREATE | `src/rates/connectors/napanta.py` | Validator connector for NaPanta |
+| CREATE | `src/rates/connectors/agriplus.py` | Validator connector for AgriPlus |
+| CREATE | `src/rates/connectors/commoditymarketlive.py` | Validator connector for CommodityMarketLive |
+| CREATE | `src/rates/connectors/shyali.py` | Validator connector for Shyali |
+| CREATE | `src/rates/connectors/vegetablemarketprice.py` | Retail produce connector |
+| CREATE | `src/rates/connectors/todaypricerates.py` | Retail produce connector for TodayPriceRates |
+| CREATE | `src/rates/connectors/petroldieselprice.py` | Fuel connector |
+| CREATE | `src/rates/connectors/parkplus_fuel.py` | Fuel connector fallback |
+| CREATE | `src/rates/connectors/businessline_gold.py` | Gold connector |
+| CREATE | `src/rates/connectors/iifl_gold.py` | Gold connector fallback |
+| CREATE | `src/agents/agent_groups.py` | Extracted grouped agent builders to keep registry slim |
+| CREATE | `src/agents/tool_registry_setup.py` | Shared agent tool-registry assembly |
+| CREATE | `src/agents/tool_setup/__init__.py` | Lazy exports for agent tool-setup helpers |
+| CREATE | `src/agents/tool_setup/commerce.py` | Commerce tool registration wrappers |
+| CREATE | `src/agents/tool_setup/agronomy.py` | Agronomy tool registration wrappers |
+| CREATE | `src/agents/tool_setup/research.py` | Research tool registration wrappers |
+| CREATE | `src/agents/tool_setup/rates.py` | Rate-hub tool registration wrappers |
+| CREATE | `src/tools/multi_source_rates.py` | Global tool entry points for `multi_source_rates` and `price_api` |
+| CREATE | `src/tools/registry_types.py` | Annotation helpers for tool schema generation |
+| CREATE | `src/scrapers/scheduler_runtime.py` | Refactored scheduler runtime with legacy and rate-hub jobs |
+| UPDATE | `src/agents/agent_registry.py` | Slimmed registry to orchestration-only factory logic |
+| UPDATE | `src/agents/__init__.py` | Lazy package exports to avoid circular imports |
+| UPDATE | `src/tools/__init__.py` | Lazy-safe auto-registration imports |
+| UPDATE | `src/tools/registry.py` | Better annotation handling for Optional and generic types |
+| UPDATE | `src/api/routes/prices.py` | Added `/prices/query` and `/prices/source-health` on the shared service |
+| UPDATE | `src/rag/agentic/orchestrator.py` | Routes `multi_source_rates` and mandi alias through extracted handlers |
+| UPDATE | `src/rag/agentic/planner.py` | Plans price, support-price, fuel, and gold queries to the rate hub |
+| CREATE | `src/rag/agentic/executor.py` | Extracted retrieval-plan execution helper |
+| CREATE | `src/rag/agentic/tool_handlers.py` | Extracted tool call handlers for standalone agentic RAG |
+| UPDATE | `src/rag/graph_runtime/services.py` | Uses the shared rate hub for live price documents |
+| UPDATE | `src/scrapers/scraper_scheduler.py` | Thin compatibility export over refactored scheduler runtime |
+| CREATE | `tests/unit/rates/test_query_builder.py` | Query normalization and cache-key tests |
+| CREATE | `tests/unit/rates/test_comparison.py` | Official-first precedence and warning tests |
+| CREATE | `tests/unit/rates/test_service.py` | Cache and circuit-breaker tests for RateService |
+| CREATE | `tests/unit/rates/connectors/test_connectors.py` | Fixture-based parsing tests for all enabled connectors |
+| CREATE | `tests/api/rates/test_prices_routes.py` | `/prices/query` and `/prices/source-health` endpoint tests |
+| CREATE | `tests/unit/rag_agentic/test_rate_planning.py` | Planner fallback and tool-registry coverage for rate-hub tools |
+| CREATE | `tests/unit/test_scheduler_rate_jobs.py` | Scheduler job registration and `force_live=True` coverage |
+| UPDATE | `docs/api/endpoints-reference.md` | Documented multi-source rate endpoints |
+| UPDATE | `docs/features/scraping-system.md` | Documented source tiers and shared rate-refresh scheduler |
+| UPDATE | `tracking/sprints/sprint-05-advanced-rag.md` | Added multi-source rate-hub sprint progress update |
+| CREATE | `tracking/daily/2026-03-17.md` | Daily implementation log for the rate-hub slice |
+| CREATE | `docs/decisions/ADR-011-multi-source-rate-hub.md` | Architecture decision for the generic rate hub and conflict policy |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this log entry and refreshed the timestamp |

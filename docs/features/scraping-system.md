@@ -81,3 +81,31 @@ APMC_PRICES:  cron(hour=6, minute=0)   # 6 AM daily
 WEATHER:      cron(hour="6,12,18")      # 3x daily
 STATE_DATA:   cron(hour=7, minute=0)   # 7 AM daily
 ```
+
+## 2026-03-17 Update — Multi-Source Rate Hub
+
+CropFresh now has a shared `src/rates/` domain that sits above the individual scrapers and exposes one official-first rate service to the API, tool registry, agentic planner, and scheduler.
+
+### Source Tiers
+
+- `official`: KRAMA daily, AGMARKNET OGD, AGMARKNET scrape, public eNAM dashboard
+- `reference_official`: KRAMA floor price, KAPRICOM, PetrolDieselPrice, BusinessLine gold
+- `validator`: NaPanta, AgriPlus, CommodityMarketLive, Shyali
+- `retail_reference`: VegetableMarketPrice, TodayPriceRates, Park+ fuel, IIFL gold
+- `pending_access`: eNAM official API, Agriwatch, NCDEX, Kisan Suvidha, app-only sources, legacy KSAMB/Maratavahini
+
+### Shared Refresh Schedule (IST)
+
+- Official mandi refresh: `06:15` and `12:15`
+- Support/reference refresh: `07:00`
+- Fuel and gold refresh: `09:00`, `13:00`, and `17:00`
+- Validator and retail refresh: `13:00`
+- Legacy `agmarknet_daily` and `imd_daily` jobs remain for compatibility while older consumers migrate
+
+### Conflict Policy
+
+- Mandi wholesale precedence: `krama_daily -> agmarknet_ogd -> agmarknet_scrape -> enam_dashboard -> validator sites`
+- Support price precedence: `krama_floor_price -> kapricom_reference`
+- Fuel precedence: `petroldieselprice -> parkplus_fuel`
+- Gold precedence: `businessline_gold -> iifl_gold`
+- Warnings are emitted for stale official data, date mismatch, unit mismatch, or source discrepancies >= 15%
