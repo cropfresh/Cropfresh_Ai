@@ -1,7 +1,7 @@
 # CropFresh AI — Task Backlog
 
 > **Priority:** P0 (critical) → P1 (high) → P2 (medium) → P3 (nice-to-have)
-> **Last Updated:** 2026-03-11
+> **Last Updated:** 2026-03-17
 
 ---
 
@@ -10,10 +10,14 @@
 - [ ] AgriEmbeddingWrapper with domain prefix + Hindi/Kannada normalization
 - [ ] Adaptive Query Router (8 strategies, cost optimization)
 - [ ] RAGAS evaluation baseline (20 golden queries)
+- [ ] Multi-source rate hub live-source validation and smoke tests
+- [ ] Multi-source rate hub CI hardening for repo-wide Ruff and mypy blockers
 - [ ] eNAM API registration
 
 ## P1 — High Priority (Sprint 06)
 
+- [ ] Expand rate-hub health monitoring and source diagnostics
+- [ ] Broaden Karnataka rate-hub coverage beyond the initial query tuples and schedules
 - [ ] Supabase schema design + migration scripts
 - [ ] User registration/auth flow (Firebase)
 - [ ] Crop listings CRUD with real database

@@ -29,6 +29,15 @@
 - [ ] Create 20 golden queries for RAGAS baseline
 - [ ] Register for eNAM API access
 
+### Rate Intelligence (added during Sprint 05)
+- [x] `src/rates/` — Shared multi-source Karnataka rate hub with precedence, caching, persistence, and comparison logic
+- [x] `src/tools/multi_source_rates.py` — Reusable tool wrapper plus mandi-only compatibility alias
+- [x] `src/api/routes/prices.py` — Multi-source rate query and source-health endpoints
+- [x] `src/rag/agentic/` — Planner and orchestration wiring for price, support-price, fuel, and gold queries
+- [x] `src/scrapers/scheduler_runtime.py` — Scheduled refresh jobs for official mandi, support/reference, validator/retail, fuel, and gold categories
+- [ ] Live smoke tests for enabled public sources once unrestricted validation is available
+- [ ] Repo-wide Ruff and mypy cleanup needed to remove unrelated CI noise from this slice
+
 ### Documentation (Sprint 05 deliverable)
 - [x] `docs/architecture/system-architecture.md` — Full architecture with Mermaid
 - [x] `docs/architecture/data-flow.md` — End-to-end data flows
@@ -54,6 +63,7 @@
 
 - eNAM API registration may take 1-2 weeks
 - BGE-M3 fine-tuning (Layer 2) is Phase 4 — keep wrapper simple
+- Repo-wide Ruff and mypy backlog can hide feature-level verification quality if not tracked separately
 
 ---
 
@@ -75,15 +85,22 @@
 - `docs/decisions/ADR-007-agentic-rag-orchestrator.md`
 - `docs/decisions/ADR-008-adaptive-query-router.md`
 - `docs/decisions/ADR-009-agri-embeddings.md`
+- `docs/decisions/ADR-010-browser-augmented-rag.md`
+- `docs/decisions/ADR-011-multi-source-rate-hub.md`
 - `docs/architecture/agentic_rag_system.md`
 
-## 2026-03-17 Progress Update � Multi-Source Rate Hub
+## 2026-03-17 Progress Update — Multi-Source Rate Hub
 
 **What shipped in this slice:**
 - Added a generic `src/rates/` domain with normalized records, precedence rules, caching, persistence, and multi-source comparison
 - Added 16 public connectors plus pending-access metadata for gated sources
 - Wired `multi_source_rates` into the API, agent tool registries, planner fallback, graph-runtime live price retrieval, and APScheduler refresh jobs
 - Added fixture-driven tests for rate normalization, comparison, connectors, API endpoints, planner fallback, and scheduler jobs
+
+**Tracking follow-up added this session:**
+- Refreshed `tracking/PROJECT_STATUS.md` and `tracking/tasks/backlog.md` with rate-hub hardening as active follow-up work
+- Rewrote `tracking/daily/2026-03-17.md` in the daily-log template shape
+- Created `tracking/weekly/2026-W12.md` from the weekly template for the new slice
 
 **Still open:**
 - Live network smoke tests for the public sources once unrestricted verification is available
