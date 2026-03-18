@@ -4,41 +4,7 @@ Language helpers for multilingual RAG responses.
 
 from __future__ import annotations
 
-import re
-
-from src.voice.entity_extractor._language import detect_language_from_text
-
-_KANNADA_LATIN_STRONG_HINTS = {
-    "yaavaga",
-    "yeshtu",
-    "hege",
-    "mattu",
-    "yojane",
-    "arji",
-    "niyantrisuvudu",
-    "maaduvudu",
-    "maadodu",
-    "maadide",
-    "ivattu",
-    "indu",
-    "eega",
-    "beku",
-    "haakabeku",
-    "raitare",
-}
-
-_KANNADA_LATIN_SUPPORT_HINTS = {
-    "bele",
-    "dara",
-    "alli",
-    "gida",
-    "sarkaar",
-    "raita",
-    "sahaya",
-    "yojana",
-    "maadi",
-    "banni",
-}
+from src.shared.language import detect_response_language
 
 _MESSAGES = {
     "no_information": {
@@ -86,22 +52,6 @@ _MESSAGES = {
         ),
     },
 }
-
-
-def detect_response_language(text: str) -> str:
-    """Detect the best response language, with Kanglish support for Kannada."""
-    detected = detect_language_from_text(text or "")
-    if detected != "en":
-        return detected
-
-    tokens = set(re.findall(r"[a-z]+", (text or "").lower()))
-    if tokens & _KANNADA_LATIN_STRONG_HINTS:
-        return "kn"
-    if len(tokens & (_KANNADA_LATIN_STRONG_HINTS | _KANNADA_LATIN_SUPPORT_HINTS)) >= 2:
-        return "kn"
-    return "en"
-
-
 def build_generation_language_instruction(
     query: str,
     route: str = "",

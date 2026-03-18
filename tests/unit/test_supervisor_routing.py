@@ -8,16 +8,17 @@ Tests the _route_rule_based() fallback method and routing logic:
   - _merge_responses() combines content and metadata correctly
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
-from src.agents.supervisor import SupervisorAgent, RoutingDecision
 from src.agents.base_agent import AgentResponse
-
+from src.agents.supervisor import SupervisorAgent
 
 # ─────────────────────────────────────────────────
 # Fixtures
 # ─────────────────────────────────────────────────
+
 
 @pytest.fixture
 def supervisor():
@@ -27,6 +28,7 @@ def supervisor():
 # ─────────────────────────────────────────────────
 # Rule-based routing tests
 # ─────────────────────────────────────────────────
+
 
 class TestRuleBasedRouting:
     def test_agronomy_keywords(self, supervisor):
@@ -38,6 +40,10 @@ class TestRuleBasedRouting:
         decision = supervisor._route_rule_based("What is the mandi price per quintal?")
         assert decision.agent_name == "commerce_agent"
 
+    def test_kannada_price_query_routes_to_commerce(self, supervisor):
+        decision = supervisor._route_rule_based("ಟೊಮೆಟೊ ಬೆಲೆ ಎಷ್ಟು?")
+        assert decision.agent_name == "commerce_agent"
+
     def test_platform_keywords(self, supervisor):
         decision = supervisor._route_rule_based("How do I register on CropFresh app?")
         assert decision.agent_name == "platform_agent"
@@ -47,7 +53,9 @@ class TestRuleBasedRouting:
         assert decision.agent_name == "buyer_matching_agent"
 
     def test_quality_assessment_keywords(self, supervisor):
-        decision = supervisor._route_rule_based("Please do quality check for tomato defects and shelf life")
+        decision = supervisor._route_rule_based(
+            "Please do quality check for tomato defects and shelf life"
+        )
         assert decision.agent_name == "quality_assessment_agent"
 
     def test_scraping_keywords(self, supervisor):
@@ -55,7 +63,9 @@ class TestRuleBasedRouting:
         assert decision.agent_name == "web_scraping_agent"
 
     def test_research_keywords(self, supervisor):
-        decision = supervisor._route_rule_based("Please give a comprehensive research report and analysis")
+        decision = supervisor._route_rule_based(
+            "Please give a comprehensive research report and analysis"
+        )
         assert decision.agent_name == "research_agent"
 
     def test_general_keywords(self, supervisor):
@@ -77,6 +87,7 @@ class TestRuleBasedRouting:
 # ─────────────────────────────────────────────────
 # _merge_responses tests
 # ─────────────────────────────────────────────────
+
 
 class TestMergeResponses:
     def _make_response(self, content: str, agent: str, confidence: float = 0.8) -> AgentResponse:
@@ -120,6 +131,7 @@ class TestMergeResponses:
 # ─────────────────────────────────────────────────
 # JSON parse failure fallback
 # ─────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_json_parse_failure_falls_back_to_rules():

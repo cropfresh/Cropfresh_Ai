@@ -48,6 +48,7 @@ class LogisticsWrapperAgent(BaseAgent):
         """Create the underlying LogisticsRouter engine."""
         try:
             from src.agents.logistics_router.engine import get_logistics_router
+
             self._router = get_logistics_router()
             self._initialized = True
             logger.info("LogisticsWrapperAgent initialized")
@@ -67,6 +68,7 @@ class LogisticsWrapperAgent(BaseAgent):
                 "cold-chain requirements, and multi-stop clustering."
             ),
             context=context,
+            agent_domain="logistics",
         )
 
     async def process(
@@ -88,10 +90,10 @@ class LogisticsWrapperAgent(BaseAgent):
         # * Natural language fallback
         if self.llm:
             messages = [
-                {"role": "system", "content": self._get_system_prompt()},
+                {"role": "system", "content": self._get_system_prompt(context)},
                 {"role": "user", "content": query},
             ]
-            answer = await self.generate_with_llm(messages)
+            answer = await self.generate_with_llm(messages, context=context)
             return AgentResponse(
                 content=answer,
                 agent_name=self.name,
@@ -128,9 +130,7 @@ class LogisticsWrapperAgent(BaseAgent):
                 PickupPoint,
             )
 
-            pickups = [
-                PickupPoint(**p) for p in context["pickups"]
-            ]
+            pickups = [PickupPoint(**p) for p in context["pickups"]]
             delivery = DeliveryPoint(**context["delivery"])
 
             result = await self._router.plan_route(

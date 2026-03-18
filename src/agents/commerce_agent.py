@@ -207,22 +207,22 @@ class CommerceAgent(BaseAgent):
             if price_data:
                 price_context = f"""
 **Current Market Data:**
-- Commodity: {price_data['commodity']}
-- Location: {price_data['location']}
-- Price: ₹{price_data['price_per_kg']:.1f}/kg (₹{price_data['price_per_quintal']:.0f}/quintal)
-- Market Range: ₹{price_data['market_min']:.1f} - ₹{price_data['market_max']:.1f}/kg
-- Recommendation: {price_data['action'].upper()} (Confidence: {price_data['confidence']:.0%})
-- Reasoning: {price_data['reason']}
+- Commodity: {price_data["commodity"]}
+- Location: {price_data["location"]}
+- Price: ₹{price_data["price_per_kg"]:.1f}/kg (₹{price_data["price_per_quintal"]:.0f}/quintal)
+- Market Range: ₹{price_data["market_min"]:.1f} - ₹{price_data["market_max"]:.1f}/kg
+- Recommendation: {price_data["action"].upper()} (Confidence: {price_data["confidence"]:.0%})
+- Reasoning: {price_data["reason"]}
 """
                 if price_data.get("aisp"):
                     aisp = price_data["aisp"]
                     price_context += f"""
 **AISP Breakdown (for 100kg):**
-- Farmer Payout: ₹{aisp.get('farmer_payout', 0):.0f}
-- Logistics: ₹{aisp.get('logistics_cost', 0):.0f}
-- Handling: ₹{aisp.get('handling_cost', 0):.0f}
-- Platform Fee: ₹{aisp.get('platform_fee', 0):.0f} ({aisp.get('platform_fee_pct', 0)*100:.1f}%)
-- Total AISP: ₹{aisp.get('total_aisp', 0):.0f} (₹{aisp.get('aisp_per_kg', 0):.1f}/kg)
+- Farmer Payout: ₹{aisp.get("farmer_payout", 0):.0f}
+- Logistics: ₹{aisp.get("logistics_cost", 0):.0f}
+- Handling: ₹{aisp.get("handling_cost", 0):.0f}
+- Platform Fee: ₹{aisp.get("platform_fee", 0):.0f} ({aisp.get("platform_fee_pct", 0) * 100:.1f}%)
+- Total AISP: ₹{aisp.get("total_aisp", 0):.0f} (₹{aisp.get("aisp_per_kg", 0):.1f}/kg)
 """
                 context_parts.append(price_context)
 
@@ -238,7 +238,7 @@ class CommerceAgent(BaseAgent):
 
             # Generate
             if self.llm:
-                answer = await self.generate_with_llm(messages)
+                answer = await self.generate_with_llm(messages, context=context)
             else:
                 answer = self._generate_fallback(query, price_data, documents)
 
@@ -256,6 +256,7 @@ class CommerceAgent(BaseAgent):
         except Exception as e:
             logger.error(f"CommerceAgent error: {e}")
             import traceback
+
             traceback.print_exc()
 
             return AgentResponse(
@@ -291,8 +292,16 @@ class CommerceAgent(BaseAgent):
 
         # Karnataka locations
         locations = [
-            "kolar", "bangalore", "bengaluru", "mysore", "mysuru",
-            "hubli", "dharwad", "belgaum", "belagavi", "shimoga",
+            "kolar",
+            "bangalore",
+            "bengaluru",
+            "mysore",
+            "mysuru",
+            "hubli",
+            "dharwad",
+            "belgaum",
+            "belagavi",
+            "shimoga",
         ]
 
         location = None
@@ -307,13 +316,13 @@ class CommerceAgent(BaseAgent):
         """Generate response without LLM."""
         if price_data:
             return f"""
-**{price_data['commodity']} Market Update - {price_data['location']}**
+**{price_data["commodity"]} Market Update - {price_data["location"]}**
 
-📊 **Current Price:** ₹{price_data['price_per_kg']:.1f}/kg (₹{price_data['price_per_quintal']:.0f}/quintal)
-📈 **Market Range:** ₹{price_data['market_min']:.1f} - ₹{price_data['market_max']:.1f}/kg
+📊 **Current Price:** ₹{price_data["price_per_kg"]:.1f}/kg (₹{price_data["price_per_quintal"]:.0f}/quintal)
+📈 **Market Range:** ₹{price_data["market_min"]:.1f} - ₹{price_data["market_max"]:.1f}/kg
 
-💡 **Recommendation:** {price_data['action'].upper()}
-{price_data['reason']}
+💡 **Recommendation:** {price_data["action"].upper()}
+{price_data["reason"]}
 
 *Prices from Agmarknet. For the most accurate pricing, check the CropFresh app.*
 """
@@ -328,15 +337,19 @@ class CommerceAgent(BaseAgent):
         suggestions = []
 
         if price_data:
-            suggestions.extend([
-                f"Calculate AISP for 500kg of {price_data['commodity']}",
-                "Which mandi offers the best price?",
-                "What's the price trend for this week?",
-            ])
+            suggestions.extend(
+                [
+                    f"Calculate AISP for 500kg of {price_data['commodity']}",
+                    "Which mandi offers the best price?",
+                    "What's the price trend for this week?",
+                ]
+            )
         else:
-            suggestions.extend([
-                "What is the current tomato price?",
-                "Should I sell my onions now?",
-            ])
+            suggestions.extend(
+                [
+                    "What is the current tomato price?",
+                    "Should I sell my onions now?",
+                ]
+            )
 
         return suggestions[:3]

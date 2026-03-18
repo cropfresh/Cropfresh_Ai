@@ -1,6 +1,6 @@
 ﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-17 (docs-first voice duplex handoff)
+> **Last Updated:** 2026-03-18 (centralized language resolution wiring)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -8,6 +8,31 @@ This document is the **single entry point** for understanding how CropFresh AI i
 ---
 
 ## Latest Session Snapshot
+
+**2026-03-18 - Centralized Language Resolution Wiring**
+
+- Split the new shared language layer into small reusable modules under `src/shared/` so language normalization, script detection, transliterated Kannada detection, and context shaping now live behind one stable import path: `src.shared.language`.
+- Wired that shared resolver into chat session preparation, supervisor session context, prompt building, LLM generation guidance, and supervisor fallback routing so Kannada support is determined centrally instead of by scattered per-agent prompt tweaks.
+- Replaced duplicate chat route implementations with one shared `src/api/chat_pkg/` router and kept both legacy import paths as thin compatibility shims.
+- Updated the voice compatibility layer so `VoiceEntityExtractor.detect_language_from_text(...)` now uses the shared detector and the legacy `VoiceAgent()` import path still works without manual dependency setup.
+- Expanded the shared Kannada prompt library with dedicated domain sections for crop listing, buyer matching, quality assessment, logistics, crop recommendation/ADCL, and price prediction instead of relying on only the older agronomy/commerce/platform buckets.
+- Added central Kannada domain-context injection in the LLM mixin so custom-prompt agents also inherit the right Kannada vocabulary and guidance, then patched the main agent call sites to pass normalized `context` through to the LLM layer.
+- Upgraded the shared Kannada prompt into an advanced multi-dialect system layer with stronger slang handling, code-mixing rules, safety/output guidance, and a district-aware dialect hint builder.
+- Added reusable runtime prompt rendering for `[DIALECT_LEXICON: ...]` and `[CONTEXT_KANNADA_INFO]` blocks so local Kannada vocabulary and crop context can be injected centrally from shared session context.
+- Verification snapshot: targeted Ruff checks passed and the focused multilingual test slice passed (`48 passed`) on 2026-03-18.
+
+**Fastest way to resume from this implementation**
+
+- Review `src/shared/language.py`, `src/shared/language_context.py`, and `src/shared/language_detection.py`
+- Review `src/api/chat_pkg/session.py` and `src/api/chat_pkg/router.py`
+- Review `src/agents/base/llm.py`, `src/agents/kannada/builder.py`, and `src/agents/supervisor/multilingual_rules.py`
+- Run `uv run pytest tests/unit/test_kannada_builder.py tests/unit/test_llm_language_guidance.py tests/unit/test_shared_language.py tests/unit/test_chat_session_flow.py tests/unit/test_supervisor_routing.py tests/unit/test_voice_agent_task16.py tests/unit/test_rag_language_support.py -v`
+
+**2026-03-18 - Retro Template Cleanup**
+
+- Normalized `tracking/retros/sprint-04-retro.md` to the repo retro template without changing the underlying sprint learnings.
+- Cleaned up `tracking/retros/sprint-05-retro.md` so it now follows the exact template structure instead of a custom metadata-heavy variant.
+- Left `tracking/retros/_template.md` unchanged and treated it as the source of truth for retrospective formatting.
 
 **2026-03-17 - Docs-First Voice Duplex Sprint Handoff**
 
@@ -341,6 +366,14 @@ uv run ruff check src/
 ---
 
 ## ðŸ“ File Changes Log
+
+### 2026-03-18 - Retro Template Cleanup
+
+| Action | File | Description |
+|--------|------|-------------|
+| UPDATE | `tracking/retros/sprint-04-retro.md` | Rewrote the Sprint 04 retrospective to match the retro template exactly while preserving the sprint learnings |
+| UPDATE | `tracking/retros/sprint-05-retro.md` | Normalized the Sprint 05 retrospective to the same template structure and retained the carry-forward actions |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this retro cleanup entry so the markdown-only change is recorded for the next session |
 
 ### 2026-03-17 - Docs-First Voice Duplex Handoff
 
@@ -1181,4 +1214,57 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | CREATE | `tracking/daily/2026-03-17.md` | Daily implementation log for the rate-hub slice |
 | CREATE | `docs/decisions/ADR-011-multi-source-rate-hub.md` | Architecture decision for the generic rate hub and conflict policy |
 | UPDATE | `WORKFLOW_STATUS.md` | Added this log entry and refreshed the timestamp |
+
+### 2026-03-18 - Centralized Language Resolution Wiring
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/shared/language_values.py` | Shared language constants, aliases, and Kannada transliteration hints |
+| CREATE | `src/shared/script_language.py` | Raw unicode-script detector extracted into a neutral shared module |
+| CREATE | `src/shared/language_detection.py` | Canonical language normalization and transliterated Kannada detection |
+| CREATE | `src/shared/language_context.py` | Canonical context shaping for `user_profile`, `entities`, and response language |
+| CREATE | `src/shared/language.py` | Small public facade for the shared language API |
+| UPDATE | `src/rag/language_support.py` | Reused the shared detector for multilingual RAG language guidance |
+| UPDATE | `src/memory/state_pkg/manager.py` | Added user-profile persistence support for language state |
+| UPDATE | `src/agents/supervisor/session.py` | Persisted current language and built normalized agent context per turn |
+| UPDATE | `src/agents/base/llm.py` | Injected per-turn language guidance into non-supervisor LLM calls |
+| CREATE | `src/agents/kannada/listing_terms.py` | Kannada listing-flow guidance and vocabulary |
+| CREATE | `src/agents/kannada/matching_terms.py` | Kannada buyer-matching guidance and vocabulary |
+| CREATE | `src/agents/kannada/quality_terms.py` | Kannada quality-grading guidance and vocabulary |
+| CREATE | `src/agents/kannada/logistics_terms.py` | Kannada logistics guidance and vocabulary |
+| CREATE | `src/agents/kannada/adcl_terms.py` | Kannada crop-recommendation and weekly-demand guidance |
+| CREATE | `src/agents/kannada/price_prediction_terms.py` | Kannada price-forecast guidance and vocabulary |
+| CREATE | `src/agents/kannada/dialect_context.py` | District-aware Kannada dialect bucket hints for the shared prompt builder |
+| CREATE | `src/agents/kannada/runtime_context.py` | Shared rendering of runtime dialect lexicon and local Kannada context blocks |
+| UPDATE | `src/agents/kannada/guidelines.py` | Replaced the basic Kannada note with advanced multi-dialect behavior, safety, and output rules |
+| UPDATE | `src/agents/kannada/builder.py` | Expanded Kannada domain mapping for more agent families |
+| UPDATE | `src/agents/prompt_context.py` | Passed normalized context into the shared Kannada builder for dialect-aware prompt injection |
+| UPDATE | `src/agents/base/llm.py` | Passed full runtime context into shared Kannada domain injection for custom-prompt agents |
+| CREATE | `src/agents/supervisor/multilingual_rules.py` | Reused multilingual voice intent keywords for supervisor fallback routing |
+| UPDATE | `src/agents/supervisor/rules.py` | Routed non-English fallback queries through the shared multilingual helper |
+| UPDATE | `src/agents/general_agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/commerce_agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/platform_agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/buyer_matching/agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/quality_assessment/agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/adcl_wrapper_agent.py` | Passed normalized context and ADCL domain into shared prompting |
+| UPDATE | `src/agents/logistics_wrapper_agent.py` | Passed normalized context and logistics domain into shared prompting |
+| CREATE | `src/api/chat_pkg/models.py` | Shared chat request/response models |
+| CREATE | `src/api/chat_pkg/supervisor.py` | Shared supervisor dependency builder for chat endpoints |
+| CREATE | `src/api/chat_pkg/session.py` | Centralized session preparation and context persistence for chat |
+| CREATE | `src/api/chat_pkg/router.py` | Canonical chat router implementation reused by both route entry points |
+| UPDATE | `src/api/routes/chat.py` | Reduced to a thin compatibility export over the shared chat router |
+| UPDATE | `src/api/routers/chat.py` | Reduced to a thin compatibility export over the shared chat router |
+| UPDATE | `src/voice/entity_extractor/_language.py` | Pointed voice raw detection at the shared script detector |
+| UPDATE | `src/voice/entity_extractor/__init__.py` | Exposed the shared response-language detector through the voice package |
+| UPDATE | `src/agents/voice_agent.py` | Restored backward-compatible no-arg construction for the legacy wrapper |
+| CREATE | `tests/unit/test_shared_language.py` | Coverage for normalization, transliterated Kannada, and context splitting |
+| CREATE | `tests/unit/test_state_manager_profiles.py` | Coverage for persisted user-profile language updates |
+| CREATE | `tests/unit/test_llm_language_guidance.py` | Coverage for centralized language instruction injection |
+| CREATE | `tests/unit/test_kannada_builder.py` | Coverage for advanced Kannada prompt sections, dialect hints, and runtime context blocks |
+| CREATE | `tests/unit/test_chat_session_flow.py` | Coverage for stateful and stateless chat language handling |
+| UPDATE | `tests/unit/test_llm_language_guidance.py` | Added runtime dialect lexicon and local context coverage for shared Kannada injection |
+| UPDATE | `tests/unit/test_supervisor_routing.py` | Added Kannada routing coverage for fallback supervisor rules |
+| UPDATE | `tests/unit/test_voice_agent_task16.py` | Added transliterated Kannada detection coverage |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this handoff entry and refreshed the timestamp |
 

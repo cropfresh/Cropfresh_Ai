@@ -82,7 +82,7 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
             {"role": "system", "content": self._get_system_prompt()},
             {"role": "user", "content": query},
         ]
-        response_text = await self.generate_with_llm(messages)
+        response_text = await self.generate_with_llm(messages, context=context)
 
         return AgentResponse(
             content=response_text,
@@ -124,8 +124,12 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
                 max_distance_km=MAX_MATCH_DISTANCE_KM,
             )
             quality_match = self.engine.calculate_quality_match(listing.grade, buyer_min_grade)
-            price_fit = self.engine.calculate_price_fit(listing.asking_price_per_kg, buyer.max_price_per_kg)
-            demand_signal = self.engine.calculate_demand_signal(listing.commodity, buyer.order_history)
+            price_fit = self.engine.calculate_price_fit(
+                listing.asking_price_per_kg, buyer.max_price_per_kg
+            )
+            demand_signal = self.engine.calculate_demand_signal(
+                listing.commodity, buyer.order_history
+            )
 
             if listing.commodity.lower() in [c.lower() for c in buyer.demand_commodities]:
                 demand_signal = min(1.0, demand_signal + 0.2)
@@ -143,8 +147,10 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
                 continue
 
             distance = self.engine.haversine(
-                listing.pickup_lat, listing.pickup_lon,
-                buyer.delivery_lat, buyer.delivery_lon,
+                listing.pickup_lat,
+                listing.pickup_lon,
+                buyer.delivery_lat,
+                buyer.delivery_lon,
             )
             grade_ok = quality_match > 0.0
             price_ok = price_fit > 0.0
@@ -163,27 +169,29 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
                 f"reliability={reliability:.2f}",
             ]
 
-            candidates.append(MatchCandidate(
-                listing_id=listing.listing_id,
-                farmer_id=listing.farmer_id,
-                buyer_id=buyer.buyer_id,
-                buyer_name=buyer.name or buyer.buyer_id[:8],
-                buyer_type=buyer.type,
-                match_score=round(match_score, 3),
-                score=round(match_score, 3),
-                proximity_km=round(distance, 2),
-                distance_km=round(distance, 1),
-                quality_match=round(quality_match, 3),
-                grade_compatible=grade_ok,
-                price_fit=round(price_fit, 3),
-                price_compatible=price_ok,
-                demand_signal=round(demand_signal, 3),
-                reliability=round(reliability, 3),
-                quantity_fillable=fillable,
-                estimated_delivery_hours=round(estimated_delivery_hours, 2),
-                estimated_logistics_cost=estimated_logistics_cost,
-                reasoning="; ".join(reasons),
-            ))
+            candidates.append(
+                MatchCandidate(
+                    listing_id=listing.listing_id,
+                    farmer_id=listing.farmer_id,
+                    buyer_id=buyer.buyer_id,
+                    buyer_name=buyer.name or buyer.buyer_id[:8],
+                    buyer_type=buyer.type,
+                    match_score=round(match_score, 3),
+                    score=round(match_score, 3),
+                    proximity_km=round(distance, 2),
+                    distance_km=round(distance, 1),
+                    quality_match=round(quality_match, 3),
+                    grade_compatible=grade_ok,
+                    price_fit=round(price_fit, 3),
+                    price_compatible=price_ok,
+                    demand_signal=round(demand_signal, 3),
+                    reliability=round(reliability, 3),
+                    quantity_fillable=fillable,
+                    estimated_delivery_hours=round(estimated_delivery_hours, 2),
+                    estimated_logistics_cost=estimated_logistics_cost,
+                    reasoning="; ".join(reasons),
+                )
+            )
 
         candidates.sort(key=lambda candidate: candidate.match_score, reverse=True)
 
@@ -204,7 +212,9 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
     ) -> list[MatchCandidate]:
         """Find top buyers for a listing."""
         listing, buyers = self._get_mock_listing_and_buyers(listing_id)
-        result = await self.match(listing=listing, buyers=buyers, top_n=max_results, min_score=min_score)
+        result = await self.match(
+            listing=listing, buyers=buyers, top_n=max_results, min_score=min_score
+        )
         return result.matches
 
     async def find_farmers_for_buyer(
@@ -251,9 +261,7 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
             return buyer.min_grade
         if not buyer.preferred_grades:
             return "C"
-        preferred_values = sorted(
-            [GRADE_ORDER.get(grade, 1) for grade in buyer.preferred_grades]
-        )
+        preferred_values = sorted([GRADE_ORDER.get(grade, 1) for grade in buyer.preferred_grades])
         preferred_min = preferred_values[0]
         for grade, value in GRADE_ORDER.items():
             if value == preferred_min:

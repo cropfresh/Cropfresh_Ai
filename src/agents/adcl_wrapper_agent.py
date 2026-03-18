@@ -12,11 +12,29 @@ from src.agents.prompt_context import build_system_prompt
 from src.memory.state_manager import AgentExecutionState
 
 DISTRICTS = [
-    "bangalore", "bengaluru", "kolar", "mysore", "mysuru",
-    "tumkur", "tumakuru", "mandya", "hassan", "shimoga",
-    "shivamogga", "davangere", "bellary", "ballari",
-    "raichur", "hubli", "dharwad", "belgaum", "belagavi",
-    "udupi", "mangalore", "dakshina kannada", "chikkaballapur",
+    "bangalore",
+    "bengaluru",
+    "kolar",
+    "mysore",
+    "mysuru",
+    "tumkur",
+    "tumakuru",
+    "mandya",
+    "hassan",
+    "shimoga",
+    "shivamogga",
+    "davangere",
+    "bellary",
+    "ballari",
+    "raichur",
+    "hubli",
+    "dharwad",
+    "belgaum",
+    "belagavi",
+    "udupi",
+    "mangalore",
+    "dakshina kannada",
+    "chikkaballapur",
 ]
 
 
@@ -27,8 +45,7 @@ class ADCLWrapperAgent(BaseAgent):
         config = AgentConfig(
             name="adcl_agent",
             description=(
-                "Recommends crops to sow based on demand signals, "
-                "seasonality, and price forecasts"
+                "Recommends crops to sow based on demand signals, seasonality, and price forecasts"
             ),
             temperature=0.5,
             max_tokens=600,
@@ -58,6 +75,7 @@ class ADCLWrapperAgent(BaseAgent):
                 "Use the ADCL engine to generate data-backed recommendations."
             ),
             context=context,
+            agent_domain="adcl",
         )
 
     async def process(
@@ -87,10 +105,10 @@ class ADCLWrapperAgent(BaseAgent):
 
         if self.llm:
             messages = [
-                {"role": "system", "content": self._get_system_prompt()},
+                {"role": "system", "content": self._get_system_prompt(context)},
                 {"role": "user", "content": query},
             ]
-            answer = await self.generate_with_llm(messages)
+            answer = await self.generate_with_llm(messages, context=context)
             return AgentResponse(
                 content=answer,
                 agent_name=self.name,

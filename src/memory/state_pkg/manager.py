@@ -113,6 +113,16 @@ class AgentStateManager:
         await self._persist_context(session_id, context)
         return True
 
+    async def update_user_profile(self, session_id: str, user_profile: dict[str, Any]) -> bool:
+        """Merge user profile fields into the session context."""
+        context = await self.get_context(session_id)
+        if not context:
+            return False
+        context.user_profile.update(user_profile)
+        context.updated_at = datetime.now()
+        await self._persist_context(session_id, context)
+        return True
+
     async def extract_and_merge_entities(self, session_id: str, text: str) -> dict[str, Any]:
         """Extract agricultural entities from text and merge into session."""
         found = extract_entities(text)

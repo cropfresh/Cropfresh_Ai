@@ -15,6 +15,7 @@ Version: 2.1.0
 from typing import Optional
 
 from src.agents.kannada import get_kannada_context
+from src.shared.language import ensure_language_context, resolve_language
 
 # * ═══════════════════════════════════════════════════════════════
 # * 1. CROPFRESH IDENTITY — who we are
@@ -110,6 +111,7 @@ COMMUNICATION_GUIDELINES = """## Communication Style
 # * 4. PROMPT BUILDER — utility for all agents
 # * ═══════════════════════════════════════════════════════════════
 
+
 def build_system_prompt(
     role_description: str,
     domain_prompt: str,
@@ -130,6 +132,8 @@ def build_system_prompt(
     Returns:
         Complete system prompt string
     """
+    normalized_context = ensure_language_context(context) if context else None
+
     parts = [
         role_description,
         "",
@@ -139,28 +143,28 @@ def build_system_prompt(
     if include_platform:
         parts.append(CROPFRESH_PLATFORM)
 
-    parts.extend([
-        "",
-        domain_prompt,
-        "",
-        COMMUNICATION_GUIDELINES,
-    ])
+    parts.extend(
+        [
+            "",
+            domain_prompt,
+            "",
+            COMMUNICATION_GUIDELINES,
+        ]
+    )
 
     # * Append user context if available
     is_kannada_user = False
-    if context:
-        user_section = _build_user_context(context)
+    if normalized_context:
+        user_section = _build_user_context(normalized_context)
         if user_section:
             parts.append(user_section)
 
-        profile = context.get("user_profile", {})
-        preferred_language = str(profile.get("language", "")).lower()
-        if "kannada" in preferred_language or "kn" == preferred_language:
+        if resolve_language(context=normalized_context, default="en") == "kn":
             is_kannada_user = True
 
     # * Inject Kannada Guidelines if preferred language is Kannada
     if is_kannada_user:
-        parts.append(get_kannada_context(agent_domain))
+        parts.append(get_kannada_context(agent_domain, normalized_context))
 
     return "\n\n".join(parts)
 
@@ -194,8 +198,14 @@ def _build_user_context(context: dict) -> str:
             lines.append(f"- Crops: {', '.join(profile['crops'])}")
         if profile.get("farm_size_acres"):
             lines.append(f"- Farm size: {profile['farm_size_acres']} acres")
-        if profile.get("language"):
-            lines.append(f"- Preferred language: {profile['language']}")
+        preferred_language = (
+            profile.get("language")
+            or profile.get("language_pref")
+            or context.get("response_language")
+            or context.get("language")
+        )
+        if preferred_language:
+            lines.append(f"- Preferred language: {preferred_language}")
 
     entities = context.get("entities", {})
     if entities:

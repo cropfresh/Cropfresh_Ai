@@ -3,6 +3,7 @@ Rule-based logic for the Supervisor Agent.
 """
 
 from src.agents.supervisor.models import RoutingDecision
+from src.agents.supervisor.multilingual_rules import route_multilingual_intent
 
 
 def route_rule_based(query: str) -> RoutingDecision:
@@ -15,35 +16,82 @@ def route_rule_based(query: str) -> RoutingDecision:
 
     # Agronomy keywords
     agronomy_kw = [
-        "grow", "plant", "cultivat", "harvest", "pest", "disease",
-        "fertilizer", "soil", "seed", "irrigation", "organic", "variety",
-        "crop", "farming", "agriculture"
+        "grow",
+        "plant",
+        "cultivat",
+        "harvest",
+        "pest",
+        "disease",
+        "fertilizer",
+        "soil",
+        "seed",
+        "irrigation",
+        "organic",
+        "variety",
+        "crop",
+        "farming",
+        "agriculture",
     ]
 
     # Commerce keywords
     commerce_kw = [
-        "price", "sell", "buy", "mandi", "market", "rate", "cost",
-        "profit", "aisp", "logistics", "₹", "rupee", "quintal"
+        "price",
+        "sell",
+        "buy",
+        "mandi",
+        "market",
+        "rate",
+        "cost",
+        "profit",
+        "aisp",
+        "logistics",
+        "₹",
+        "rupee",
+        "quintal",
     ]
 
     # Platform keywords
     platform_kw = [
-        "register", "login", "app", "feature", "account", "order",
-        "payment", "cropfresh", "digital twin"
+        "register",
+        "login",
+        "app",
+        "feature",
+        "account",
+        "order",
+        "payment",
+        "cropfresh",
+        "digital twin",
     ]
 
     # Buyer matching keywords
     matching_kw = [
-        "find buyer", "match buyer", "buyer matching", "who wants to buy",
-        "find farmer", "find supplier", "supplier match", "sell my produce",
-        "need tomatoes", "need onion", "procurement"
+        "find buyer",
+        "match buyer",
+        "buyer matching",
+        "who wants to buy",
+        "find farmer",
+        "find supplier",
+        "supplier match",
+        "sell my produce",
+        "need tomatoes",
+        "need onion",
+        "procurement",
     ]
 
     # Quality assessment keywords
     quality_kw = [
-        "quality check", "quality assessment", "grade produce", "produce grade",
-        "defect", "bruise", "worm hole", "fungal", "shelf life", "inspect quality",
-        "a+ grade", "quality grading"
+        "quality check",
+        "quality assessment",
+        "grade produce",
+        "produce grade",
+        "defect",
+        "bruise",
+        "worm hole",
+        "fungal",
+        "shelf life",
+        "inspect quality",
+        "a+ grade",
+        "quality grading",
     ]
 
     # Prefer explicit matching intents before weighted keyword scoring.
@@ -64,75 +112,145 @@ def route_rule_based(query: str) -> RoutingDecision:
 
     # Web scraping keywords (live data)
     scraping_kw = [
-        "live", "current", "today", "real-time", "realtime", "fetch",
-        "scrape", "website", "portal", "enam", "agmarknet", "weather",
-        "latest", "now", "today's"
+        "live",
+        "current",
+        "today",
+        "real-time",
+        "realtime",
+        "fetch",
+        "scrape",
+        "website",
+        "portal",
+        "enam",
+        "agmarknet",
+        "weather",
+        "latest",
+        "now",
+        "today's",
     ]
 
     # Browser agent keywords (interactive)
     browser_kw = [
-        "login to", "submit", "navigate", "download", "form",
-        "interactive", "authenticated", "dashboard", "check my"
+        "login to",
+        "submit",
+        "navigate",
+        "download",
+        "form",
+        "interactive",
+        "authenticated",
+        "dashboard",
+        "check my",
     ]
 
     # Research agent keywords (deep research)
     research_kw = [
-        "research", "investigate", "comprehensive", "detailed",
-        "compare", "analysis", "report", "study", "in-depth"
+        "research",
+        "investigate",
+        "comprehensive",
+        "detailed",
+        "compare",
+        "analysis",
+        "report",
+        "study",
+        "in-depth",
     ]
 
     # * NEW: ADCL crop recommendation keywords
     adcl_kw = [
-        "recommend", "sow", "what to grow", "demand", "crop suggestion",
-        "weekly report", "which crop", "what should i grow",
+        "recommend",
+        "sow",
+        "what to grow",
+        "demand",
+        "crop suggestion",
+        "weekly report",
+        "which crop",
+        "what should i grow",
     ]
 
     # * NEW: Price prediction keywords
     prediction_kw = [
-        "predict", "forecast", "trend", "future price", "will price",
-        "hold or sell", "price tomorrow", "price next week",
+        "predict",
+        "forecast",
+        "trend",
+        "future price",
+        "will price",
+        "hold or sell",
+        "price tomorrow",
+        "price next week",
     ]
 
     # * NEW: Crop listing keywords
     listing_kw = [
-        "list my crop", "sell my produce", "create listing",
-        "my listings", "cancel listing", "update listing",
+        "list my crop",
+        "sell my produce",
+        "create listing",
+        "my listings",
+        "cancel listing",
+        "update listing",
     ]
 
     # * NEW: Logistics keywords
     logistics_kw = [
-        "delivery", "transport", "route", "vehicle", "logistics cost",
-        "shipping", "pickup", "truck", "tempo",
+        "delivery",
+        "transport",
+        "route",
+        "vehicle",
+        "logistics cost",
+        "shipping",
+        "pickup",
+        "truck",
+        "tempo",
     ]
 
     # * NEW: Knowledge agent keywords
     knowledge_kw = [
-        "explain", "tell me about", "information", "knowledge",
-        "learn", "what is", "how does",
+        "explain",
+        "tell me about",
+        "information",
+        "knowledge",
+        "learn",
+        "what is",
+        "how does",
     ]
 
     # Direct/general keywords
     general_kw = [
-        "hello", "hi", "thanks", "thank you", "bye", "help",
-        "who are you", "what are you"
+        "hello",
+        "hi",
+        "thanks",
+        "thank you",
+        "bye",
+        "help",
+        "who are you",
+        "what are you",
     ]
 
     # * Check explicit phrase matches first (before weighted scoring)
     for kw in adcl_kw:
         if kw in query_lower:
             return RoutingDecision(
-                agent_name="adcl_agent", confidence=0.83, reasoning="Rule-based: crop recommendation",
+                agent_name="adcl_agent",
+                confidence=0.83,
+                reasoning="Rule-based: crop recommendation",
             )
     for kw in listing_kw:
         if kw in query_lower:
             return RoutingDecision(
-                agent_name="crop_listing_agent", confidence=0.83, reasoning="Rule-based: listing",
+                agent_name="crop_listing_agent",
+                confidence=0.83,
+                reasoning="Rule-based: listing",
             )
     for kw in logistics_kw:
         if kw in query_lower:
             return RoutingDecision(
-                agent_name="logistics_agent", confidence=0.82, reasoning="Rule-based: logistics",
+                agent_name="logistics_agent",
+                confidence=0.82,
+                reasoning="Rule-based: logistics",
             )
+
+    multilingual_route = route_multilingual_intent(query)
+    if multilingual_route:
+        return multilingual_route
 
     # Score each category
     scores = {
