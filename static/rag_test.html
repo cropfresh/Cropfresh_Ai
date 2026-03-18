@@ -10,11 +10,45 @@
       href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./assets/css/suite.css" />
-    <link rel="stylesheet" href="./assets/css/lab-pages.css" />
+    <link rel="stylesheet" href="./assets/css/suite/critical-shell.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/suite.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/lab-pages.css?v=20260318-shellfix" />
   </head>
-  <body>
-    <div class="app-shell">
+  <body data-suite-page="rag-lab">
+    <div class="suite-frame">
+      <aside class="suite-rail">
+        <div class="suite-rail-brand">
+          <a class="suite-rail-mark" href="./index.html">
+            <span class="suite-rail-mark-badge">R</span>
+            <div>
+              <span class="suite-rail-label">Freemium Lab</span>
+              <h2 class="suite-rail-title">Knowledge and Routing Lab</h2>
+            </div>
+          </a>
+          <p class="suite-rail-copy">Premium-feeling workspace for query routing, normalization, semantic search, and quick knowledge-base updates.</p>
+        </div>
+        <nav class="suite-rail-nav">
+          <a class="suite-rail-link" href="./index.html"><strong>Dashboard</strong><small>Suite switchboard and fast checks.</small></a>
+          <a class="suite-rail-link" href="./voice_agent.html"><strong>Voice Hub</strong><small>Validate agent output in voice lanes.</small></a>
+          <a class="suite-rail-link" href="./vision_lab.html"><strong>Vision Lab</strong><small>Check quality grading and listing attach.</small></a>
+          <a class="suite-rail-link" href="./premium_voice.html"><strong>Premium Voice</strong><small>Freemium live demo shell.</small></a>
+          <a class="suite-rail-link active" href="./rag_test.html"><strong>RAG Lab</strong><small>Knowledge workflows and retrieval debugging.</small></a>
+          <a class="suite-rail-link" href="./voice_realtime.html"><strong>Realtime</strong><small>Watch streamed answers in motion.</small></a>
+          <a class="suite-rail-link" href="./voice_test_ui.html"><strong>Voice UI</strong><small>Fast sanity checks for multilingual voice.</small></a>
+        </nav>
+        <div class="suite-rail-panels">
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Primary Use</span>
+            <p>Best lane for verifying grounding, search quality, and agent routing before demoing the answer elsewhere.</p>
+          </article>
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Freemium Cue</span>
+            <p>Feels like a polished knowledge-control room instead of a plain utility page.</p>
+          </article>
+        </div>
+        <p class="suite-rail-footer">Use this page when you want retrieval confidence, not just response cosmetics.</p>
+      </aside>
+      <div class="app-shell">
       <header class="topbar">
         <div class="brand">
           <span class="brand-logo">RAG</span>
@@ -23,18 +57,12 @@
             <div class="brand-subtitle">Router, normalize, query, search, stats, and ingest</div>
           </div>
         </div>
-        <div class="status-pill online"><span class="dot"></span><span data-status-text>RAG Lab</span></div>
+        <div class="topbar-actions">
+          <span class="topbar-tag">Knowledge workflows</span>
+          <span class="topbar-tag">Grounding tools</span>
+          <div class="status-pill online"><span class="dot"></span><span data-status-text>RAG Lab</span></div>
+        </div>
       </header>
-
-      <nav class="nav-links">
-        <a href="./index.html" class="nav-link">Dashboard</a>
-        <a href="./rag_test.html" class="nav-link active">RAG Lab</a>
-        <a href="./voice_agent.html" class="nav-link">Voice Hub</a>
-        <a href="./premium_voice.html" class="nav-link">Premium Voice</a>
-        <a href="./voice_test_ui.html" class="nav-link">Voice UI</a>
-        <a href="./voice_realtime.html" class="nav-link">Realtime</a>
-        <a href="/docs" class="nav-link" target="_blank">Swagger</a>
-      </nav>
 
       <section class="hero page-hero">
         <div>
@@ -56,6 +84,24 @@
         <button class="tab-btn" data-tab="tab-query">Query</button>
         <button class="tab-btn" data-tab="tab-kb">Knowledge base</button>
       </div>
+
+      <section class="grid grid-3">
+        <article class="card">
+          <span class="card-kicker">Route</span>
+          <h3 class="card-title">Test where questions should go</h3>
+          <p class="card-desc">Use this lane to validate lightweight planner and router behavior before deeper retrieval.</p>
+        </article>
+        <article class="card">
+          <span class="card-kicker">Query</span>
+          <h3 class="card-title">Check response grounding</h3>
+          <p class="card-desc">Run focused questions, review answers, and keep the retrieval loop easy to reason about.</p>
+        </article>
+        <article class="card">
+          <span class="card-kicker">Ingest</span>
+          <h3 class="card-title">Refresh knowledge quickly</h3>
+          <p class="card-desc">Inject fresh facts into the lab without bouncing between multiple test-only surfaces.</p>
+        </article>
+      </section>
 
       <section id="tab-router" class="tab-panel active"><article class="card"><h3 class="card-title">Adaptive router test</h3><label class="label" for="routerQuery">Query</label><textarea id="routerQuery" class="textarea">tomato price today in Hubli mandi</textarea><button id="btnRoute" class="btn btn-primary">Route query</button><div id="routerResult" class="result"></div></article></section>
       <section id="tab-normalize" class="tab-panel"><article class="card"><h3 class="card-title">Bilingual normalizer</h3><label class="label" for="normalizeInput">Text</label><textarea id="normalizeInput" class="textarea">tamatar ki rabi kheti mein sinchai kaise kare</textarea><button id="btnNormalize" class="btn btn-primary">Normalize</button><div id="normalizeResult" class="result"></div></article></section>
@@ -82,6 +128,19 @@
           <div id="ingestResult" class="result"></div>
         </article>
       </section>
+
+      <footer class="page-footer">
+        <div>
+          <div class="page-footer-copy">RAG Lab</div>
+          <div class="page-footer-note">Premium shell for router checks, normalization, query validation, and knowledge maintenance.</div>
+        </div>
+        <div class="page-footer-links">
+          <a href="./index.html">Back to dashboard</a>
+          <a href="./voice_agent.html">Open voice hub</a>
+          <a href="/docs" target="_blank">Swagger</a>
+        </div>
+      </footer>
+      </div>
     </div>
     <script src="./assets/js/shared.js"></script>
     <script src="./assets/js/rag-lab.js"></script>

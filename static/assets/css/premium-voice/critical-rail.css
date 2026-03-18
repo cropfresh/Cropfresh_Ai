@@ -1,0 +1,68 @@
+.premium-suite-frame {
+  display: grid;
+  grid-template-columns: minmax(252px, 300px) minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 24px 24px 42px;
+}
+
+.premium-suite-frame > .voice-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0 0 44px;
+}
+
+.premium-suite-rail {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: grid;
+  gap: 18px;
+  min-height: calc(100vh - 48px);
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(9, 16, 21, 0.94), rgba(14, 22, 28, 0.82));
+}
+
+.premium-suite-mark {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.premium-suite-nav,
+.premium-suite-panels {
+  display: grid;
+  gap: 10px;
+}
+
+.premium-suite-link,
+.premium-suite-panel {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 1120px) {
+  .premium-suite-frame {
+    grid-template-columns: 1fr;
+    padding: 20px 18px 34px;
+  }
+
+  .premium-suite-rail {
+    position: relative;
+    top: auto;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .premium-suite-frame {
+    padding: 16px 14px 28px;
+  }
+}

@@ -8,6 +8,7 @@ import pytest
 
 from src.agents.base.llm import LLMMixin
 from src.agents.base.models import AgentConfig
+from src.agents.kannada import get_kannada_context
 
 
 class StubLLM:
@@ -152,3 +153,27 @@ async def test_generate_with_llm_injects_advanced_kannada_runtime_context():
     )
     assert any("[DIALECT_LEXICON: HYDERABAD_KARNATAKA]" in message for message in system_messages)
     assert any("[CONTEXT_KANNADA_INFO]" in message for message in system_messages)
+    assert any("Kannada Few-Shot Examples" in message for message in system_messages)
+
+
+@pytest.mark.asyncio
+async def test_generate_with_llm_adds_query_specific_retrieval_when_static_prompt_exists():
+    agent = DummyAgent("price_prediction")
+    static_prompt = get_kannada_context(
+        "price_prediction",
+        {"user_profile": {"language": "kn", "district": "Dharwad"}},
+    )
+
+    await agent.generate_with_llm(
+        [
+            {"role": "system", "content": static_prompt},
+            {"role": "user", "content": "onion price forecast next week, hold madla?"},
+        ],
+        context={"user_profile": {"language": "kn", "district": "Dharwad"}},
+    )
+
+    system_messages = [
+        message.content for message in agent.llm.messages if message.role == "system"
+    ]
+    assert any("## Kannada Runtime Retrieval" in message for message in system_messages)
+    assert any("storage cost" in message for message in system_messages)

@@ -8,23 +8,54 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./assets/css/premium-voice.css" />
+    <link rel="stylesheet" href="./assets/css/premium-voice/critical-rail.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/premium-voice.css?v=20260318-shellfix" />
   </head>
-  <body class="voice-mode" data-voice-state="idle">
-    <div class="voice-shell">
+  <body class="voice-mode" data-suite-page="premium-voice" data-voice-state="idle">
+    <div class="premium-suite-frame">
+      <aside class="premium-suite-rail">
+        <div class="premium-suite-brand">
+          <a class="premium-suite-mark" href="./premium_voice.html">
+            <span class="premium-suite-badge">PV</span>
+            <div>
+              <span class="premium-suite-label">Freemium Voice Lab</span>
+              <h2>Premium Demo Lane</h2>
+            </div>
+          </a>
+          <p class="premium-suite-copy">This is the most product-facing static page, so it now sits inside the same connected testing suite as the operator tools.</p>
+        </div>
+        <nav class="premium-suite-nav">
+          <a class="premium-suite-link" href="./index.html"><strong>Dashboard</strong><small>Operator switchboard and quick checks.</small></a>
+          <a class="premium-suite-link" href="./voice_agent.html"><strong>Voice Hub</strong><small>Full REST, duplex, TTS, and inspector console.</small></a>
+          <a class="premium-suite-link" href="./vision_lab.html"><strong>Vision Lab</strong><small>Quality grading and listing handoff lane.</small></a>
+          <a class="premium-suite-link active" href="./premium_voice.html"><strong>Premium Voice</strong><small>Freemium-ready live customer story and spoken demo.</small></a>
+          <a class="premium-suite-link" href="./voice_test_ui.html"><strong>Voice UI</strong><small>Quick multilingual record and TTS checks.</small></a>
+          <a class="premium-suite-link" href="./voice_realtime.html"><strong>Realtime</strong><small>Streaming trace for live answers.</small></a>
+          <a class="premium-suite-link" href="./rag_test.html"><strong>RAG Lab</strong><small>Knowledge and routing workflows.</small></a>
+        </nav>
+        <div class="premium-suite-panels">
+          <article class="premium-suite-panel">
+            <strong>Freemium Story</strong>
+            <p>Give this page the confidence and polish of a product preview while keeping the AI testing signals visible.</p>
+          </article>
+          <article class="premium-suite-panel">
+            <strong>Best For</strong>
+            <p>Live multilingual demos where the UI should feel premium, guided, and believable to non-engineering viewers.</p>
+          </article>
+        </div>
+        <p class="premium-suite-footer">The whole suite now flows into this demo lane without breaking the shared product identity.</p>
+      </aside>
+      <div class="voice-shell">
       <header class="voice-header">
         <div class="brand-lockup">
           <span class="brand-badge">Freemium Preview</span>
           <a class="brand-title" href="./premium_voice.html">CropFresh Premium Voice</a>
         </div>
-        <nav class="voice-nav" aria-label="Premium voice navigation">
-          <a href="./index.html">Dashboard</a>
-          <a href="./rag_test.html">RAG Lab</a>
-          <a href="./voice_agent.html">Voice Hub</a>
-          <a href="./premium_voice.html" class="active">Premium Voice</a>
-          <a href="./voice_test_ui.html">Voice UI</a>
-          <a href="./voice_realtime.html">Realtime</a>
-        </nav>
+        <div class="hero-badges voice-header-tags">
+          <span class="mini-pill">Connected suite</span>
+          <span class="mini-pill">Freemium-ready</span>
+          <span class="mini-pill">Indic voice demo</span>
+        </div>
       </header>
       <main class="voice-main">
         <section class="hero-grid">
@@ -190,7 +221,20 @@
             </div>
           </article>
         </section>
+
+        <footer class="voice-footer panel">
+          <div>
+            <p class="panel-kicker">Static Suite</p>
+            <h3>Keep the premium voice demo connected to the rest of the product story.</h3>
+          </div>
+          <div class="voice-footer-links">
+            <a href="./index.html">Dashboard</a>
+            <a href="./voice_agent.html">Voice Hub</a>
+            <a href="./voice_test_ui.html">Voice UI</a>
+          </div>
+        </footer>
       </main>
+      </div>
     </div>
     <script type="module" src="./assets/js/voice-agent-duplex.js"></script>
   </body>

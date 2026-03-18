@@ -19,6 +19,15 @@ from src.api.rest.voice_runtime import resolve_stt, resolve_tts, resolve_voice_a
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 
 
+def _workflow_context(voice_agent, session_id: str) -> dict[str, str | None]:
+    session = voice_agent.get_session(session_id) if hasattr(voice_agent, "get_session") else None
+    context = getattr(session, "context", {}) if session is not None else {}
+    return {
+        "last_listing_id": context.get("last_listing_id"),
+        "pending_intent": context.get("pending_intent"),
+    }
+
+
 @router.post("/process", response_model=VoiceProcessResponse)
 async def process_voice(
     request: Request,
@@ -32,7 +41,8 @@ async def process_voice(
         audio_bytes = await audio.read()
         if not audio_bytes:
             raise HTTPException(status_code=400, detail="Empty audio file")
-        result = await resolve_voice_agent(request).process_voice(
+        voice_agent = resolve_voice_agent(request)
+        result = await voice_agent.process_voice(
             audio=audio_bytes,
             user_id=user_id,
             session_id=session_id,
@@ -47,6 +57,7 @@ async def process_voice(
             response_audio_base64=base64.b64encode(result.response_audio).decode("utf-8"),
             session_id=result.session_id,
             confidence=result.confidence,
+            workflow_context=_workflow_context(voice_agent, result.session_id),
         )
     except HTTPException:
         raise

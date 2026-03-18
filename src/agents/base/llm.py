@@ -112,8 +112,6 @@ class LLMMixin:
         """Inject centralized Kannada domain guidance for custom prompt agents."""
         if self.name == "supervisor":
             return ""
-        if self._already_has_kannada_context(messages):
-            return ""
 
         user_text = ""
         for message in reversed(messages):
@@ -124,7 +122,12 @@ class LLMMixin:
         language = resolve_language(query=user_text, context=context, default="en")
         if language != "kn":
             return ""
-        return get_kannada_context(self.name, context)
+        return get_kannada_context(
+            self.name,
+            context,
+            query=user_text,
+            include_static=not self._already_has_kannada_context(messages),
+        )
 
     @staticmethod
     def _insert_system_message(messages: list[dict], content: str) -> None:

@@ -7,12 +7,14 @@ def test_crop_listing_domain_gets_listing_guidance():
     context = get_kannada_context("crop_listing")
     assert "Listing & Selling Flow" in context
     assert "Grama Kannada AI Sahayaka" in context
+    assert "Useful Kannada Response Patterns" in context
 
 
 def test_buyer_matching_domain_gets_matching_guidance():
     context = get_kannada_context("buyer_matching")
     assert "Buyer Matching Guidance" in context
     assert "code-mixed usage" in context
+    assert "Kannada Dialect Bucket Guide" in context
 
 
 def test_quality_domain_gets_quality_guidance():
@@ -72,3 +74,20 @@ def test_builder_renders_local_kannada_context_blocks():
     )
     assert "[CONTEXT_KANNADA_INFO]" in context
     assert 'crop = "ragi"' in context
+
+
+def test_builder_includes_shared_kannada_few_shots():
+    context = get_kannada_context("general")
+    assert "Kannada Few-Shot Examples" in context
+    assert "listing create madakke" in context
+
+
+def test_builder_retrieves_structured_kannada_entries_from_query():
+    context = get_kannada_context(
+        "price_prediction",
+        {"user_profile": {"district": "Dharwad", "language": "kn"}},
+        query="onion price forecast next week, hold madla?",
+    )
+    assert "## Kannada Dialect Lexicon Hints" in context
+    assert "## Kannada Local Context Hints" in context
+    assert "storage cost" in context

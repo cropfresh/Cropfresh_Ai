@@ -1,6 +1,6 @@
 # CropFresh AI - API Endpoints Reference
 
-> **Last Updated:** 2026-03-17
+> **Last Updated:** 2026-03-18
 > **Base URL:** `http://localhost:8000` (dev) / `https://api.cropfresh.in` (prod)
 > **Auth:** `X-API-Key` for API routes outside development
 
@@ -20,6 +20,7 @@ graph TD
     MAIN --> R8
     MAIN --> R9
     MAIN --> R10
+    MAIN --> R11
 
     R1["routes/chat.py<br/>/api/v1/chat"]
     R2["routes/rag.py<br/>/api/v1/rag"]
@@ -28,9 +29,10 @@ graph TD
     R5["routes/adcl.py<br/>/api/v1/adcl"]
     R6["routers/auth.py<br/>/api/v1/auth"]
     R7["routers/listings.py<br/>/api/v1/listings"]
-    R8["routers/orders.py<br/>/api/v1/orders"]
-    R9["rest/voice.py<br/>/api/v1/voice"]
-    R10["websocket/voice_pkg/router.py<br/>/api/v1/voice/ws*"]
+    R8["routers/vision.py<br/>/api/v1/vision"]
+    R9["routers/orders.py<br/>/api/v1/orders"]
+    R10["rest/voice.py<br/>/api/v1/voice"]
+    R11["websocket/voice_pkg/router.py<br/>/api/v1/voice/ws*"]
 ```
 
 ---
@@ -210,7 +212,42 @@ graph TD
 
 ---
 
-## 8. Orders API (`/api/v1/orders`)
+## 8. Vision API (`/api/v1/vision`)
+
+**Source:** `src/api/routers/vision.py`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/vision/health` | GET | Shared quality-agent health plus model/fallback status |
+| `/api/v1/vision/assess` | POST | Run a quality assessment for image or description input |
+
+### POST `/api/v1/vision/assess`
+
+**Request**
+
+```json
+{
+  "commodity": "Tomato",
+  "listing_id": "lst-42",
+  "description": "Fresh and firm with light bruising",
+  "image_b64": "optional-base64-image",
+  "require_upgrade_review": false
+}
+```
+
+**Response highlights**
+
+- `grade`
+- `confidence`
+- `defects`
+- `hitl_required`
+- `assessment_mode`
+- `vision_ready`
+- `grade_attach_preview` for reuse with `/api/v1/listings/{listing_id}/grade`
+
+---
+
+## 9. Orders API (`/api/v1/orders`)
 
 **Source:** `src/api/routers/orders.py`
 
@@ -226,7 +263,7 @@ graph TD
 
 ---
 
-## 9. Voice REST API (`/api/v1/voice`)
+## 10. Voice REST API (`/api/v1/voice`)
 
 **Source:** `src/api/rest/voice.py`
 
@@ -261,7 +298,11 @@ graph TD
   "response_text": "Tomato price in Mysore mandi is Rs25/kg.",
   "response_audio_base64": "...",
   "session_id": "uuid-string",
-  "confidence": 0.94
+  "confidence": 0.94,
+  "workflow_context": {
+    "last_listing_id": "lst-42",
+    "pending_intent": null
+  }
 }
 ```
 
@@ -279,7 +320,7 @@ Sprint 07 expands this endpoint with provider readiness and warm-status details.
 
 ---
 
-## 10. Voice WebSocket (`/api/v1/voice/ws*`)
+## 11. Voice WebSocket (`/api/v1/voice/ws*`)
 
 **Source:** `src/api/websocket/voice_pkg/router.py`
 
@@ -301,7 +342,7 @@ See `docs/api/websocket-voice.md` for the full protocol.
 
 ---
 
-## 11. Health and Observability
+## 12. Health and Observability
 
 **Source:** `src/api/main.py`
 

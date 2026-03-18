@@ -51,6 +51,11 @@ async function runQuickPricingCheck() {
     latency_ms: response.ms,
     payload: response.data
   }, !response.ok);
+  window.AgentWorkflows?.renderDashboardRoute('dashboardRouteBoard', response.data, {
+    laneLabel: 'Quick pricing check',
+    trigger: message,
+    latencyMs: response.ms,
+  });
 }
 
 /**
@@ -66,6 +71,11 @@ async function runQuickBuyerMatch() {
     latency_ms: response.ms,
     payload: response.data
   }, !response.ok);
+  window.AgentWorkflows?.renderDashboardRoute('dashboardRouteBoard', response.data, {
+    laneLabel: 'Buyer matching check',
+    trigger: message,
+    latencyMs: response.ms,
+  });
 }
 
 /**
@@ -79,15 +89,35 @@ async function runQuickQualityCheck() {
     renderResult('quickQualityResult', 'Please add produce condition details.', true);
     return;
   }
-  const message = `Assess quality grade for ${commodity}: ${description}`;
-  const response = await requestJson('POST', '/api/v1/chat', { message });
+  const response = await requestJson('POST', '/api/v1/vision/assess', {
+    commodity,
+    description,
+  });
   renderResult('quickQualityResult', {
     latency_ms: response.ms,
     payload: response.data
   }, !response.ok);
+  const routePayload = response.ok ? {
+    agent_used: 'quality_assessment_agent',
+    confidence: response.data.confidence,
+    message: response.data.message,
+    suggested_actions: response.data.hitl_required
+      ? ['Review the result with HITL before trusting the grade.', 'Open Vision Lab for image-based validation.']
+      : ['Attach this grade to a listing in Vision Lab.', 'Compare the result with a voice-created listing if needed.'],
+    steps: ['vision_assess', response.data.assessment_mode, 'listing_grade_ready'],
+    sources: [response.data.vision_ready ? 'vision_models' : 'rule_based_fallback'],
+    session_id: response.data.assessment_id,
+  } : null;
+  window.AgentWorkflows?.renderDashboardRoute('dashboardRouteBoard', routePayload, {
+    laneLabel: 'Vision grading check',
+    trigger: `Assess ${commodity} quality from dashboard`,
+    latencyMs: response.ms,
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  window.AgentWorkflows?.renderScenarioCatalog('dashboardScenarioCatalog', window.AgentWorkflows.voiceScenarios);
+  window.AgentWorkflows?.renderDashboardRoute('dashboardRouteBoard', null);
   loadDashboardHealth().catch((err) => {
     renderResult('healthResult', `Error: ${err.message}`, true);
     setStatusPill('apiStatusPill', false, 'API Error');

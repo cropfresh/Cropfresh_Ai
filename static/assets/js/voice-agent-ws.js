@@ -7,6 +7,7 @@ const wsPlayer = new AudioPlayer();
 
 function wsConnect() {
   if (wsSocket && wsSocket.readyState === WebSocket.OPEN) return;
+  window.VoiceHubLab?.resetWsWorkflow();
   const userId = document.getElementById('wsUserId')?.value || 'ws-test-user';
   const lang   = document.getElementById('wsLang')?.value || 'hi';
   const proto  = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -47,12 +48,14 @@ function wsConnect() {
 
 function wsDisconnect() {
   wsStopMic(false);
+  window.VoiceHubLab?.resetWsWorkflow();
   wsSocket?.close();
 }
 
 function wsHandleMessage(event) {
   let msg;
   try { msg = JSON.parse(event.data); } catch { return; }
+  window.VoiceHubLab?.handleWsMessage(msg);
 
   switch (msg.type) {
     case 'ready':
@@ -101,6 +104,9 @@ function wsHandleMessage(event) {
       break;
 
     case 'response_end':
+      if (msg.full_text && wsAgentMsgEl) {
+        wsAgentMsgEl.textContent = msg.full_text;
+      }
       wsAddEvent('response', `✔ Done`);
       wsSetStatus('🟢 Ready — hold PTT to speak', 'connected');
       wsAgentMsgEl = null;
@@ -114,8 +120,8 @@ function wsHandleMessage(event) {
       break;
 
     case 'error':
-      wsAddEvent('system', `⚠ ${msg.text}`);
-      wsAppendBubble('system', `Error: ${msg.text}`);
+      wsAddEvent('system', `⚠ ${msg.error || msg.text}`);
+      wsAppendBubble('system', `Error: ${msg.error || msg.text}`);
       wsSetStatus('🟢 Ready — hold PTT to speak', 'connected');
       break;
     
@@ -155,5 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tl) tl.innerHTML = '';
     const chat = wsGetChat();
     if (chat) chat.innerHTML = '';
+    window.VoiceHubLab?.resetWsWorkflow();
   });
 });

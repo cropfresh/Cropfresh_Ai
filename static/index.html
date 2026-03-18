@@ -10,11 +10,47 @@
       href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./assets/css/suite.css" />
-    <link rel="stylesheet" href="./assets/css/dashboard-suite.css" />
+    <link rel="stylesheet" href="./assets/css/suite/critical-shell.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/suite.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/dashboard-suite.css?v=20260318-shellfix" />
   </head>
-  <body>
-    <div class="app-shell">
+  <body data-suite-page="dashboard">
+    <div class="suite-frame">
+      <aside class="suite-rail">
+        <div class="suite-rail-brand">
+          <a class="suite-rail-mark" href="./index.html">
+            <span class="suite-rail-mark-badge">CF</span>
+            <div>
+              <span class="suite-rail-label">Freemium Lab</span>
+              <h2 class="suite-rail-title">CropFresh AI Testing Suite</h2>
+            </div>
+          </a>
+          <p class="suite-rail-copy">
+            Premium-feeling operator shell for voice, retrieval, routing, and live assistant validation.
+          </p>
+        </div>
+        <nav class="suite-rail-nav">
+          <a class="suite-rail-link active" href="./index.html"><strong>Dashboard</strong><small>Command center and quick health checks.</small></a>
+          <a class="suite-rail-link" href="./voice_agent.html"><strong>Voice Hub</strong><small>REST, duplex, TTS, and payload inspection.</small></a>
+          <a class="suite-rail-link" href="./vision_lab.html"><strong>Vision Lab</strong><small>Grade produce and attach quality results.</small></a>
+          <a class="suite-rail-link" href="./premium_voice.html"><strong>Premium Voice</strong><small>Freemium-ready live demo surface.</small></a>
+          <a class="suite-rail-link" href="./rag_test.html"><strong>RAG Lab</strong><small>Routing, normalization, search, and ingest.</small></a>
+          <a class="suite-rail-link" href="./voice_realtime.html"><strong>Realtime</strong><small>Token-by-token streaming validation.</small></a>
+          <a class="suite-rail-link" href="./voice_test_ui.html"><strong>Voice UI</strong><small>Fast multilingual record and TTS checks.</small></a>
+        </nav>
+        <div class="suite-rail-panels">
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Best For</span>
+            <p>Quickly jumping between core agent test lanes without losing the product narrative.</p>
+          </article>
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Current Tone</span>
+            <p>Freemium operator dashboard with premium styling, connected navigation, and live system confidence cues.</p>
+          </article>
+        </div>
+        <p class="suite-rail-footer">Use this rail as the persistent switchboard for all static AI-lab surfaces.</p>
+      </aside>
+      <div class="app-shell">
       <header class="topbar">
         <div class="brand">
           <span class="brand-logo">CF</span>
@@ -23,21 +59,15 @@
             <div class="brand-subtitle">Connected dashboard for voice, RAG, and live testing</div>
           </div>
         </div>
-        <div class="status-pill offline" id="apiStatusPill">
-          <span class="dot"></span>
-          <span data-status-text>Checking API</span>
+        <div class="topbar-actions">
+          <span class="topbar-tag">Kannada-first</span>
+          <span class="topbar-tag">Live operator suite</span>
+          <div class="status-pill offline" id="apiStatusPill">
+            <span class="dot"></span>
+            <span data-status-text>Checking API</span>
+          </div>
         </div>
       </header>
-
-      <nav class="nav-links">
-        <a href="./index.html" class="nav-link active">Dashboard</a>
-        <a href="./rag_test.html" class="nav-link">RAG Lab</a>
-        <a href="./voice_agent.html" class="nav-link">Voice Hub</a>
-        <a href="./premium_voice.html" class="nav-link">Premium Voice</a>
-        <a href="./voice_test_ui.html" class="nav-link">Voice UI</a>
-        <a href="./voice_realtime.html" class="nav-link">Realtime</a>
-        <a href="/docs" class="nav-link" target="_blank">Swagger</a>
-      </nav>
 
       <section class="hero dashboard-hero">
         <div class="hero-copy">
@@ -51,6 +81,7 @@
         <div class="launch-grid">
           <a class="launch-card" href="./premium_voice.html"><span>Premium Voice</span><strong>Freemium duplex demo</strong></a>
           <a class="launch-card" href="./voice_agent.html"><span>Voice Hub</span><strong>REST, WebSocket, TTS, inspector</strong></a>
+          <a class="launch-card" href="./vision_lab.html"><span>Vision Lab</span><strong>Grade produce and attach listing quality</strong></a>
           <a class="launch-card" href="./rag_test.html"><span>RAG Lab</span><strong>Router, normalize, query, ingest</strong></a>
         </div>
       </section>
@@ -59,6 +90,15 @@
         <article class="kpi-card"><span class="kpi-label">LLM</span><strong id="kpiLlm" class="kpi-value">-</strong></article>
         <article class="kpi-card"><span class="kpi-label">Redis</span><strong id="kpiRedis" class="kpi-value">-</strong></article>
         <article class="kpi-card"><span class="kpi-label">Supervisor</span><strong id="kpiSupervisor" class="kpi-value">-</strong></article>
+      </section>
+
+      <section class="card stack">
+        <div>
+          <span class="card-kicker">Connected journeys</span>
+          <h3 class="card-title">Use the right surface for the right agent flow</h3>
+          <p class="card-desc">The pages are now tied to real backend paths so voice listing, price discovery, buyer matching, and quality checks no longer feel like the same demo with different headings.</p>
+        </div>
+        <div id="dashboardScenarioCatalog" class="scenario-grid"></div>
       </section>
 
       <section class="grid grid-2">
@@ -100,7 +140,8 @@
 
       <section class="grid grid-2">
         <article class="card">
-          <h3 class="card-title">Quality grading</h3>
+          <h3 class="card-title">Vision quality grading</h3>
+          <p class="card-desc">Run a quick shared quality-agent check here. Use Vision Lab for image uploads and listing-grade attachment.</p>
           <label class="label" for="quickQualityCommodity">Commodity</label>
           <input id="quickQualityCommodity" class="input" value="Tomato" />
           <label class="label" for="quickQualityDescription">Condition description</label>
@@ -109,19 +150,32 @@
           <div id="quickQualityResult" class="result"></div>
         </article>
         <article class="card stack">
-          <div><h3 class="card-title">Static suite map</h3><p class="card-desc">These surfaces now share one cleaner visual system.</p></div>
-          <div class="badge-strip">
-            <span class="mini-stat">Dashboard</span>
-            <span class="mini-stat">RAG Lab</span>
-            <span class="mini-stat">Voice Hub</span>
-            <span class="mini-stat">Premium Voice</span>
-            <span class="mini-stat">Voice UI</span>
-            <span class="mini-stat">Realtime</span>
+          <div>
+            <span class="card-kicker">Latest routed run</span>
+            <h3 class="card-title">Agent route board</h3>
+            <p class="card-desc">Quick checks now explain which agent answered, what tools were used, and where to continue testing the same flow.</p>
           </div>
+          <div id="dashboardRouteBoard" class="workflow-board"></div>
         </article>
       </section>
+
+      <footer class="page-footer">
+        <div>
+          <div class="page-footer-copy">CropFresh Static Suite</div>
+          <div class="page-footer-note">Shared shell for dashboard, voice, realtime, and RAG validation surfaces.</div>
+        </div>
+        <div class="page-footer-links">
+          <a href="./vision_lab.html">Vision Lab</a>
+          <a href="./premium_voice.html">Premium Voice</a>
+          <a href="./voice_agent.html">Voice Hub</a>
+          <a href="./rag_test.html">RAG Lab</a>
+        </div>
+      </footer>
+      </div>
     </div>
     <script src="./assets/js/shared.js"></script>
+    <script src="./assets/js/agent-workflow-data.js"></script>
+    <script src="./assets/js/agent-workflows.js"></script>
     <script src="./assets/js/dashboard.js"></script>
   </body>
 </html>

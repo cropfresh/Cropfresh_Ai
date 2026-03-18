@@ -1,6 +1,6 @@
 ﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-18 (centralized language resolution wiring)
+> **Last Updated:** 2026-03-18 (vision lab API and static wiring)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -8,6 +8,55 @@ This document is the **single entry point** for understanding how CropFresh AI i
 ---
 
 ## Latest Session Snapshot
+
+**2026-03-18 - Vision Lab API and Static Wiring**
+
+- Added a small shared Vision API surface under `src/api/routers/vision.py` so the static suite can call the real quality agent instead of routing quality checks through unrelated chat-only flows.
+- `GET /api/v1/vision/health` now exposes whether the shared quality agent is available and whether the runtime is in full model mode or rule-based fallback, while `POST /api/v1/vision/assess` returns the grading/HITL contract plus a ready-to-reuse listing-grade payload.
+- Added `static/vision_lab.html` with focused JS/CSS helpers so image or description-based quality checks, model-mode visibility, and `/api/v1/listings/{id}/grade` attachment all live in one connected testing page.
+- Added a small session-storage bridge in `static/assets/js/lab-state.js` and surfaced `workflow_context` on `/api/v1/voice/process` so Voice Hub can carry the last created listing id into Vision Lab for a truthful voice -> vision -> listing demo path.
+- Updated the dashboard quick quality check to use the new vision route, expanded shared suite navigation to include Vision Lab, and added focused API/static contract tests for the new route and page.
+- Verification snapshot: run `uv run pytest tests/api/test_vision_routes.py tests/unit/test_static_testing_lab.py -v` plus targeted `ruff check` on the new/updated Python tests.
+
+**Fastest way to resume from this implementation**
+
+- Review `src/api/routers/vision.py` and `src/api/rest/voice.py`
+- Review `static/vision_lab.html`, `static/assets/js/vision-lab.js`, and `static/assets/js/lab-state.js`
+- Review `static/assets/js/dashboard.js`, `static/assets/js/voice-agent-rest.js`, and `static/assets/js/agent-workflows.js`
+- Run `uv run pytest tests/api/test_vision_routes.py tests/unit/test_static_testing_lab.py -v`
+
+**2026-03-18 - Static Agent Journey Wiring**
+
+- Upgraded the static testing lab from a premium skin into a more accurate operator dashboard by adding explicit workflow boards for route validation, downstream service handoff, and realtime contract visibility.
+- The dashboard now shows connected scenario cards plus a routed-run board that explains which agent answered a quick check, what tools were used, and which surface should be opened next for deeper validation.
+- The voice hub now includes a REST route board that spells out detected language, intent, missing listing fields, and expected service handoff, plus a duplex contract board that stays honest about the current websocket limitation: no intent or entity payloads yet.
+- Fixed the voice inspector health panel so it now reads the real `/api/v1/voice/health` fields (`stt_providers`, `tts_provider`) instead of stale placeholder names.
+- Added a focused static-contract test slice to keep dashboard/voice DOM hooks, script ordering, shared workflow assets, and the small-file rule from drifting.
+- Hardened the static shell against stale browser cache by adding direct critical rail CSS for suite pages and the premium voice demo, plus versioned CSS asset links so the dashboard rail cannot fall back into raw document flow above the main content.
+- Verification snapshot: run `uv run pytest tests/unit/test_static_testing_lab.py -v` and targeted `ruff check` for the new Python test before closing this slice.
+
+**Fastest way to resume from this implementation**
+
+- Review `static/index.html` and `static/voice_agent.html`
+- Review `static/assets/css/suite/critical-shell.css` and `static/assets/css/premium-voice/critical-rail.css`
+- Review `static/assets/js/agent-workflow-data.js`, `static/assets/js/agent-workflows.js`, and `static/assets/js/voice-hub-lab.js`
+- Review `static/assets/js/voice-agent-rest.js`, `static/assets/js/voice-agent-ws.js`, and `static/assets/js/voice-agent-tools.js`
+- Run `uv run pytest tests/unit/test_static_testing_lab.py -v`
+
+**2026-03-18 - Premium Static Suite Refresh**
+
+- Refreshed the entire `static/` experience so the dashboard, RAG lab, voice hub, realtime stream, quick voice UI, and premium voice demo now feel like one product family instead of separate utility pages.
+- Added a shared suite chrome layer for premium header, navigation, shell glow, footer, and card polish under `static/assets/css/suite/`, then upgraded the form controls so inputs, buttons, and result panes feel more intentional.
+- Expanded that into a real freemium testing-lab layout with persistent suite rails, page-specific theming, and connected navigation so the static pages no longer feel like the same layout repeated with different titles.
+- Updated each static page with product-style header tags, richer section framing, shared footer navigation, and page-specific side context while preserving all existing IDs and JS wiring.
+- Tightened the premium voice page so it now sits inside the same connected suite concept instead of feeling visually isolated from the other static surfaces.
+- Verification note: no automated frontend test or screenshot pipeline was run for this static-only pass; changes were validated by code-level sanity checks only on 2026-03-18.
+
+**Fastest way to resume from this implementation**
+
+- Review `static/assets/css/suite/chrome.css`, `static/assets/css/suite/forms.css`, and `static/assets/css/premium-voice/layout.css`
+- Review `static/index.html`, `static/voice_agent.html`, `static/rag_test.html`, `static/voice_realtime.html`, `static/voice_test_ui.html`, and `static/premium_voice.html`
+- Open the pages locally and compare mobile vs desktop layout before making further visual changes
 
 **2026-03-18 - Centralized Language Resolution Wiring**
 
@@ -19,14 +68,17 @@ This document is the **single entry point** for understanding how CropFresh AI i
 - Added central Kannada domain-context injection in the LLM mixin so custom-prompt agents also inherit the right Kannada vocabulary and guidance, then patched the main agent call sites to pass normalized `context` through to the LLM layer.
 - Upgraded the shared Kannada prompt into an advanced multi-dialect system layer with stronger slang handling, code-mixing rules, safety/output guidance, and a district-aware dialect hint builder.
 - Added reusable runtime prompt rendering for `[DIALECT_LEXICON: ...]` and `[CONTEXT_KANNADA_INFO]` blocks so local Kannada vocabulary and crop context can be injected centrally from shared session context.
-- Verification snapshot: targeted Ruff checks passed and the focused multilingual test slice passed (`48 passed`) on 2026-03-18.
+- Expanded the overall shared Kannada library with dialect bucket guidance, reusable response patterns, few-shot interaction examples, and deeper domain content for listing, buyer matching, quality, logistics, price prediction, and crop recommendation.
+- Added a scalable structured Kannada retrieval layer with JSONL seed corpora, cached loaders, runtime enrichment, and query-aware retrieval so we can grow Kannada coverage into thousands of entries without bloating the base system prompt.
+- Updated the LLM mixin to inject retrieval-only Kannada blocks even when a static shared Kannada prompt already exists, keeping the static layer compact while still adding query-specific dialect and domain hints.
+- Verification snapshot: targeted Ruff checks passed and the focused multilingual test slice passed (`54 passed`) on 2026-03-18.
 
 **Fastest way to resume from this implementation**
 
 - Review `src/shared/language.py`, `src/shared/language_context.py`, and `src/shared/language_detection.py`
 - Review `src/api/chat_pkg/session.py` and `src/api/chat_pkg/router.py`
-- Review `src/agents/base/llm.py`, `src/agents/kannada/builder.py`, and `src/agents/supervisor/multilingual_rules.py`
-- Run `uv run pytest tests/unit/test_kannada_builder.py tests/unit/test_llm_language_guidance.py tests/unit/test_shared_language.py tests/unit/test_chat_session_flow.py tests/unit/test_supervisor_routing.py tests/unit/test_voice_agent_task16.py tests/unit/test_rag_language_support.py -v`
+- Review `src/agents/base/llm.py`, `src/agents/kannada/builder.py`, `src/agents/kannada/retriever.py`, and `src/agents/kannada/data/`
+- Run `uv run pytest tests/unit/test_kannada_retriever.py tests/unit/test_kannada_builder.py tests/unit/test_llm_language_guidance.py tests/unit/test_shared_language.py tests/unit/test_chat_session_flow.py tests/unit/test_supervisor_routing.py tests/unit/test_voice_agent_task16.py tests/unit/test_rag_language_support.py -v`
 
 **2026-03-18 - Retro Template Cleanup**
 
@@ -1235,9 +1287,24 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | CREATE | `src/agents/kannada/adcl_terms.py` | Kannada crop-recommendation and weekly-demand guidance |
 | CREATE | `src/agents/kannada/price_prediction_terms.py` | Kannada price-forecast guidance and vocabulary |
 | CREATE | `src/agents/kannada/dialect_context.py` | District-aware Kannada dialect bucket hints for the shared prompt builder |
+| CREATE | `src/agents/kannada/dialect_patterns.py` | Shared Kannada dialect bucket descriptions and style-matching guidance |
+| CREATE | `src/agents/kannada/conversation_patterns.py` | Reusable Kannada clarification, confirmation, and recommendation patterns |
+| CREATE | `src/agents/kannada/few_shot_examples.py` | Shared Kannada few-shot examples for rural, market, and platform interactions |
 | CREATE | `src/agents/kannada/runtime_context.py` | Shared rendering of runtime dialect lexicon and local Kannada context blocks |
+| CREATE | `src/agents/kannada/data_loader.py` | Cached JSONL loaders for structured Kannada lexicon and domain context corpora |
+| CREATE | `src/agents/kannada/domain_resolution.py` | Shared Kannada domain alias resolution for prompt building and retrieval |
+| CREATE | `src/agents/kannada/retriever.py` | Query-aware Kannada runtime enrichment from structured seed corpora |
+| CREATE | `src/agents/kannada/data/dialect_lexicon.jsonl` | Seed Kannada dialect lexicon corpus for scalable runtime injection |
+| CREATE | `src/agents/kannada/data/domain_context.jsonl` | Seed Kannada domain-context corpus for scalable runtime injection |
 | UPDATE | `src/agents/kannada/guidelines.py` | Replaced the basic Kannada note with advanced multi-dialect behavior, safety, and output rules |
-| UPDATE | `src/agents/kannada/builder.py` | Expanded Kannada domain mapping for more agent families |
+| UPDATE | `src/agents/kannada/dialect_context.py` | Exposed reusable district-signal and dialect-bucket helpers for shared retrieval |
+| UPDATE | `src/agents/kannada/builder.py` | Composed advanced shared Kannada sections plus retrieval-aware runtime enrichment in one builder |
+| UPDATE | `src/agents/kannada/adcl_terms.py` | Deepened Kannada crop-recommendation wording, risks, and output pattern guidance |
+| UPDATE | `src/agents/kannada/listing_terms.py` | Deepened Kannada listing flow, selling guidance, and clearer marketplace vocabulary |
+| UPDATE | `src/agents/kannada/matching_terms.py` | Deepened Kannada buyer-matching explanations, trust cues, and comparison wording |
+| UPDATE | `src/agents/kannada/quality_terms.py` | Deepened Kannada quality-result wording, photo guidance, and defect vocabulary |
+| UPDATE | `src/agents/kannada/logistics_terms.py` | Deepened Kannada logistics tradeoff language, timing, and spoilage guidance |
+| UPDATE | `src/agents/kannada/price_prediction_terms.py` | Deepened Kannada forecast framing, confidence language, and hold/sell wording |
 | UPDATE | `src/agents/prompt_context.py` | Passed normalized context into the shared Kannada builder for dialect-aware prompt injection |
 | UPDATE | `src/agents/base/llm.py` | Passed full runtime context into shared Kannada domain injection for custom-prompt agents |
 | CREATE | `src/agents/supervisor/multilingual_rules.py` | Reused multilingual voice intent keywords for supervisor fallback routing |
@@ -1261,10 +1328,55 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | CREATE | `tests/unit/test_shared_language.py` | Coverage for normalization, transliterated Kannada, and context splitting |
 | CREATE | `tests/unit/test_state_manager_profiles.py` | Coverage for persisted user-profile language updates |
 | CREATE | `tests/unit/test_llm_language_guidance.py` | Coverage for centralized language instruction injection |
-| CREATE | `tests/unit/test_kannada_builder.py` | Coverage for advanced Kannada prompt sections, dialect hints, and runtime context blocks |
+| CREATE | `tests/unit/test_kannada_retriever.py` | Coverage for structured Kannada retrieval and runtime-context merging |
+| CREATE | `tests/unit/test_kannada_builder.py` | Coverage for advanced Kannada prompt sections, few-shot content, dialect hints, and runtime context blocks |
 | CREATE | `tests/unit/test_chat_session_flow.py` | Coverage for stateful and stateless chat language handling |
-| UPDATE | `tests/unit/test_llm_language_guidance.py` | Added runtime dialect lexicon and local context coverage for shared Kannada injection |
+| UPDATE | `tests/unit/test_llm_language_guidance.py` | Added query-specific retrieval coverage for shared Kannada injection with and without static prompts |
 | UPDATE | `tests/unit/test_supervisor_routing.py` | Added Kannada routing coverage for fallback supervisor rules |
 | UPDATE | `tests/unit/test_voice_agent_task16.py` | Added transliterated Kannada detection coverage |
 | UPDATE | `WORKFLOW_STATUS.md` | Added this handoff entry and refreshed the timestamp |
+
+### 2026-03-18 - Premium Static Suite Refresh
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `static/assets/css/suite.css` | Added the shared premium suite chrome layer to the static design stack |
+| CREATE | `static/assets/css/suite/chrome.css` | Shared premium shell styling for headers, nav, cards, glow, and footers |
+| CREATE | `static/assets/css/suite/lab-shell.css` | Connected freemium-lab rail layout shared across the static suite |
+| CREATE | `static/assets/css/suite/page-themes.css` | Page-specific premium themes for dashboard, voice, RAG, realtime, and quick voice UI |
+| UPDATE | `static/assets/css/suite/forms.css` | Added richer focus, depth, and premium interaction styling for controls |
+| UPDATE | `static/assets/css/premium-voice.css` | Added the premium rail layer to the premium voice style stack |
+| CREATE | `static/assets/css/premium-voice/rail.css` | Connected-suite rail layout for the premium voice demo |
+| UPDATE | `static/assets/css/premium-voice/layout.css` | Upgraded premium voice header treatment and added shared footer layout |
+| UPDATE | `static/assets/css/premium-voice/components.css` | Refined premium voice nav and footer chip styling |
+| UPDATE | `static/index.html` | Moved the dashboard into the connected suite rail layout and upgraded page framing |
+| UPDATE | `static/voice_agent.html` | Moved the voice hub into the connected suite rail layout and upgraded operator framing |
+| UPDATE | `static/rag_test.html` | Moved the RAG lab into the connected suite rail layout and upgraded knowledge-lab framing |
+| UPDATE | `static/voice_realtime.html` | Moved the realtime stream page into the connected suite rail layout and upgraded streaming-lab framing |
+| UPDATE | `static/voice_test_ui.html` | Moved the quick voice UI page into the connected suite rail layout and upgraded utility-lab framing |
+| UPDATE | `static/premium_voice.html` | Connected the premium voice demo to the broader suite via a dedicated premium rail layout |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this static-suite refresh log entry |
+
+### 2026-03-18 - Static Agent Journey Wiring
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `static/assets/css/suite/workflows.css` | Shared workflow-board and scenario-card styling for route-aware testing surfaces |
+| CREATE | `static/assets/css/suite/critical-shell.css` | Direct critical rail layout CSS to prevent unstyled suite-rail content above the dashboard |
+| CREATE | `static/assets/css/premium-voice/critical-rail.css` | Direct critical premium rail layout CSS to prevent premium demo shell regressions under stale cache |
+| CREATE | `static/assets/js/agent-workflow-data.js` | Shared voice scenario catalog and route metadata for the static lab |
+| CREATE | `static/assets/js/agent-workflows.js` | Shared renderers for dashboard route boards and voice intent workflow boards |
+| CREATE | `static/assets/js/voice-hub-lab.js` | Voice Hub-specific duplex contract board and scenario bootstrap |
+| UPDATE | `static/index.html` | Added connected scenario cards, routed-run board, and versioned critical shell asset links |
+| UPDATE | `static/voice_agent.html` | Added REST route and duplex contract boards plus versioned critical shell asset links |
+| UPDATE | `static/rag_test.html` | Added versioned critical shell asset links for the shared suite rail |
+| UPDATE | `static/voice_realtime.html` | Added versioned critical shell asset links for the shared suite rail |
+| UPDATE | `static/voice_test_ui.html` | Added versioned critical shell asset links for the shared suite rail |
+| UPDATE | `static/premium_voice.html` | Added versioned critical premium rail asset links |
+| UPDATE | `static/assets/js/dashboard.js` | Wired quick checks into the new dashboard route board |
+| UPDATE | `static/assets/js/voice-agent-rest.js` | Wired REST voice results into the route board |
+| UPDATE | `static/assets/js/voice-agent-ws.js` | Wired duplex websocket events into the contract board and improved error/full-text handling |
+| UPDATE | `static/assets/js/voice-agent-tools.js` | Fixed voice health rendering to use the current endpoint payload fields |
+| CREATE | `tests/unit/test_static_testing_lab.py` | Contract checks for DOM wiring, script ordering, workflow assets, and file-size guardrails |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this agent-journey wiring log entry |
 

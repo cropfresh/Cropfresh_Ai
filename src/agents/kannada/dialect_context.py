@@ -42,11 +42,11 @@ _DISTRICT_BUCKETS = {
 
 def build_dialect_context(context: Mapping[str, Any] | None) -> str:
     """Build a district-aware dialect hint for Kannada prompting."""
-    signal = _extract_signal(context)
+    signal = extract_location_signal(context)
     if not signal:
         return ""
 
-    bucket = _resolve_bucket(signal)
+    bucket = resolve_dialect_bucket(signal)
     if not bucket:
         return ""
 
@@ -62,7 +62,7 @@ def build_dialect_context(context: Mapping[str, Any] | None) -> str:
     )
 
 
-def _extract_signal(context: Mapping[str, Any] | None) -> str:
+def extract_location_signal(context: Mapping[str, Any] | None) -> str:
     payload = _coerce_mapping(context)
     profile = _coerce_mapping(payload.get("user_profile"))
     entities = _coerce_mapping(payload.get("entities"))
@@ -75,7 +75,12 @@ def _extract_signal(context: Mapping[str, Any] | None) -> str:
     return ""
 
 
-def _resolve_bucket(signal: str) -> str:
+def resolve_dialect_bucket(context_or_signal: Mapping[str, Any] | str | None) -> str:
+    signal = (
+        context_or_signal
+        if isinstance(context_or_signal, str)
+        else extract_location_signal(context_or_signal)
+    )
     signal_lower = signal.lower()
     for district, bucket in _DISTRICT_BUCKETS.items():
         if district in signal_lower:

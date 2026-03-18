@@ -1,4 +1,8 @@
 @import "./suite/tokens.css";
 @import "./suite/base.css";
+@import "./suite/chrome.css";
+@import "./suite/lab-shell.css";
+@import "./suite/page-themes.css";
 @import "./suite/forms.css";
 @import "./suite/surfaces.css";
+@import "./suite/workflows.css";
