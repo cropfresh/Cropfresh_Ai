@@ -7,6 +7,8 @@ The main DuplexPipeline orchestrator for CropFresh Voice Agent.
 from __future__ import annotations
 
 import asyncio
+import time
+import uuid
 from typing import AsyncIterator, Callable, Optional
 
 from loguru import logger
@@ -36,6 +38,10 @@ class DuplexPipeline(InitializersMixin, ProcessingMixin):
         self._cancelled = False
         self._conversation_history: list[dict] = []
         self._last_turn_timing: dict[str, float | None] = {}
+        self._last_user_text: str = ""
+        self._last_response_text: str = ""
+        self._last_turn_id: str = str(uuid.uuid4())
+        self._interrupt_requested_at: float | None = None
         self._on_event: Optional[Callable] = None
 
         logger.info(
@@ -52,6 +58,18 @@ class DuplexPipeline(InitializersMixin, ProcessingMixin):
     @property
     def last_turn_timing(self) -> dict[str, float | None]:
         return dict(self._last_turn_timing)
+
+    @property
+    def last_user_text(self) -> str:
+        return self._last_user_text
+
+    @property
+    def last_response_text(self) -> str:
+        return self._last_response_text
+
+    @property
+    def last_turn_id(self) -> str:
+        return self._last_turn_id
 
     def on_event(self, callback: Callable) -> None:
         self._on_event = callback
@@ -77,6 +95,7 @@ class DuplexPipeline(InitializersMixin, ProcessingMixin):
         if self._state not in (PipelineState.THINKING, PipelineState.SPEAKING):
             return
 
+        self._interrupt_requested_at = self._interrupt_requested_at or time.perf_counter()
         self._cancelled = True
         if self._llm:
             self._llm.cancel()
@@ -85,6 +104,10 @@ class DuplexPipeline(InitializersMixin, ProcessingMixin):
     def reset(self) -> None:
         self._cancelled = False
         self._last_turn_timing = {}
+        self._last_user_text = ""
+        self._last_response_text = ""
+        self._last_turn_id = str(uuid.uuid4())
+        self._interrupt_requested_at = None
         if self._llm:
             self._llm.reset()
         self._state = PipelineState.IDLE
@@ -108,6 +131,11 @@ class DuplexPipeline(InitializersMixin, ProcessingMixin):
     def clear_history(self) -> None:
         self._conversation_history.clear()
         logger.info("[DuplexPipeline] Conversation history cleared")
+
+    def load_conversation_history(self, history: list[dict[str, str]]) -> None:
+        """Hydrate conversation memory from reconnect-safe turn state."""
+        self._conversation_history = list(history[-20:])
+        logger.info("[DuplexPipeline] Conversation history hydrated with {} messages", len(self._conversation_history))
 
     async def close(self) -> None:
         self._cancelled = True

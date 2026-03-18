@@ -4,6 +4,7 @@ Agent State Manager data models and exceptions.
 
 import uuid
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -36,6 +37,30 @@ class Message(BaseModel):
     tool_result: Optional[dict] = None
 
 
+class VoicePlaybackState(str, Enum):
+    """Realtime playback states tracked for reconnect-aware voice sessions."""
+
+    IDLE = "idle"
+    LISTENING = "listening"
+    TRANSCRIBING = "transcribing"
+    THINKING = "thinking"
+    SPEAKING = "speaking"
+    INTERRUPTED = "interrupted"
+    RECOVERING = "recovering"
+
+
+class VoiceTurn(BaseModel):
+    """Compact voice turn record used for reconnect recovery."""
+
+    turn_id: str
+    user_text: str
+    assistant_text: str
+    language: str = "en"
+    interrupted: bool = False
+    timing: dict[str, float | None] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
 class ConversationContext(BaseModel):
     """Full conversation context for an agent session."""
 
@@ -57,6 +82,15 @@ class ConversationContext(BaseModel):
 
     voice_session_id: Optional[str] = None
     last_active_at: datetime = Field(default_factory=datetime.now)
+    transport_mode: Optional[str] = None
+    language: str = "hi"
+    playback_state: VoicePlaybackState = VoicePlaybackState.IDLE
+    recent_turns: list[VoiceTurn] = Field(default_factory=list)
+    pending_transcript: Optional[str] = None
+    pending_segment_id: Optional[str] = None
+    last_turn_id: Optional[str] = None
+    reconnect_token_hash: Optional[str] = None
+    last_heartbeat_at: datetime = Field(default_factory=datetime.now)
 
 
 class AgentExecutionState(BaseModel):

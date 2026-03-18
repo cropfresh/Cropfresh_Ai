@@ -22,6 +22,7 @@ from src.memory.state_manager import (
     ConversationContext,
     Message,
     SessionExpiredError,
+    VoiceTurn,
 )
 
 
@@ -247,6 +248,67 @@ class TestVoiceSessionTouch:
         after = manager._sessions[session.session_id].last_active_at
 
         assert after > before
+
+    @pytest.mark.asyncio
+    async def test_touch_with_heartbeat_refreshes_last_heartbeat_at(
+        self, manager: AgentStateManager
+    ):
+        """Heartbeat touches should refresh both active and heartbeat timestamps."""
+        session = await manager.create_session()
+        before = manager._sessions[session.session_id].last_heartbeat_at
+
+        await manager.touch_voice_session(session.session_id, heartbeat=True)
+
+        after = manager._sessions[session.session_id].last_heartbeat_at
+        assert after > before
+
+
+class TestReconnectTokensAndRecentTurns:
+
+    @pytest.mark.asyncio
+    async def test_ensure_session_preserves_requested_session_id(self, manager: AgentStateManager):
+        """ensure_session() should create a session with the supplied id when absent."""
+        context = await manager.ensure_session("voice-session-fixed", user_id="farmer-fixed")
+
+        assert context.session_id == "voice-session-fixed"
+        assert context.user_id == "farmer-fixed"
+
+    @pytest.mark.asyncio
+    async def test_validate_reconnect_token_round_trip(self, manager: AgentStateManager):
+        """A registered reconnect token should validate for the same session."""
+        session = await manager.create_session()
+
+        await manager.register_voice_session(
+            session.session_id,
+            session.session_id,
+            reconnect_token="secret-token",
+            transport_mode="duplex_ws",
+            language="kn",
+        )
+
+        assert await manager.validate_reconnect_token(session.session_id, "secret-token") is True
+        assert await manager.validate_reconnect_token(session.session_id, "wrong-token") is False
+
+    @pytest.mark.asyncio
+    async def test_recent_voice_turns_are_capped_at_last_ten(self, manager: AgentStateManager):
+        """Recent turn history should trim to the last 10 reconnect-safe turns."""
+        session = await manager.create_session()
+        for index in range(12):
+            await manager.append_recent_voice_turn(
+                session.session_id,
+                VoiceTurn(
+                    turn_id=f"turn-{index}",
+                    user_text=f"user {index}",
+                    assistant_text=f"assistant {index}",
+                    language="en",
+                ),
+            )
+
+        context = await manager.get_context(session.session_id)
+        assert context is not None
+        assert len(context.recent_turns) == 10
+        assert context.recent_turns[0].turn_id == "turn-2"
+        assert context.recent_turns[-1].turn_id == "turn-11"
 
 
 # * ═══════════════════════════════════════════════════════════════

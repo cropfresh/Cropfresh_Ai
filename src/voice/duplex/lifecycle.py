@@ -39,6 +39,9 @@ async def emit_interrupted(
     if timing.interrupted_at is not None:
         return
 
+    requested_at = getattr(pipeline, "_interrupt_requested_at", None)
+    if requested_at is not None:
+        timing.mark_interrupt_requested(requested_at)
     timing.mark_interrupted()
     await pipeline._emit(PipelineState.INTERRUPTED, timing=timing.snapshot())
 

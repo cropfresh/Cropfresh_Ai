@@ -3,6 +3,8 @@ Agent State Manager — session, conversation, and voice session management.
 """
 
 import asyncio
+import hashlib
+import hmac
 import uuid
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -15,6 +17,8 @@ from src.memory.state_pkg.models import (
     ConversationContext,
     Message,
     SessionExpiredError,
+    VoicePlaybackState,
+    VoiceTurn,
 )
 
 
@@ -27,6 +31,7 @@ class AgentStateManager:
     """
 
     MAX_MESSAGES = 50
+    MAX_RECENT_VOICE_TURNS = 10
     SESSION_TTL = timedelta(hours=24)
     VOICE_SESSION_TTL_SECONDS: int = 300
     VOICE_SESSION_MAX_STALE_SECONDS: float = 300.0
@@ -55,10 +60,13 @@ class AgentStateManager:
     # ── Session Management ────────────────────────────────────
 
     async def create_session(
-        self, user_id: Optional[str] = None, user_profile: Optional[dict] = None,
+        self,
+        user_id: Optional[str] = None,
+        user_profile: Optional[dict] = None,
+        session_id: Optional[str] = None,
     ) -> ConversationContext:
         """Create a new conversation session."""
-        session_id = str(uuid.uuid4())
+        session_id = session_id or str(uuid.uuid4())
         context = ConversationContext(
             session_id=session_id, user_id=user_id, user_profile=user_profile or {},
         )
@@ -73,6 +81,22 @@ class AgentStateManager:
             self._sessions[session_id] = context
         logger.debug(f"Created session: {session_id}")
         return context
+
+    async def ensure_session(
+        self,
+        session_id: str,
+        user_id: Optional[str] = None,
+        user_profile: Optional[dict] = None,
+    ) -> ConversationContext:
+        """Return an existing session or create one with the requested id."""
+        context = await self.get_context(session_id)
+        if context is not None:
+            return context
+        return await self.create_session(
+            user_id=user_id,
+            user_profile=user_profile,
+            session_id=session_id,
+        )
 
     async def get_context(self, session_id: str) -> Optional[ConversationContext]:
         """Get conversation context for a session."""
@@ -93,12 +117,7 @@ class AgentStateManager:
             return False
 
         context.messages.append(message)
-
-        if len(context.messages) > self.MAX_MESSAGES:
-            system_msgs = [m for m in context.messages if m.role == "system"]
-            other_msgs = [m for m in context.messages if m.role != "system"]
-            context.messages = system_msgs + other_msgs[-(self.MAX_MESSAGES - len(system_msgs)):]
-
+        self._trim_messages(context)
         context.updated_at = datetime.now()
         await self._persist_context(session_id, context)
         return True
@@ -194,26 +213,41 @@ class AgentStateManager:
 
     # ── NFR6: Voice Session Rehydration ───────────────────────
 
-    async def register_voice_session(self, session_id: str, voice_session_id: str) -> None:
-        """Link a WebRTC voice_session_id to a conversation session_id."""
-        context = await self.get_context(session_id)
-        if context:
-            context.voice_session_id = voice_session_id
-            context.last_active_at = datetime.now()
-            redis = await self._get_redis()
-            if redis:
-                await redis.setex(
-                    f"session:{session_id}",
-                    int(self.SESSION_TTL.total_seconds()),
-                    context.model_dump_json(),
-                )
-                await redis.setex(
-                    f"voice:{voice_session_id}",
-                    self.VOICE_SESSION_TTL_SECONDS, session_id,
-                )
-            else:
-                self._sessions[session_id] = context
-                self._voice_sessions[voice_session_id] = session_id
+    async def register_voice_session(
+        self,
+        session_id: str,
+        voice_session_id: str,
+        reconnect_token: Optional[str] = None,
+        transport_mode: Optional[str] = None,
+        language: Optional[str] = None,
+    ) -> None:
+        """Link a voice session id to a conversation session and persist reconnect metadata."""
+        context = await self.ensure_session(session_id)
+        context.voice_session_id = voice_session_id
+        context.last_active_at = datetime.now()
+        context.last_heartbeat_at = datetime.now()
+        if transport_mode is not None:
+            context.transport_mode = transport_mode
+        if language is not None:
+            context.language = language
+        if reconnect_token:
+            context.reconnect_token_hash = self._hash_reconnect_token(reconnect_token)
+
+        redis = await self._get_redis()
+        if redis:
+            await redis.setex(
+                f"session:{session_id}",
+                int(self.SESSION_TTL.total_seconds()),
+                context.model_dump_json(),
+            )
+            await redis.setex(
+                f"voice:{voice_session_id}",
+                self.VOICE_SESSION_TTL_SECONDS,
+                session_id,
+            )
+        else:
+            self._sessions[session_id] = context
+            self._voice_sessions[voice_session_id] = session_id
         logger.debug("Voice session registered: voice_id={} session_id={}",
                       voice_session_id, session_id)
 
@@ -244,18 +278,108 @@ class AgentStateManager:
     async def deregister_voice_session(self, voice_session_id: str) -> None:
         """Remove voice-session mapping on clean disconnect."""
         redis = await self._get_redis()
+        session_id: Optional[str] = None
         if redis:
+            raw = await redis.get(f"voice:{voice_session_id}")
+            session_id = raw.decode() if isinstance(raw, bytes) else raw
             await redis.delete(f"voice:{voice_session_id}")
         else:
-            self._voice_sessions.pop(voice_session_id, None)
+            session_id = self._voice_sessions.pop(voice_session_id, None)
 
-    async def touch_voice_session(self, session_id: str) -> None:
+        if session_id:
+            context = await self.get_context(session_id)
+            if context:
+                context.voice_session_id = None
+                context.reconnect_token_hash = None
+                context.transport_mode = None
+                context.playback_state = VoicePlaybackState.IDLE
+                await self._persist_context(session_id, context)
+
+    async def touch_voice_session(self, session_id: str, *, heartbeat: bool = False) -> None:
         """Refresh last_active_at for a voice session."""
         context = await self.get_context(session_id)
         if not context:
             return
         context.last_active_at = datetime.now()
+        if heartbeat:
+            context.last_heartbeat_at = context.last_active_at
         await self._persist_context(session_id, context)
+
+    async def update_voice_runtime(self, session_id: str, **updates: Any) -> bool:
+        """Patch reconnect-aware voice runtime fields on a session."""
+        context = await self.get_context(session_id)
+        if not context:
+            return False
+
+        for key, value in updates.items():
+            if key == "reconnect_token":
+                context.reconnect_token_hash = (
+                    self._hash_reconnect_token(value) if value else None
+                )
+                continue
+            if hasattr(context, key):
+                setattr(context, key, value)
+
+        context.updated_at = datetime.now()
+        context.last_active_at = datetime.now()
+        if "last_heartbeat_at" not in updates:
+            context.last_heartbeat_at = context.last_active_at
+        await self._persist_context(session_id, context)
+        return True
+
+    async def append_recent_voice_turn(self, session_id: str, turn: VoiceTurn) -> bool:
+        """Persist a compact reconnect-safe voice turn and mirror it into message history."""
+        context = await self.get_context(session_id)
+        if not context:
+            return False
+
+        context.recent_turns.append(turn)
+        if len(context.recent_turns) > self.MAX_RECENT_VOICE_TURNS:
+            context.recent_turns = context.recent_turns[-self.MAX_RECENT_VOICE_TURNS:]
+
+        context.last_turn_id = turn.turn_id
+        context.pending_transcript = None
+        context.pending_segment_id = None
+        context.language = turn.language or context.language
+        context.updated_at = datetime.now()
+        context.last_active_at = context.updated_at
+        context.last_heartbeat_at = context.updated_at
+
+        context.messages.append(
+            Message(
+                role="user",
+                content=turn.user_text,
+                metadata={
+                    "transport": "voice",
+                    "turn_id": turn.turn_id,
+                    "language": turn.language,
+                },
+            )
+        )
+        context.messages.append(
+            Message(
+                role="assistant",
+                content=turn.assistant_text,
+                metadata={
+                    "transport": "voice",
+                    "turn_id": turn.turn_id,
+                    "language": turn.language,
+                    "interrupted": turn.interrupted,
+                    "timing": turn.timing,
+                },
+            )
+        )
+        self._trim_messages(context)
+        await self._persist_context(session_id, context)
+        return True
+
+    async def validate_reconnect_token(self, session_id: str, reconnect_token: str) -> bool:
+        """Return whether the provided reconnect token matches the stored hash."""
+        context = await self.get_context(session_id)
+        if not context or not context.reconnect_token_hash:
+            return False
+        provided_hash = self._hash_reconnect_token(reconnect_token)
+        return hmac.compare_digest(context.reconnect_token_hash, provided_hash)
 
     # ── Private helpers ───────────────────────────────────────
 
@@ -270,6 +394,18 @@ class AgentStateManager:
             )
         else:
             self._sessions[session_id] = context
+
+    def _trim_messages(self, context: ConversationContext) -> None:
+        """Keep system messages plus the most recent non-system messages."""
+        if len(context.messages) <= self.MAX_MESSAGES:
+            return
+        system_msgs = [m for m in context.messages if m.role == "system"]
+        other_msgs = [m for m in context.messages if m.role != "system"]
+        context.messages = system_msgs + other_msgs[-(self.MAX_MESSAGES - len(system_msgs)):]
+
+    def _hash_reconnect_token(self, reconnect_token: str) -> str:
+        """Hash reconnect tokens before persisting them to session state."""
+        return hashlib.sha256(reconnect_token.encode("utf-8")).hexdigest()
 
     async def _lookup_voice_session(
         self, voice_session_id: str,

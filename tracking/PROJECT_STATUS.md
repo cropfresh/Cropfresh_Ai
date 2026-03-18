@@ -1,9 +1,9 @@
 # CropFresh AI - Project Status
 
-> **Last Updated:** 2026-03-17
+> **Last Updated:** 2026-03-18
 > **Phase:** Phase 2 - Business Services
 > **Sprint:** Sprint 06 (current)
-> **Next Sprint:** Sprint 07 - Voice Duplex Productionization and Bedrock Removal
+> **Next Sprint:** Sprint 08 - LiveKit Voice Bridge Foundation
 
 ---
 
@@ -17,8 +17,13 @@
 | Memory System (Redis + in-memory) | Complete | 100% | Sprint 01 |
 | Voice Agent v1 (10 languages) | Complete | 95% | Sprint 01-04 |
 | VoiceAgent Multi-turn Flows | Complete | 90% | Sprint 04 |
-| Duplex WebSocket Voice Path | In Progress | 80% | Sprint 07 |
+| Duplex WebSocket Voice Path | In Progress | 80% | Sprint 07 carryover |
 | Pipecat Voice Pipeline | In Progress | 60% | Sprint 07 (experimental) |
+| LiveKit Voice Bridge Foundation | In Progress | 15% | Sprint 08 |
+| Semantic VAD + Session Recovery | Not Started | 0% | Sprint 09 |
+| Voice Orchestration State + Tools | Not Started | 0% | Sprint 10 |
+| Voice Load Hardening + Observability | Not Started | 0% | Sprint 11 |
+| LiveKit Scale + Deployment | Not Started | 0% | Sprint 12 |
 | Tool Registry + Shared Tools | Complete | 100% | Sprint 01-05 |
 | Agmarknet APMC Scraper | Complete | 100% | Sprint 04 |
 | Documentation System | In Progress | 95% | Sprint 05-07 |
@@ -28,7 +33,7 @@
 | Adaptive Query Router | Not Started | 0% | Sprint 05 |
 | RAGAS Evaluation Baseline | Not Started | 0% | Sprint 05 |
 | ADCL Service (district-first) | In Progress | 80% | Sprint 06 |
-| Supabase/Auth Hardening | Not Started | 0% | Sprint 08 |
+| Supabase/Auth Hardening | Not Started | 0% | Backlog after Sprint 12 |
 | Vision Agent (YOLOv12) | Not Started | 0% | Phase 3 |
 | Flutter Mobile App | Not Started | 0% | Phase 4 |
 
@@ -38,6 +43,9 @@
 
 | Date | Accomplishment |
 |------|----------------|
+| 2026-03-18 | Sprint 08 first implementation slice landed: `services/voice-gateway/`, `services/vad-service/`, premium bootstrap fallback flow, Dockerfiles, compose entries, and focused tests |
+| 2026-03-18 | Sprint 09-12 voice-program sprint files created and linked into roadmap, backlog, workflow, and handoff docs |
+| 2026-03-18 | Docs-first Sprint 08 handoff created with a new sprint file, ADR-015, planned bridge architecture doc, daily log, and synced tracking pointers |
 | 2026-03-17 | Full markdown sweep started for the Sprint 07 voice duplex handoff, including provider-policy cleanup and websocket doc corrections |
 | 2026-03-17 | Sprint 07 voice duplex productionization sprint file created with realistic latency targets and Bedrock-removal scope |
 | 2026-03-17 | Canonical ADCL service, persistence, API route, voice/listing wiring, scheduler, and focused tests implemented |
@@ -53,13 +61,14 @@
 
 ## Current Priorities
 
-1. **Sprint 07 handoff:** Use the new voice sprint and refreshed docs as the source of truth for the next implementation session.
-2. **Sprint 07:** Harden `/api/v1/voice/ws/duplex` as the canonical realtime path with stage-level timing and latency instrumentation.
-3. **Sprint 07:** Remove Bedrock from the intended provider stack and operator docs; standardize on `groq`, `vllm`, and `together`.
-4. **Sprint 07:** Benchmark local-language voice quality for `kn`, `hi`, `te`, and `ta`, then lock the production fallback strategy.
-5. **Sprint 06 carryover:** Run the ADCL golden-set review plus historical backtest using a real district order snapshot.
-6. **Sprint 06 carryover:** Verify gated eNAM behavior when credentials land and confirm IMD live advisories end to end.
-7. **Sprint 05 carryover:** Adaptive Query Router, AgriEmbeddingWrapper, and RAGAS baseline remain backlog debt after the voice handoff.
+1. **Sprint 08 source of truth:** Continue from the new gateway, VAD, and premium bootstrap scaffolds already in repo instead of reopening the bridge architecture.
+2. **Sprint 08:** Wire the gateway ring buffer and RMS gate into the actual downstream relay path instead of leaving them as isolated utilities.
+3. **Sprint 08:** Move from bootstrap-only bridge mode toward a real gateway -> VAD -> duplex relay loop while preserving `/api/v1/voice/ws/duplex` as the truthful live fallback.
+4. **Sprint 08:** Keep the current Groq plus Edge/local Indic provider path for Phase 1 and defer provider swaps until after bridge relay scaffolding lands.
+5. **Voice program guardrails:** Use the new Sprint 09-12 docs to keep semantic endpointing, orchestration, hardening, and deployment work out of Sprint 08.
+6. **Sprint 06 carryover:** Run the ADCL golden-set review plus historical backtest using a real district order snapshot.
+7. **Sprint 06 carryover:** Verify gated eNAM behavior when credentials land and confirm IMD live advisories end to end.
+8. **Sprint 05 carryover:** Adaptive Query Router, AgriEmbeddingWrapper, and RAGAS baseline remain backlog debt after the voice bridge handoff.
 
 ---
 
@@ -67,8 +76,8 @@
 
 | Blocker | Impact | Mitigation |
 |---------|--------|-----------|
-| No fixed multilingual voice benchmark set in repo | Makes latency and naturalness comparisons noisy across sessions | Sprint 07 adds a fixed utterance set and benchmark logging |
-| Pipecat slice still has failing focused tests | Experimental voice path is not trustworthy enough for production claims | Keep Pipecat explicitly experimental and fix the failing test slice during Sprint 07 |
+| No fixed multilingual voice benchmark set in repo | Makes latency and naturalness comparisons noisy across sessions | Keep benchmark-set creation in the Sprint 08 voice bridge plan before trusting latency comparisons |
+| Pipecat slice still has failing focused tests | Experimental voice path is not trustworthy enough for production claims | Keep Pipecat explicitly experimental and out of the Sprint 08 critical path |
 | No 8-week district order snapshot in repo | Blocks a real ADCL backtest from being executed locally | Use the existing runbook and run once Aurora data is available |
 | eNAM API registration pending | Limits gated-source verification for ADCL and rate-hub flows | Keep eNAM behind a flag and continue with official-first public sources |
 | Repo-wide Ruff and mypy backlog | CI is noisy and full-repo checks fail outside feature slices | Track cleanup separately from feature delivery; keep feature-level verification explicit |
@@ -87,16 +96,20 @@
 | ADR-012 | ADCL district-first canonical service contract | Approved |
 | ADR-013 | ADCL marketplace-first source precedence with explicit evidence | Approved |
 | ADR-014 | Duplex websocket as the canonical production voice path | Planned for Sprint 07 |
+| ADR-015 | LiveKit bridge hybrid cutover instead of immediate websocket replacement | Approved |
 
 ---
 
 ## Next Session Start Here
 
-1. Read `tracking/sprints/sprint-07-voice-duplex-productionization.md`.
-2. Read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md`.
-3. Read `tracking/daily/2026-03-17.md` for the latest implementation and docs handoff context.
-4. Review `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`.
-5. Open `static/premium_voice.html` before changing the live voice test path.
+1. Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`.
+2. Skim `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`, `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`, `tracking/sprints/sprint-11-voice-load-hardening-and-observability.md`, and `tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md` to keep future boundaries fixed.
+3. Read `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md`.
+4. Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`.
+5. Cross-read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md` for current runtime truth.
+6. Review `services/voice-gateway/src/server.ts`, `services/voice-gateway/src/services/session-bootstrap.ts`, and `services/vad-service/app/run_service.py`.
+7. Review `static/assets/js/duplex/bootstrap.js`, `static/assets/js/duplex/socket.js`, and `static/premium_voice.html`.
+8. Cross-read `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`.
 
 ---
 

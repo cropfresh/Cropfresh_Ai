@@ -58,6 +58,22 @@ def test_voice_hub_scripts_reference_accurate_route_and_health_fields() -> None:
     assert "tts_provider" in tools_js
 
 
+def test_premium_voice_wires_gateway_bootstrap_with_visible_fallback_indicator() -> None:
+    """Premium voice should bootstrap through the Sprint 08 gateway before using duplex fallback."""
+    html = _read("static/premium_voice.html")
+    socket_js = _read("static/assets/js/duplex/socket.js")
+    bootstrap_js = _read("static/assets/js/duplex/bootstrap.js")
+    app_js = _read("static/assets/js/duplex/app.js")
+    assert 'data-voice-gateway-url="http://localhost:3101"' in html
+    assert 'id="bridgeModePill"' in html
+    assert "/sessions/bootstrap" in bootstrap_js
+    assert "fallback_ws_url" in bootstrap_js
+    assert "reconnect_token" in bootstrap_js
+    assert 'type: "heartbeat"' in socket_js
+    assert 'mode === "bridge"' in app_js
+    assert "bootstrapVoiceSession" in socket_js
+
+
 def test_vision_lab_page_wires_real_assess_and_attach_flow() -> None:
     """Vision Lab should connect the shared vision API and listing grade route."""
     html = _read("static/vision_lab.html")

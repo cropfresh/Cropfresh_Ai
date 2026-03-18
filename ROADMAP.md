@@ -1,6 +1,6 @@
 # ROADMAP.md - CropFresh AI Milestones & Phases
 
-> **Last Updated:** 2026-03-17
+> **Last Updated:** 2026-03-18
 > **Current Phase:** Phase 2 - Business Services (active)
 > **Horizon:** 6-month view (Feb -> Aug 2026)
 
@@ -14,6 +14,10 @@ CropFresh AI builds India's intelligent agricultural marketplace, connecting Kar
 
 Sprint 06 is now reserved for **ADCL Productionization & Full Hardening** as the first district-first Phase 3 delivery slice. Supabase and user-management follow-up work moves behind it into Sprint 07 so the next build session can focus on one production-grade ADCL path instead of splitting effort across unrelated tracks.
 
+### Sprint Sequencing Addendum (2026-03-18)
+
+Sprint 07 remains the preserved duplex-hardening handoff created on 2026-03-17, but the next implementation-facing handoff is now **Sprint 08 - LiveKit Voice Bridge Foundation**. The follow-on voice program is now documented through **Sprint 12** so the next sessions do not need to re-plan semantic endpointing, orchestration, hardening, or deployment boundaries. Supabase/auth follow-up now sits behind the voice-program sequence as post-Sprint-12 work.
+
 ---
 
 ## Near-Term Sprint Sequencing
@@ -22,7 +26,12 @@ Sprint 06 is now reserved for **ADCL Productionization & Full Hardening** as the
 |--------|--------|-------|--------|
 | Sprint 05 | 2026-03-10 -> 2026-03-24 | Advanced RAG, docs, and multi-source rate-hub hardening | In Progress |
 | Sprint 06 | 2026-03-25 -> 2026-04-07 | ADCL productionization, live data, persistence, API wiring, evaluation | Planned |
-| Sprint 07 | 2026-04-08 -> 2026-04-21 | Supabase/auth hardening and deferred marketplace follow-up | Planned |
+| Sprint 07 | 2026-04-08 -> 2026-04-21 | Duplex websocket productionization, latency instrumentation, provider cleanup, and live-test alignment | Planned reference |
+| Sprint 08 | 2026-04-22 -> 2026-05-05 | LiveKit voice bridge foundation, Node gateway scaffolding, Python VAD service, and websocket fallback | Planned next |
+| Sprint 09 | 2026-05-06 -> 2026-05-19 | Semantic VAD, stream continuity, barge-in quality, and session recovery | Planned |
+| Sprint 10 | 2026-05-20 -> 2026-06-02 | Voice orchestration, Redis state machine, memory, and tool routing | Planned |
+| Sprint 11 | 2026-06-03 -> 2026-06-16 | Voice load hardening, observability, and benchmark-driven tuning | Planned |
+| Sprint 12 | 2026-06-17 -> 2026-06-30 | LiveKit scale, security, deployment assets, and cutover readiness | Planned |
 
 ---
 
@@ -76,7 +85,7 @@ Sprint 06 is now reserved for **ADCL Productionization & Full Hardening** as the
 - [x] Crop listing marketplace APIs
 - [x] Order lifecycle and escrow workflow
 - [x] Farmer and buyer registration foundation
-- [ ] Remaining hardening and cleanup tasks moved to Sprint 07
+- [ ] Remaining hardening and cleanup tasks moved behind the voice program into post-Sprint-12 follow-up work
 
 ### Success Criteria
 
@@ -209,7 +218,12 @@ Sprint 06 is now reserved for **ADCL Productionization & Full Hardening** as the
 ## Links
 
 - Product vision and tech plan: [`PLAN.md`](./PLAN.md)
-- Current sprint: [`tracking/sprints/sprint-05-advanced-rag.md`](./tracking/sprints/sprint-05-advanced-rag.md)
-- Next sprint: [`tracking/sprints/sprint-06-adcl-productionization.md`](./tracking/sprints/sprint-06-adcl-productionization.md)
+- Current sprint: [`tracking/sprints/sprint-06-adcl-productionization.md`](./tracking/sprints/sprint-06-adcl-productionization.md)
+- Next implementation sprint: [`tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`](./tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md)
+- Voice program follow-on sprints:
+  - [`tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`](./tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md)
+  - [`tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`](./tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md)
+  - [`tracking/sprints/sprint-11-voice-load-hardening-and-observability.md`](./tracking/sprints/sprint-11-voice-load-hardening-and-observability.md)
+  - [`tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md`](./tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md)
 - Architecture decisions: [`docs/decisions/`](./docs/decisions/)
 - Project status: [`tracking/PROJECT_STATUS.md`](./tracking/PROJECT_STATUS.md)

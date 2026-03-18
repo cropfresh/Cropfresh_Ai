@@ -16,6 +16,18 @@ export function createDuplexApp() {
   });
   socket = createDuplexSocket({
     getLanguage: () => language,
+    onBootstrap: (bootstrap) => {
+      ui.updateTransport(bootstrap);
+      if (bootstrap.bootstrap_error) {
+        ui.log(`Gateway bootstrap fell back to websocket: ${bootstrap.bootstrap_error}`);
+        return;
+      }
+      ui.log(
+        bootstrap.mode === "bridge"
+          ? "Gateway bootstrap succeeded. Static client is still using websocket relay for Sprint 08."
+          : "Gateway bootstrap selected direct websocket fallback.",
+      );
+    },
     onError: () => ui.log("WebSocket error"),
     onLog: ui.log,
     onMessage: handleServerMessage,
@@ -119,7 +131,14 @@ export function createDuplexApp() {
           sessionStorage.setItem("voice_duplex_session_id", message.session_id);
         }
         setState("idle");
-        ui.addChatBubble("system", "Session ready. Say something!");
+        if (message.recovered) {
+          ui.addChatBubble(
+            "system",
+            `Session recovered with ${message.recovered_turn_count || 0} saved turns.`,
+          );
+        } else {
+          ui.addChatBubble("system", "Session ready. Say something!");
+        }
         break;
       case "pipeline_state":
         handlePipelineState(message.state, message);
@@ -139,6 +158,11 @@ export function createDuplexApp() {
         audio.stopPlayback();
         setState("interrupted");
         setTimeout(() => setState("listening"), 200);
+        break;
+      case "heartbeat_ack":
+        ui.log(
+          `Heartbeat ack (${message.heartbeat_interval_ms || 0}ms / recovery ${message.session_recovery_ttl_ms || 0}ms)`,
+        );
         break;
       case "error":
         ui.log(`Server error: ${message.error || "unknown"}`);
@@ -179,6 +203,7 @@ export function createDuplexApp() {
       query: ui.query,
     });
     ui.updateMetrics();
+    ui.updateTransport();
     ui.updateState(currentState, currentState);
     ui.log("Duplex client initialized");
   }

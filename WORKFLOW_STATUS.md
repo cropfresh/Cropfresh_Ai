@@ -1,6 +1,6 @@
 ﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-18 (vision lab API and static wiring)
+> **Last Updated:** 2026-03-18 (Sprint 08 implementation slice landed)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -8,6 +8,55 @@ This document is the **single entry point** for understanding how CropFresh AI i
 ---
 
 ## Latest Session Snapshot
+
+**2026-03-18 - Sprint 08 Bridge Services and Premium Bootstrap**
+
+- Added `services/voice-gateway/` with a strict TypeScript scaffold, `/sessions/bootstrap`, `/health`, `/ready`, `/metrics`, and the initial ring-buffer plus RMS-gate utilities.
+- Added `services/vad-service/` with FastAPI probes, `/v1/vad/config`, the Sprint 08 segmenter, generated protobuf files, and the initial gRPC server surface.
+- Updated `static/premium_voice.html` and the duplex JS modules so the premium static client now requests gateway bootstrap metadata first and visibly falls back to the existing duplex websocket.
+- Added local Dockerfiles, compose entries, and Prometheus scraping for the new gateway service so the Sprint 08 slice is runnable in local dev.
+- Verified the new Python, static, and Node slices; the existing Pipecat baseline failures remain outside this Sprint 08 implementation change.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`
+- Review `services/voice-gateway/src/server.ts`, `services/voice-gateway/src/services/session-bootstrap.ts`, and `services/vad-service/app/run_service.py`
+- Review `static/assets/js/duplex/bootstrap.js`, `static/assets/js/duplex/socket.js`, and `static/premium_voice.html`
+- Cross-read `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`
+
+**2026-03-18 - Sprint 09-12 Voice Program Docs Alignment**
+
+- Added `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`, `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`, `tracking/sprints/sprint-11-voice-load-hardening-and-observability.md`, and `tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md` so the remaining voice program has explicit sprint boundaries.
+- Updated `docs/features/livekit-voice-bridge.md`, `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`, and `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` so Sprint 08 is now clearly the first step in a documented Sprint 08-12 voice program.
+- Updated `tracking/PROJECT_STATUS.md`, `ROADMAP.md`, `tracking/tasks/backlog.md`, and `tracking/daily/2026-03-18.md` so the next-session read order, backlog buckets, and roadmap sequence all point to the same follow-on sprint set.
+- Kept current runtime truth intact: the active live path is still the FastAPI duplex websocket, and the LiveKit bridge remains planned work.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`
+- Skim `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`, `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`, `tracking/sprints/sprint-11-voice-load-hardening-and-observability.md`, and `tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md`
+- Read `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md`
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`
+- Cross-read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md`
+- Review `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`
+
+**2026-03-18 - Docs-First Sprint 08 Voice Bridge Handoff**
+
+- Added `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` as the next implementation-facing handoff for bridge-mode voice work.
+- Added `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` so the next session does not need to reopen the cutover-vs-bridge decision.
+- Added `docs/features/livekit-voice-bridge.md` with the current runtime truth, target Sprint 08 bridge flow, browser bootstrap contract, and VAD gRPC contract.
+- Added `tracking/daily/2026-03-18.md` as the docs-only planning handoff with the exact files to open first, the first coding slice, and the pre-edit verification commands.
+- Updated `tracking/PROJECT_STATUS.md`, `ROADMAP.md`, and `tracking/tasks/backlog.md` so Sprint 08 is now the aligned next-session pointer and Supabase/auth follow-up sits behind the bridge work.
+- Kept the current runtime docs truthful: the active live path is still the FastAPI duplex websocket, not a LiveKit production runtime.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`
+- Read `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md`
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`
+- Cross-read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md`
+- Review `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`
 
 **2026-03-18 - Vision Lab API and Static Wiring**
 
@@ -252,7 +301,8 @@ Format it into the sprint template at tracking/sprints/_template.md."
 
 ```
 "Read PLAN.md, tracking/PROJECT_STATUS.md, and the relevant sprint file.
-For voice work, start with tracking/sprints/sprint-07-voice-duplex-productionization.md.
+For voice bridge work, start with tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md, docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md, and docs/features/livekit-voice-bridge.md.
+Cross-read tracking/sprints/sprint-07-voice-duplex-productionization.md only when you need current duplex runtime details.
 Implement [feature/endpoint name] in [file path].
 Follow coding standards in docs/architecture/coding-standards.md.
 Generate unit tests in tests/unit/ as part of this change.
@@ -283,7 +333,7 @@ Reference TESTING/STRATEGY.md checklist and our coding standards."
 
 ```
 "Read the active sprint file and the last 5 daily logs.
-For voice work, start with tracking/sprints/sprint-07-voice-duplex-productionization.md.
+For voice bridge work, start with tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md and ADR-015.
 Summarize: what shipped, what slipped, 3 key learnings.
 Format as the Sprint Outcome section and also update tracking/PROJECT_STATUS.md."
 ```
@@ -343,11 +393,16 @@ git checkout main && git merge feature/sprint-04-apmc-scraper
 | Multi-Agent System                  | âœ… Complete    | 100%     | Sprint 01 |
 | Memory System (Redis)               | âœ… Complete    | 100%     | Sprint 01 |
 | Voice Agent v1 (Edge-TTS + Whisper) | âœ… Complete    | 90%      | Sprint 01 |
-| Duplex WebSocket Voice Path         | In Progress    | 80%      | Sprint 07 |
+| Duplex WebSocket Voice Path         | In Progress    | 80%      | Sprint 07 carryover |
 | Pipecat Voice Pipeline              | ðŸŸ¡ In Progress | 40%      | Sprint 07 (experimental) |
+| LiveKit Voice Bridge Foundation     | âŒ Not Started | 0%       | Sprint 08 |
+| Semantic VAD + Session Recovery     | âŒ Not Started | 0%       | Sprint 09 |
+| Voice Orchestration State + Tools   | âŒ Not Started | 0%       | Sprint 10 |
+| Voice Load Hardening + Observability | âŒ Not Started | 0%       | Sprint 11 |
+| LiveKit Scale + Deployment          | âŒ Not Started | 0%       | Sprint 12 |
 | APMC Mandi Scraper                  | âŒ Not Started | 0%       | Sprint 04 |
 | ADCL Service (district-first)      | In Progress    | 80%      | Sprint 06 |
-| Supabase/Auth Hardening            | âŒ Not Started | 0%       | Sprint 08 |
+| Supabase/Auth Hardening            | âŒ Not Started | 0%       | Backlog after Sprint 12 |
 | Vision Agent (YOLOv12 + DINOv2)     | âŒ Not Started | 0%       | Phase 3   |
 | Evaluation Framework (LangSmith)    | âŒ Not Started | 0%       | Sprint 05 |
 | Flutter Mobile App                  | âŒ Not Started | 0%       | Phase 4   |
@@ -418,6 +473,67 @@ uv run ruff check src/
 ---
 
 ## ðŸ“ File Changes Log
+
+### 2026-03-18 - Sprint 08 Bridge Services and Premium Bootstrap
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `services/voice-gateway/package.json` | Added the new Node gateway package manifest and scripts |
+| CREATE | `services/voice-gateway/src/` | Added gateway config, metrics, bootstrap routing, and audio utility modules |
+| CREATE | `services/voice-gateway/tests/` | Added Vitest coverage for bootstrap, RMS gate, and ring-buffer behavior |
+| CREATE | `services/vad-service/app/` | Added the FastAPI plus gRPC VAD service scaffold and Sprint 08 segmenter |
+| CREATE | `services/vad-service/proto/vad.proto` | Added the Sprint 08 protobuf contract for streaming VAD |
+| CREATE | `services/vad-service/app/proto/vad_pb2.py` | Added generated protobuf message bindings |
+| CREATE | `services/vad-service/app/proto/vad_pb2_grpc.py` | Added generated gRPC service bindings |
+| CREATE | `infra/docker/voice-gateway.Dockerfile` | Added a local dev image for the gateway |
+| CREATE | `infra/docker/vad-service.Dockerfile` | Added a local dev image for the VAD service |
+| UPDATE | `docker-compose.yml` | Added local dev services for the Sprint 08 gateway and VAD service |
+| UPDATE | `.env.example` | Added Sprint 08 environment variables for the new services |
+| UPDATE | `infra/monitoring/prometheus.yml` | Added a Prometheus scrape job for `voice-gateway` |
+| UPDATE | `static/premium_voice.html` | Added gateway bootstrap configuration and a visible fallback-mode pill |
+| CREATE | `static/assets/js/duplex/bootstrap.js` | Added the premium duplex bootstrap helper |
+| UPDATE | `static/assets/js/duplex/socket.js` | Added bootstrap resolution before websocket connection |
+| UPDATE | `static/assets/js/duplex/app.js` | Added bootstrap-aware logging and transport-mode UI updates |
+| UPDATE | `static/assets/js/duplex/ui.js` | Added a visible transport-mode indicator update helper |
+| UPDATE | `tests/unit/test_static_testing_lab.py` | Added coverage for the premium bootstrap and fallback indicator |
+| CREATE | `tests/unit/test_vad_service_segmenter.py` | Added unit coverage for the Sprint 08 segmenter and runtime energy gate |
+| CREATE | `tests/unit/test_vad_service_api.py` | Added coverage for VAD service health, readiness, and config routes |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Marked Sprint 08 as in progress and pointed the next session to the new service entrypoints |
+| UPDATE | `tracking/tasks/backlog.md` | Checked off the Sprint 08 items that are now implemented |
+| UPDATE | `tracking/daily/2026-03-18.md` | Appended the first Sprint 08 implementation addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the implementation snapshot for the first Sprint 08 code landing |
+| UPDATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Added a progress snapshot for the first implementation slice |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this latest-session snapshot and file-log entry |
+
+### 2026-03-18 - Sprint 09-12 Voice Program Docs Alignment
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Added the semantic endpointing, continuity, and reconnect-recovery sprint boundary |
+| CREATE | `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` | Added the orchestration, state-machine, memory, and tool-routing sprint boundary |
+| CREATE | `tracking/sprints/sprint-11-voice-load-hardening-and-observability.md` | Added the hardening, observability, and load-test sprint boundary |
+| CREATE | `tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md` | Added the deployment, security, and cutover-readiness sprint boundary |
+| UPDATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Added explicit references to the Sprint 09-12 follow-on boundaries so Sprint 08 stays narrow |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the Sprint 08-12 voice-program sequence to the planned bridge architecture doc |
+| UPDATE | `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` | Marked Sprint 08 handoff docs complete and linked the follow-on sprint set |
+| UPDATE | `tracking/daily/2026-03-18.md` | Appended the Sprint 09-12 voice-program docs addendum and updated the next-session read order |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Added Sprint 09-12 component rows and expanded the next-session handoff pointers |
+| UPDATE | `ROADMAP.md` | Added the Sprint 09-12 near-term sequence and links |
+| UPDATE | `tracking/tasks/backlog.md` | Split the voice backlog into Sprint 09-12 follow-on buckets |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this latest-session snapshot, component-status alignment, and file-log entry |
+
+### 2026-03-18 - Docs-First Sprint 08 Voice Bridge Handoff
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Added the next implementation-facing sprint source of truth for bridge-mode voice work |
+| CREATE | `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` | Locked bridge mode as the next architecture decision instead of immediate websocket replacement |
+| CREATE | `docs/features/livekit-voice-bridge.md` | Documented the planned bridge flow, browser bootstrap contract, and VAD gRPC contract |
+| CREATE | `tracking/daily/2026-03-18.md` | Added the docs-only handoff log with the next-session read order and first coding slice |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Repointed the next-session handoff to Sprint 08 and kept current voice runtime status truthful |
+| UPDATE | `ROADMAP.md` | Added the Sprint 08 sequencing addendum and moved Supabase/auth follow-up behind the bridge work |
+| UPDATE | `tracking/tasks/backlog.md` | Promoted Sprint 08 bridge-foundation tasks into the top voice bucket |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this handoff snapshot, prompt updates, component-status alignment, and file-log entries |
 
 ### 2026-03-18 - Retro Template Cleanup
 

@@ -27,14 +27,17 @@ async def process_duplex_speech(
     language: str,
     websocket: WebSocket,
     send_msg,
-) -> None:
+    *,
+    transcription: str | None = None,
+    detected_language: str | None = None,
+) -> dict[str, object] | None:
     """
     Process buffered speech through the duplex pipeline.
 
     Streams LLM sentences → TTS audio chunks back to the client.
     """
     if not audio_buffer:
-        return
+        return None
 
     # Combine and convert audio
     audio = b"".join(audio_buffer)
@@ -47,9 +50,15 @@ async def process_duplex_speech(
     response_text_parts = []
 
     try:
-        async for audio_chunk in pipeline.process_speech(
-            audio_wav, language=language
-        ):
+        if transcription:
+            stream = pipeline.process_text(
+                transcription,
+                language=detected_language or language,
+            )
+        else:
+            stream = pipeline.process_speech(audio_wav, language=language)
+
+        async for audio_chunk in stream:
             # Send each audio chunk immediately
             payload = {
                 "audio_base64": audio_chunk.audio_base64,
@@ -78,7 +87,9 @@ async def process_duplex_speech(
         if pipeline.last_turn_timing:
             payload["timing"] = pipeline.last_turn_timing
         await send_msg("response_end", payload)
+        return payload
 
     except Exception as e:
         logger.error(f"Duplex speech processing error: {e}")
         await send_msg("error", {"error": str(e)})
+        return None

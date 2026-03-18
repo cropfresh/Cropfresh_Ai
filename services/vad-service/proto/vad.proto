@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package cropfresh.voice.vad.v1;
+
+service VadAnalyzer {
+  rpc AnalyzeStream(stream AudioFrame) returns (stream VadEvent);
+}
+
+message AudioFrame {
+  string session_id = 1;
+  int64 sequence = 2;
+  int32 sample_rate = 3;
+  bytes pcm16 = 4;
+}
+
+message VadEvent {
+  string session_id = 1;
+  string state = 2;
+  float probability = 3;
+  float rms = 4;
+  string segment_id = 5;
+  int64 sequence = 6;
+  bool end_of_segment = 7;
+}

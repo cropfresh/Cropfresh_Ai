@@ -50,6 +50,7 @@ async def run_speech_turn(
         transcription,
         detected_language,
     )
+    pipeline._last_user_text = transcription
     async for chunk in run_text_turn(
         pipeline,
         transcription,
@@ -75,6 +76,9 @@ async def run_text_turn(
 
     if reset_pipeline:
         pipeline.reset()
+        pipeline._last_user_text = text
+    elif text:
+        pipeline._last_user_text = text
 
     turn_timing = timing or TurnTiming()
     turn_timing.mark_thinking_started()
@@ -152,7 +156,10 @@ async def run_text_turn(
         return
 
     if full_response_parts:
-        update_history(pipeline, text, " ".join(full_response_parts))
+        pipeline._last_response_text = " ".join(full_response_parts)
+        update_history(pipeline, text, pipeline._last_response_text)
+    else:
+        pipeline._last_response_text = ""
 
     await finish_turn(
         pipeline,

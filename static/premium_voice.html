@@ -11,7 +11,12 @@
     <link rel="stylesheet" href="./assets/css/premium-voice/critical-rail.css?v=20260318-shellfix" />
     <link rel="stylesheet" href="./assets/css/premium-voice.css?v=20260318-shellfix" />
   </head>
-  <body class="voice-mode" data-suite-page="premium-voice" data-voice-state="idle">
+  <body
+    class="voice-mode"
+    data-suite-page="premium-voice"
+    data-voice-state="idle"
+    data-voice-gateway-url="http://localhost:3101"
+  >
     <div class="premium-suite-frame">
       <aside class="premium-suite-rail">
         <div class="premium-suite-brand">
@@ -96,7 +101,12 @@
                     Tap the orb or connect the session to start a duplex conversation.
                   </p>
                 </div>
-                <span id="wsStatusPill" class="status-pill" data-state="offline">Offline</span>
+                <div class="hero-badges voice-header-tags">
+                  <span id="bridgeModePill" class="mini-pill" data-transport-mode="fallback_ws">
+                    Fallback WS
+                  </span>
+                  <span id="wsStatusPill" class="status-pill" data-state="offline">Offline</span>
+                </div>
               </div>
 
               <div class="metric-row">

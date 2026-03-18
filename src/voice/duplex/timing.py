@@ -29,6 +29,7 @@ class TurnTiming:
     first_sentence_at: float | None = None
     speaking_started_at: float | None = None
     first_audio_at: float | None = None
+    interrupt_requested_at: float | None = None
     interrupted_at: float | None = None
     completed_at: float | None = None
 
@@ -49,6 +50,9 @@ class TurnTiming:
 
     def mark_first_audio(self) -> None:
         self.first_audio_at = self.first_audio_at or time.perf_counter()
+
+    def mark_interrupt_requested(self, requested_at: float | None = None) -> None:
+        self.interrupt_requested_at = self.interrupt_requested_at or requested_at or time.perf_counter()
 
     def mark_interrupted(self) -> None:
         self.interrupted_at = self.interrupted_at or time.perf_counter()
@@ -78,6 +82,10 @@ class TurnTiming:
             "total_ms": _elapsed_ms(self.turn_started_at, now),
             "interrupted_ms": _elapsed_ms(
                 self.turn_started_at,
+                self.interrupted_at,
+            ),
+            "bargein_reaction_ms": _elapsed_ms(
+                self.interrupt_requested_at,
                 self.interrupted_at,
             ),
         }

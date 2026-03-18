@@ -120,6 +120,17 @@ export function createDuplexUI({ getSocketState }) {
     renderMetric("metricTotal", "TOTAL", timing.total_ms);
   }
 
+  function updateTransport(bootstrap = {}) {
+    const modePill = $("#bridgeModePill");
+    if (!modePill) {
+      return;
+    }
+
+    const mode = bootstrap.mode || "fallback_ws";
+    modePill.dataset.transportMode = mode;
+    modePill.textContent = mode === "bridge" ? "Bridge bootstrap" : "Fallback WS";
+  }
+
   function addChatBubble(role, text) {
     const userEl = $("#transcriptUser");
     const agentEl = $("#transcriptAgent");
@@ -159,6 +170,7 @@ export function createDuplexUI({ getSocketState }) {
     log,
     query: $,
     updateMetrics,
+    updateTransport,
     updateState,
   };
 }
