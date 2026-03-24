@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from loguru import logger
@@ -19,13 +20,26 @@ from src.api.rest.voice_runtime import resolve_stt, resolve_tts, resolve_voice_a
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 
 
-def _workflow_context(voice_agent, session_id: str) -> dict[str, str | None]:
+async def _workflow_context(voice_agent, session_id: str) -> dict[str, Any]:
     session = voice_agent.get_session(session_id) if hasattr(voice_agent, "get_session") else None
     context = getattr(session, "context", {}) if session is not None else {}
-    return {
+    payload: dict[str, Any] = {
         "last_listing_id": context.get("last_listing_id"),
         "pending_intent": context.get("pending_intent"),
+        "active_speaker_id": context.get("active_speaker_id"),
+        "known_speakers": context.get("known_speakers") or [],
     }
+    state_manager = getattr(voice_agent, "state_manager", None)
+    if state_manager is None:
+        return payload
+
+    persisted = await state_manager.get_context(session_id)
+    if persisted is None:
+        return payload
+
+    payload["active_speaker_id"] = persisted.active_speaker_id or payload["active_speaker_id"]
+    payload["known_speakers"] = sorted(persisted.speaker_profiles.keys())
+    return payload
 
 
 @router.post("/process", response_model=VoiceProcessResponse)
@@ -35,6 +49,9 @@ async def process_voice(
     user_id: str = Form(..., description="User identifier"),
     session_id: str | None = Form(None, description="Session ID for context"),
     language: str = Form("auto", description="Language code or 'auto'"),
+    speaker_id: str | None = Form(None, description="Stable speaker ID for grouped turns"),
+    speaker_label: str | None = Form(None, description="Human-readable speaker label"),
+    speaker_role: str | None = Form(None, description="Speaker role such as farmer or buyer"),
 ):
     """Process voice input and return a synthesized voice response."""
     try:
@@ -47,6 +64,9 @@ async def process_voice(
             user_id=user_id,
             session_id=session_id,
             language=language,
+            speaker_id=speaker_id,
+            speaker_label=speaker_label,
+            speaker_role=speaker_role,
         )
         return VoiceProcessResponse(
             transcription=result.transcription,
@@ -57,7 +77,7 @@ async def process_voice(
             response_audio_base64=base64.b64encode(result.response_audio).decode("utf-8"),
             session_id=result.session_id,
             confidence=result.confidence,
-            workflow_context=_workflow_context(voice_agent, result.session_id),
+            workflow_context=await _workflow_context(voice_agent, result.session_id),
         )
     except HTTPException:
         raise

@@ -15,10 +15,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 
 from src.api.config import get_settings
-from src.api.websocket.voice_pkg.duplex import process_duplex_speech
+from src.api.websocket.voice_pkg.duplex import (
+    process_duplex_speech,
+    process_duplex_text_response,
+)
 from src.api.websocket.voice_pkg.recovery import apply_recovery_context, resolve_duplex_session
 from src.api.websocket.voice_pkg.session import VAD_AVAILABLE, SessionManager
-from src.memory.state_pkg.models import VoicePlaybackState, VoiceTurn
+from src.memory.state_pkg.models import VoicePlaybackState, VoiceSessionState, VoiceTurn
 from src.voice.semantic_endpointing import evaluate_semantic_flush
 
 try:
@@ -108,10 +111,10 @@ async def voice_duplex_websocket(
 
     await websocket.accept()
     settings = get_settings()
-    state_manager = getattr(getattr(websocket, "app", None), "state", None)
-    state_manager = getattr(state_manager, "state_manager", None)
-    llm_provider = getattr(getattr(websocket, "app", None), "state", None)
-    llm_provider = getattr(llm_provider, "llm", None)
+    app_state = getattr(getattr(websocket, "app", None), "state", None)
+    state_manager = getattr(app_state, "state_manager", None)
+    llm_provider = getattr(app_state, "llm", None)
+    voice_orchestrator = getattr(app_state, "voice_orchestrator", None)
     reconnect_token = websocket.query_params.get("reconnect_token")
     heartbeat_interval_ms = settings.voice_heartbeat_interval_ms
     dead_peer_timeout_ms = settings.voice_dead_peer_timeout_ms
@@ -144,6 +147,7 @@ async def voice_duplex_websocket(
     last_client_activity = time.monotonic()
     clean_disconnect = False
     recovered_turn_count = 0
+    pending_speaker_hint: dict[str, object] = {}
 
     async def send_msg(msg_type: str, data: dict) -> None:
         try:
@@ -154,6 +158,122 @@ async def voice_duplex_websocket(
             })
         except Exception:
             pass
+
+    def coerce_speaker_confidence(value: object) -> float | None:
+        if value in (None, ""):
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    async def transition_voice_state(
+        state: VoiceSessionState,
+        *,
+        reason: str,
+        metadata: dict | None = None,
+    ) -> None:
+        if state_manager is None:
+            return
+
+        try:
+            await state_manager.transition_voice_state(
+                session_id,
+                state,
+                source="duplex_router",
+                reason=reason,
+                actor="duplex_ws",
+                metadata=metadata,
+            )
+        except ValueError as exc:
+            logger.debug(
+                "Ignoring invalid duplex voice state transition for {}: {}",
+                session_id,
+                exc,
+            )
+
+    async def load_workflow_context() -> dict:
+        payload = dict(pending_speaker_hint)
+        if state_manager is None:
+            if payload.get("speaker_id"):
+                payload["active_speaker_id"] = payload["speaker_id"]
+                payload["known_speakers"] = [payload["speaker_id"]]
+            return payload
+
+        context = await state_manager.get_context(session_id)
+        if context is None:
+            if payload.get("speaker_id"):
+                payload["active_speaker_id"] = payload["speaker_id"]
+                payload["known_speakers"] = [payload["speaker_id"]]
+            return payload
+
+        payload.update(context.active_workflow)
+        payload["active_speaker_id"] = context.active_speaker_id
+        payload["known_speakers"] = sorted(context.speaker_profiles.keys())
+        if pending_speaker_hint.get("speaker_id"):
+            payload["active_speaker_id"] = pending_speaker_hint["speaker_id"]
+            known_speakers = set(payload["known_speakers"])
+            known_speakers.add(str(pending_speaker_hint["speaker_id"]))
+            payload["known_speakers"] = sorted(known_speakers)
+        return payload
+
+    async def sync_active_speaker(
+        speaker_hint: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        nonlocal pending_speaker_hint
+        next_hint = {
+            key: value
+            for key, value in dict(speaker_hint or pending_speaker_hint).items()
+            if value not in (None, "")
+        }
+        if not next_hint:
+            if state_manager is None:
+                return pending_speaker_hint
+
+            context = await state_manager.get_context(session_id)
+            if context is None or not context.active_speaker_id:
+                return pending_speaker_hint
+
+            active_profile = context.speaker_profiles.get(context.active_speaker_id)
+            pending_speaker_hint = {
+                "speaker_id": context.active_speaker_id,
+                "speaker_label": getattr(active_profile, "label", None),
+                "speaker_role": getattr(active_profile, "role", None),
+                "speaker_confidence": getattr(active_profile, "confidence", None),
+                "speaker_metadata": getattr(active_profile, "metadata", {}),
+            }
+            return pending_speaker_hint
+
+        if state_manager is None:
+            pending_speaker_hint = next_hint
+            return pending_speaker_hint
+
+        profile = await state_manager.update_active_speaker(
+            session_id,
+            speaker_id=str(next_hint.get("speaker_id") or "") or None,
+            speaker_label=str(next_hint.get("speaker_label") or "") or None,
+            speaker_role=str(next_hint.get("speaker_role") or "") or None,
+            speaker_confidence=coerce_speaker_confidence(
+                next_hint.get("speaker_confidence")
+            ),
+            speaker_metadata=(
+                dict(next_hint.get("speaker_metadata") or {})
+                if isinstance(next_hint.get("speaker_metadata"), dict)
+                else {}
+            ),
+        )
+        if profile is None:
+            pending_speaker_hint = next_hint
+            return pending_speaker_hint
+
+        pending_speaker_hint = {
+            "speaker_id": profile.speaker_id,
+            "speaker_label": profile.label,
+            "speaker_role": profile.role,
+            "speaker_confidence": profile.confidence,
+            "speaker_metadata": dict(profile.metadata),
+        }
+        return pending_speaker_hint
 
     async def on_pipeline_event(event: PipelineEvent) -> None:
         nonlocal last_detected_language, connection_language
@@ -169,6 +289,31 @@ async def voice_duplex_websocket(
                 last_detected_language = lang
                 await send_msg("language_detected", {"language": lang})
 
+        if event.state == PipelineState.THINKING:
+            await transition_voice_state(
+                VoiceSessionState.THINKING,
+                reason="duplex_pipeline_thinking",
+                metadata=event.data,
+            )
+        elif event.state == PipelineState.SPEAKING:
+            await transition_voice_state(
+                VoiceSessionState.SPEAKING,
+                reason="duplex_pipeline_speaking",
+                metadata=event.data,
+            )
+        elif event.state == PipelineState.INTERRUPTED:
+            await transition_voice_state(
+                VoiceSessionState.BARGE_IN,
+                reason="duplex_pipeline_interrupted",
+                metadata=event.data,
+            )
+        elif event.state == PipelineState.IDLE:
+            await transition_voice_state(
+                VoiceSessionState.IDLE,
+                reason="duplex_pipeline_idle",
+                metadata=event.data,
+            )
+
         if state_manager is not None:
             await state_manager.update_voice_runtime(
                 session_id,
@@ -179,10 +324,14 @@ async def voice_duplex_websocket(
 
     pipeline.on_event(on_pipeline_event)
 
-    async def persist_turn(semantic_hold_ms: int | None = None) -> None:
+    async def persist_turn(
+        semantic_hold_ms: int | None = None,
+        speaker_hint: dict[str, object] | None = None,
+    ) -> None:
         if state_manager is None or not pipeline.last_user_text or not pipeline.last_response_text:
             return
 
+        resolved_speaker = await sync_active_speaker(speaker_hint)
         timing = dict(pipeline.last_turn_timing)
         if semantic_hold_ms is not None:
             timing["semantic_hold_ms"] = semantic_hold_ms
@@ -195,6 +344,17 @@ async def voice_duplex_websocket(
                 user_text=pipeline.last_user_text,
                 assistant_text=pipeline.last_response_text,
                 language=connection_language,
+                speaker_id=str(resolved_speaker.get("speaker_id") or "") or None,
+                speaker_label=str(resolved_speaker.get("speaker_label") or "") or None,
+                speaker_role=str(resolved_speaker.get("speaker_role") or "") or None,
+                speaker_confidence=coerce_speaker_confidence(
+                    resolved_speaker.get("speaker_confidence")
+                ),
+                speaker_metadata=(
+                    dict(resolved_speaker.get("speaker_metadata") or {})
+                    if isinstance(resolved_speaker.get("speaker_metadata"), dict)
+                    else {}
+                ),
                 interrupted=timing.get("interrupted_ms") is not None,
                 timing=timing,
             ),
@@ -218,14 +378,30 @@ async def voice_duplex_websocket(
 
         semantic_enabled = settings.voice_semantic_endpointing_enabled and not force_flush
         semantic_hold_ms: int | None = None
-        transcript: str | None = None
-        detected_language = connection_language
+        speaker_hint = await sync_active_speaker()
+        await transition_voice_state(
+            VoiceSessionState.VAD_TRIGGERED,
+            reason="duplex_segment_ready",
+            metadata={"force_flush": force_flush, "segment_id": segment_id},
+        )
+
+        transcript, detected_language = await pipeline._transcribe(
+            combined_audio,
+            connection_language,
+        )
+        if detected_language:
+            connection_language = detected_language
+
+        if not transcript:
+            pending_audio = None
+            pending_hold_started_at = None
+            await transition_voice_state(
+                VoiceSessionState.IDLE,
+                reason="duplex_empty_transcript",
+            )
+            return
 
         if semantic_enabled:
-            transcript, detected_language = await pipeline._transcribe(combined_audio, connection_language)
-            if detected_language:
-                connection_language = detected_language
-
             decision = await evaluate_semantic_flush(
                 transcript=transcript,
                 language=detected_language,
@@ -261,18 +437,59 @@ async def voice_duplex_websocket(
                     )
                     return
 
-        result = await process_duplex_speech(
-            pipeline,
-            [combined_audio],
-            connection_language,
-            websocket,
-            send_msg,
-            transcription=transcript,
-            detected_language=detected_language,
+        await transition_voice_state(
+            VoiceSessionState.TRANSCRIBING,
+            reason="duplex_transcript_ready",
+            metadata={"segment_id": segment_id},
         )
+
+        result = None
+        if voice_orchestrator is not None:
+            workflow_context = await load_workflow_context()
+            outcome = await voice_orchestrator.handle_turn(
+                text=transcript,
+                language=detected_language,
+                user_id=user_id,
+                session_id=session_id,
+                workflow_context=workflow_context,
+            )
+            if outcome is not None:
+                workflow_updates = dict(outcome.workflow_updates)
+                workflow_updates["voice_persona"] = outcome.persona
+                workflow_updates["routed_agent"] = outcome.agent_name
+                workflow_updates["last_tools_used"] = ",".join(outcome.tools_used)
+                if state_manager is not None:
+                    await state_manager.update_active_workflow(
+                        session_id,
+                        workflow_updates,
+                    )
+                    await state_manager.update_voice_runtime(
+                        session_id,
+                        current_agent=outcome.agent_name,
+                        language=connection_language,
+                    )
+                result = await process_duplex_text_response(
+                    pipeline,
+                    transcript,
+                    outcome.response_text,
+                    connection_language,
+                    websocket,
+                    send_msg,
+                )
+
+        if result is None:
+            result = await process_duplex_speech(
+                pipeline,
+                [combined_audio],
+                connection_language,
+                websocket,
+                send_msg,
+                transcription=transcript,
+                detected_language=detected_language,
+            )
         if result is not None and pending_hold_started_at is not None:
             semantic_hold_ms = int((time.monotonic() - pending_hold_started_at) * 1000)
-        await persist_turn(semantic_hold_ms)
+        await persist_turn(semantic_hold_ms, speaker_hint=speaker_hint)
         pending_audio = None
         pending_hold_started_at = None
 
@@ -289,6 +506,10 @@ async def voice_duplex_websocket(
                     session_id,
                     playback_state=VoicePlaybackState.IDLE,
                 )
+            await transition_voice_state(
+                VoiceSessionState.IDLE,
+                reason="duplex_heartbeat_timeout",
+            )
             await send_msg("error", {"error": "heartbeat_timeout"})
             await websocket.close(code=1011, reason="heartbeat_timeout")
             return
@@ -319,6 +540,11 @@ async def voice_duplex_websocket(
                 playback_state=VoicePlaybackState.RECOVERING if recovered else VoicePlaybackState.IDLE,
                 reconnect_token=reconnect_token,
             )
+        await transition_voice_state(
+            VoiceSessionState.IDLE,
+            reason="duplex_ready",
+            metadata={"recovered": recovered},
+        )
         await send_msg("ready", {
             "session_id": session_id,
             "mode": "duplex",
@@ -334,6 +560,7 @@ async def voice_duplex_websocket(
                 "bargein": True,
                 "heartbeat": True,
                 "semantic_endpointing": settings.voice_semantic_endpointing_enabled,
+                "speaker_hints": True,
             },
         })
 
@@ -359,13 +586,39 @@ async def voice_duplex_websocket(
                     audio_bytes = base64.b64decode(msg.get("audio_base64", ""))
                 except Exception:
                     continue
+                if any(
+                    msg.get(field) not in (None, "")
+                    for field in (
+                        "speaker_id",
+                        "speaker_label",
+                        "speaker_role",
+                        "speaker_confidence",
+                    )
+                ) or isinstance(msg.get("speaker_metadata"), dict):
+                    await sync_active_speaker(
+                        {
+                            "speaker_id": msg.get("speaker_id"),
+                            "speaker_label": msg.get("speaker_label"),
+                            "speaker_role": msg.get("speaker_role"),
+                            "speaker_confidence": msg.get("speaker_confidence"),
+                            "speaker_metadata": msg.get("speaker_metadata"),
+                        }
+                    )
                 audio_buffer.append(audio_bytes)
+                await transition_voice_state(
+                    VoiceSessionState.LISTENING,
+                    reason="duplex_audio_chunk",
+                )
 
                 if vad:
                     event = vad.process_chunk(audio_bytes)
                     if pipeline.state == PipelineState.SPEAKING:
                         if event.state in (VADState.SPEECH_START, VADState.SPEECH) and event.probability > 0.7:
                             pipeline.interrupt()
+                            await transition_voice_state(
+                                VoiceSessionState.BARGE_IN,
+                                reason="duplex_vad_bargein",
+                            )
                             await send_msg("bargein", {"session_id": session_id})
                             audio_buffer = [audio_bytes]
 
@@ -377,7 +630,22 @@ async def voice_duplex_websocket(
                     await handle_segment(force_flush=True)
             elif msg_type == "bargein":
                 pipeline.interrupt()
+                await transition_voice_state(
+                    VoiceSessionState.BARGE_IN,
+                    reason="duplex_client_bargein",
+                )
                 await send_msg("bargein", {"session_id": session_id})
+            elif msg_type == "speaker_hint":
+                speaker_hint = await sync_active_speaker(
+                    {
+                        "speaker_id": msg.get("speaker_id"),
+                        "speaker_label": msg.get("speaker_label"),
+                        "speaker_role": msg.get("speaker_role"),
+                        "speaker_confidence": msg.get("speaker_confidence"),
+                        "speaker_metadata": msg.get("speaker_metadata"),
+                    }
+                )
+                await send_msg("speaker_ack", speaker_hint)
             elif msg_type == "heartbeat":
                 if state_manager is not None:
                     await state_manager.touch_voice_session(session_id, heartbeat=True)
@@ -406,6 +674,10 @@ async def voice_duplex_websocket(
         if clean_disconnect and state_manager is not None:
             await state_manager.deregister_voice_session(session_id)
         elif state_manager is not None:
+            await transition_voice_state(
+                VoiceSessionState.IDLE,
+                reason="duplex_disconnect",
+            )
             await state_manager.update_voice_runtime(
                 session_id,
                 playback_state=VoicePlaybackState.IDLE,

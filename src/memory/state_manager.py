@@ -14,6 +14,9 @@ from src.memory.state_pkg.models import (
     Message,
     SessionExpiredError,
     VoicePlaybackState,
+    VoiceSpeakerProfile,
+    VoiceSessionState,
+    VoiceStateEvent,
     VoiceTurn,
 )
 
@@ -24,6 +27,9 @@ __all__ = [
     "Message",
     "SessionExpiredError",
     "VoicePlaybackState",
+    "VoiceSpeakerProfile",
+    "VoiceSessionState",
+    "VoiceStateEvent",
     "VoiceTurn",
     "extract_entities",
 ]

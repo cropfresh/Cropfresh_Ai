@@ -1,6 +1,6 @@
 ﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-24 (Sprint 09 continuity and recovery completion slice landed)
+> **Last Updated:** 2026-03-24 (Sprint 10 retro template update landed)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -8,6 +8,51 @@ This document is the **single entry point** for understanding how CropFresh AI i
 ---
 
 ## Latest Session Snapshot
+
+**2026-03-24 - Sprint 10 Retro Template Update**
+
+- Added `tracking/retros/sprint-10-retro.md` using the exact repo retrospective template instead of a custom format.
+- Captured the Sprint 10 wins around the shared state machine, router-first orchestration, grouped-speaker continuity, and focused test discipline.
+- Kept the retro honest about the remaining weaknesses: sprint date drift, orchestration still inside the FastAPI runtime, narrow tool scope, and limited latency/routing instrumentation.
+- Left the action items pointed at proper Sprint 10 closeout alignment plus the bridge-facing observability and state propagation work needed before Sprint 11 expands load hardening.
+- No code or tests changed in this session; this handoff is documentation-only.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/retros/sprint-10-retro.md`
+- Cross-check `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` and `tracking/PROJECT_STATUS.md`
+- Decide whether to formally close Sprint 10 now or keep it open for one more implementation slice
+- If keeping it open, start the next slice from the Sprint 10 action items captured in the new retro
+
+**2026-03-24 - Sprint 10 Speaker-Aware Grouped-Turn Slice**
+
+- Extended the shared Sprint 10 state contract with `VoiceSpeakerProfile`, active-speaker tracking, and per-turn speaker metadata so grouped calls can preserve speaker continuity without adding full ML diarization yet.
+- Wired speaker hints through the REST voice path, voice-agent persistence layer, and orchestration context builder so routed agents receive the active speaker and known-speaker state on later turns.
+- Extended the duplex websocket flow with `speaker_hint` intake, `speaker_ack` responses, and speaker-aware grouped-turn persistence before orchestration runs.
+- Added focused coverage for shared speaker-state management, REST speaker propagation, voice-agent grouped-turn persistence, and duplex grouped-speaker behavior.
+- Verified the slice with focused pytest coverage across the state, REST, agent, orchestrator, and websocket paths (`14 passed`).
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`
+- Read `tracking/PROJECT_STATUS.md` and `tracking/daily/2026-03-24.md`
+- Review `src/memory/state_pkg/manager.py`, `src/agents/voice/agent.py`, `src/api/rest/voice.py`, and `src/api/websocket/voice_pkg/router.py`
+- Run `uv run pytest tests/unit/test_voice_state_machine.py tests/unit/test_voice_speaker_state.py tests/unit/test_voice_orchestrator.py tests/unit/test_voice_agent_stateful_runtime.py tests/unit/test_voice_duplex_orchestration.py tests/api/test_voice_rest_speaker_context.py`
+
+**2026-03-24 - Sprint 10 Voice Orchestration, State, and Tools First Slice**
+
+- Added the canonical Sprint 10 voice-state contract to the shared state manager, including `VoiceSessionState`, `VoiceStateEvent`, transition validation, event history, and Redis pub/sub broadcasting.
+- Added the new router-first voice orchestration service for price, listing, logistics, and supervisor fallback flows, with shared persona metadata for Priya, Arjun, Ravi, and Admin.
+- Wired the shared workflow memory contract into the REST voice path, fallback voice runtime, and duplex websocket flow so routed-agent context and reconnect-safe turn history persist across turns.
+- Added an orchestrated duplex text-response helper so websocket turns can bypass the LLM stream while preserving timing events, playback updates, history, and interruption behavior.
+- Verified the slice with focused pytest coverage for the state machine, orchestrator routing, shared voice-session hydration, and duplex orchestration path (`9 passed`).
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`
+- Read `tracking/PROJECT_STATUS.md` and `tracking/daily/2026-03-24.md`
+- Review `src/memory/state_pkg/manager.py`, `src/voice/orchestration/service.py`, `src/agents/voice/agent.py`, and `src/api/websocket/voice_pkg/router.py`
+- Run `uv run pytest tests/unit/test_voice_state_machine.py tests/unit/test_voice_orchestrator.py tests/unit/test_voice_agent_stateful_runtime.py tests/unit/test_voice_duplex_orchestration.py`
 
 **2026-03-24 - Sprint 09 Retro Template Update**
 
@@ -1690,4 +1735,64 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | UPDATE | `tracking/PROJECT_STATUS.md` | Appended the CI/CD recovery status addendum and remaining external dependency note |
 | UPDATE | `tracking/daily/2026-03-24.md` | Added the CI/CD recovery addendum and verification snapshot |
 | UPDATE | `WORKFLOW_STATUS.md` | Added this CI/CD recovery and pipeline hardening log entry |
+
+### 2026-03-24 - Sprint 10 Voice Orchestration, State, and Tools First Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `src/memory/state_pkg/models.py` | Added canonical Sprint 10 voice-state and voice-state-event models |
+| UPDATE | `src/memory/state_pkg/__init__.py` | Exported the new voice-state models from the shared state package |
+| UPDATE | `src/memory/state_manager.py` | Re-exported the new voice-state models through the legacy state-manager surface |
+| UPDATE | `src/memory/state_pkg/manager.py` | Added voice-state validation, event recording, workflow persistence, and pub/sub broadcasting |
+| CREATE | `src/voice/orchestration/models.py` | Added shared workflow, route, and orchestration result models |
+| CREATE | `src/voice/orchestration/service.py` | Added the router-first voice orchestration service for the first Sprint 10 roster |
+| CREATE | `src/voice/orchestration/__init__.py` | Exported the Sprint 10 voice orchestration service surface |
+| CREATE | `src/api/runtime/voice_orchestration.py` | Added the shared runtime builder for the new voice orchestrator |
+| UPDATE | `src/api/runtime/services.py` | Wired the shared voice orchestrator into app startup |
+| UPDATE | `src/api/runtime/voice_agent.py` | Passed shared state and orchestrator dependencies into the voice agent builder |
+| UPDATE | `src/agents/voice/agent.py` | Added shared-session hydration, canonical state transitions, and reconnect-safe persistence |
+| UPDATE | `src/api/websocket/voice_pkg/duplex.py` | Added orchestrated duplex text-response synthesis helper |
+| UPDATE | `src/api/websocket/voice_pkg/router.py` | Added duplex orchestration routing and canonical voice-state transitions |
+| UPDATE | `src/api/websocket/voice_pkg/__init__.py` | Re-exported the new duplex orchestrated-response helper |
+| UPDATE | `src/api/rest/voice_runtime.py` | Wired fallback REST voice resolution to the shared state manager and orchestrator |
+| CREATE | `tests/unit/test_voice_state_machine.py` | Added shared voice-state transition and workflow tests |
+| CREATE | `tests/unit/test_voice_orchestrator.py` | Added routing and tool-usage coverage for the new orchestrator |
+| CREATE | `tests/unit/test_voice_agent_stateful_runtime.py` | Added shared-session hydration and persistence coverage for the voice agent |
+| CREATE | `tests/unit/test_voice_duplex_orchestration.py` | Added duplex websocket coverage for the orchestrated response path |
+| UPDATE | `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` | Marked the first Sprint 10 slice in progress and appended verification notes |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Updated Sprint 10 progress, priorities, and next-session pointers |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the Sprint 10 first-slice daily-log addendum and verification snapshot |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 10 orchestration/state handoff entry |
+
+### 2026-03-24 - Sprint 10 Speaker-Aware Grouped-Turn Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `src/memory/state_pkg/models.py` | Added shared speaker-profile models and per-turn speaker metadata fields |
+| UPDATE | `src/memory/state_pkg/__init__.py` | Exported the speaker-profile model through the shared state package |
+| UPDATE | `src/memory/state_manager.py` | Re-exported the speaker-profile model through the legacy state-manager surface |
+| UPDATE | `src/memory/state_pkg/manager.py` | Added active-speaker upsert helpers and speaker-aware turn persistence |
+| UPDATE | `src/agents/voice/agent.py` | Added speaker-hint hydration and grouped-turn persistence for voice sessions |
+| UPDATE | `src/api/rest/voice.py` | Accepted speaker form fields and returned speaker-aware workflow context |
+| UPDATE | `src/api/rest/voice_models.py` | Widened workflow-context typing for speaker-aware response payloads |
+| UPDATE | `src/voice/orchestration/service.py` | Passed active-speaker and known-speaker context into routed agents |
+| UPDATE | `src/api/websocket/voice_pkg/router.py` | Added duplex speaker hints, acknowledgements, and grouped-turn persistence |
+| UPDATE | `src/api/websocket/voice_pkg/session.py` | Added websocket message types for speaker hints and acknowledgements |
+| CREATE | `tests/unit/test_voice_speaker_state.py` | Added grouped-speaker shared-state coverage |
+| UPDATE | `tests/unit/test_voice_orchestrator.py` | Added persisted speaker-context coverage for routed agents |
+| UPDATE | `tests/unit/test_voice_agent_stateful_runtime.py` | Added grouped-speaker persistence coverage for the voice agent |
+| UPDATE | `tests/unit/test_voice_duplex_orchestration.py` | Added duplex grouped-speaker coverage |
+| CREATE | `tests/api/test_voice_rest_speaker_context.py` | Added REST speaker-hint and workflow-context coverage |
+| UPDATE | `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` | Marked the speaker-aware Sprint 10 tasks complete and appended verification notes |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Updated Sprint 10 progress, accomplishments, and next-session pointers for the speaker-aware slice |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the Sprint 10 speaker-aware grouped-turn addendum and verification snapshot |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this speaker-aware Sprint 10 handoff entry |
+
+### 2026-03-24 - Sprint 10 Retro Template Update
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `tracking/retros/sprint-10-retro.md` | Added the Sprint 10 retrospective using the exact repo retro template |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the Sprint 10 retro-template addendum and noted that the update was docs-only |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 10 retro handoff entry and updated the latest-session snapshot |
 

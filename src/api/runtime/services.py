@@ -11,6 +11,7 @@ from src.agents.adcl import get_adcl_service
 from src.agents.adcl.scheduler import ADCLScheduler
 from src.agents.price_prediction.agent import PricePredictionAgent
 from src.api.runtime.voice_agent import build_voice_agent
+from src.api.runtime.voice_orchestration import build_voice_orchestrator
 from src.api.services.listing_service import get_listing_service
 from src.api.services.order_service import get_order_service
 from src.api.services.registration_service import get_registration_service
@@ -64,6 +65,14 @@ async def initialize_runtime_services(app: Any, settings: Any) -> None:
         quality_agent=_supervisor_agent(app, "quality_assessment_agent"),
         adcl_agent=app.state.adcl_service,
     )
+    app.state.voice_orchestrator = build_voice_orchestrator(
+        supervisor=getattr(app.state, "supervisor", None),
+        state_manager=getattr(app.state, "state_manager", None),
+        tool_registry=getattr(getattr(app.state, "supervisor", None), "tools", None),
+        listing_service=app.state.listing_service,
+        logistics_agent=_supervisor_agent(app, "logistics_agent"),
+        llm_provider=getattr(app.state, "llm", None),
+    )
     app.state.voice_agent = build_voice_agent(
         llm_provider=getattr(app.state, "llm", None),
         listing_service=app.state.listing_service,
@@ -74,6 +83,8 @@ async def initialize_runtime_services(app: Any, settings: Any) -> None:
         adcl_agent=app.state.adcl_service,
         registration_service=app.state.registration_service,
         weather_api_key=settings.weather_api_key,
+        state_manager=getattr(app.state, "state_manager", None),
+        orchestrator=getattr(app.state, "voice_orchestrator", None),
     )
     app.state.adcl_scheduler = _build_adcl_scheduler(app.state.adcl_service)
     if app.state.adcl_scheduler is not None:

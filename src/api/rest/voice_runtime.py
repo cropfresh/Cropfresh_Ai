@@ -25,6 +25,8 @@ def resolve_voice_agent(request: Request) -> Any:
             listing_service=getattr(request.app.state, "listing_service", None),
             order_service=getattr(request.app.state, "order_service", None),
             adcl_agent=getattr(request.app.state, "adcl_service", None),
+            state_manager=getattr(request.app.state, "state_manager", None),
+            orchestrator=getattr(request.app.state, "voice_orchestrator", None),
         )
         logger.warning("Voice REST is using a fallback voice agent")
     return _fallback_voice_agent

@@ -49,6 +49,45 @@ class VoicePlaybackState(str, Enum):
     RECOVERING = "recovering"
 
 
+class VoiceSessionState(str, Enum):
+    """Canonical cross-service voice turn states for Sprint 10 orchestration."""
+
+    IDLE = "idle"
+    LISTENING = "listening"
+    VAD_TRIGGERED = "vad_triggered"
+    TRANSCRIBING = "transcribing"
+    THINKING = "thinking"
+    SPEAKING = "speaking"
+    BARGE_IN = "barge_in"
+
+
+class VoiceStateEvent(BaseModel):
+    """Single canonical voice-state transition event."""
+
+    session_id: str
+    sequence: int
+    state: VoiceSessionState
+    previous_state: VoiceSessionState | None = None
+    source: str
+    correlation_id: str
+    reason: str | None = None
+    actor: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class VoiceSpeakerProfile(BaseModel):
+    """Speaker metadata tracked for grouped voice turns."""
+
+    speaker_id: str
+    label: str | None = None
+    role: str | None = None
+    confidence: float | None = None
+    turn_count: int = 0
+    last_seen_at: datetime = Field(default_factory=datetime.now)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class VoiceTurn(BaseModel):
     """Compact voice turn record used for reconnect recovery."""
 
@@ -56,6 +95,11 @@ class VoiceTurn(BaseModel):
     user_text: str
     assistant_text: str
     language: str = "en"
+    speaker_id: str | None = None
+    speaker_label: str | None = None
+    speaker_role: str | None = None
+    speaker_confidence: float | None = None
+    speaker_metadata: dict[str, Any] = Field(default_factory=dict)
     interrupted: bool = False
     timing: dict[str, float | None] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.now)
@@ -85,12 +129,17 @@ class ConversationContext(BaseModel):
     transport_mode: Optional[str] = None
     language: str = "hi"
     playback_state: VoicePlaybackState = VoicePlaybackState.IDLE
+    voice_state: VoiceSessionState = VoiceSessionState.IDLE
+    voice_state_sequence: int = 0
     recent_turns: list[VoiceTurn] = Field(default_factory=list)
     pending_transcript: Optional[str] = None
     pending_segment_id: Optional[str] = None
     last_turn_id: Optional[str] = None
     reconnect_token_hash: Optional[str] = None
     last_heartbeat_at: datetime = Field(default_factory=datetime.now)
+    active_workflow: dict[str, Any] = Field(default_factory=dict)
+    active_speaker_id: Optional[str] = None
+    speaker_profiles: dict[str, VoiceSpeakerProfile] = Field(default_factory=dict)
 
 
 class AgentExecutionState(BaseModel):

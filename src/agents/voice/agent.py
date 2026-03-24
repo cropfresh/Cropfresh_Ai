@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from loguru import logger
 
+from src.memory.state_manager import VoiceSessionState, VoiceTurn
 from src.agents.voice.handlers import (
     handle_check_price,
     handle_create_listing,
@@ -52,6 +53,8 @@ class VoiceAgent:
         self.adcl_agent = kwargs.get("adcl_agent")
         self.registration_service = kwargs.get("registration_service")
         self.llm_provider = kwargs.get("llm_provider")
+        self.state_manager = kwargs.get("state_manager")
+        self.orchestrator = kwargs.get("orchestrator")
         self._sessions: dict[str, VoiceSession] = {}
 
     async def process_voice(
@@ -60,9 +63,24 @@ class VoiceAgent:
         user_id: str,
         session_id: Optional[str] = None,
         language: str = "auto",
+        speaker_id: str | None = None,
+        speaker_label: str | None = None,
+        speaker_role: str | None = None,
     ) -> VoiceResponse:
         """Process audio through the full voice pipeline."""
         session = self._get_or_create_session(user_id, session_id, language)
+        await self._sync_session_from_state(session)
+        self._apply_speaker_context(
+            session,
+            speaker_id=speaker_id,
+            speaker_label=speaker_label,
+            speaker_role=speaker_role,
+        )
+        await self._transition_voice_state(
+            session.session_id,
+            VoiceSessionState.TRANSCRIBING,
+            reason="voice_rest_stt",
+        )
 
         # Step 1: STT
         transcription = await self.stt.transcribe(
@@ -81,13 +99,36 @@ class VoiceAgent:
         extraction = await self._extract_entities(text, session.language, pending_intent)
 
         # Step 3: Generate response
+        await self._transition_voice_state(
+            session.session_id,
+            VoiceSessionState.THINKING,
+            reason="voice_rest_router",
+        )
         response_text = await self._generate_response(extraction, session)
 
         # Step 4: TTS
+        await self._transition_voice_state(
+            session.session_id,
+            VoiceSessionState.SPEAKING,
+            reason="voice_rest_tts",
+        )
         response_audio = await self._synthesize(response_text, session.language)
 
         # Step 5: Update history
         session.add_turn(text, response_text)
+        await self._persist_shared_session(
+            session,
+            text,
+            response_text,
+            speaker_id=speaker_id,
+            speaker_label=speaker_label,
+            speaker_role=speaker_role,
+        )
+        await self._transition_voice_state(
+            session.session_id,
+            VoiceSessionState.IDLE,
+            reason="voice_rest_turn_complete",
+        )
 
         return VoiceResponse(
             transcription=text,
@@ -113,6 +154,23 @@ class VoiceAgent:
         # Get language-specific template
         templates = self.RESPONSE_TEMPLATES.get(intent, {})
         template = templates.get(lang, templates.get("en", ""))
+
+        if self.orchestrator is not None:
+            outcome = await self.orchestrator.handle_turn(
+                text=extraction.original_text,
+                language=lang,
+                user_id=session.user_id,
+                session_id=session.session_id,
+                workflow_context=session.context,
+                extraction=extraction,
+            )
+            if outcome is not None:
+                session.context.clear()
+                session.context.update(outcome.workflow_updates)
+                session.context["voice_persona"] = outcome.persona
+                session.context["routed_agent"] = outcome.agent_name
+                session.context["last_tools_used"] = ",".join(outcome.tools_used)
+                return outcome.response_text
 
         # Route to handler
         if intent == VoiceIntent.GREETING:
@@ -238,9 +296,19 @@ class VoiceAgent:
         user_id: str,
         session_id: Optional[str] = None,
         language: str = "auto",
+        speaker_id: str | None = None,
+        speaker_label: str | None = None,
+        speaker_role: str | None = None,
     ) -> VoiceResponse:
         """Process already-transcribed text, bypassing STT."""
         session = self._get_or_create_session(user_id, session_id, language)
+        await self._sync_session_from_state(session)
+        self._apply_speaker_context(
+            session,
+            speaker_id=speaker_id,
+            speaker_label=speaker_label,
+            speaker_role=speaker_role,
+        )
 
         if session.language == "auto":
             detected_lang = self._detect_language_from_text(text)
@@ -249,9 +317,32 @@ class VoiceAgent:
         pending_intent = session.context.get("pending_intent", "")
         extraction = await self._extract_entities(text, session.language, pending_intent)
 
+        await self._transition_voice_state(
+            session.session_id,
+            VoiceSessionState.THINKING,
+            reason="voice_text_router",
+        )
         response_text = await self._generate_response(extraction, session)
+        await self._transition_voice_state(
+            session.session_id,
+            VoiceSessionState.SPEAKING,
+            reason="voice_text_tts",
+        )
         response_audio = await self._synthesize(response_text, session.language)
         session.add_turn(text, response_text)
+        await self._persist_shared_session(
+            session,
+            text,
+            response_text,
+            speaker_id=speaker_id,
+            speaker_label=speaker_label,
+            speaker_role=speaker_role,
+        )
+        await self._transition_voice_state(
+            session.session_id,
+            VoiceSessionState.IDLE,
+            reason="voice_text_turn_complete",
+        )
 
         return VoiceResponse(
             transcription=text,
@@ -301,6 +392,194 @@ class VoiceAgent:
         if callable(detector):
             return detector(text)
         return "unknown"
+
+    async def _sync_session_from_state(self, session: VoiceSession) -> None:
+        """Hydrate local voice session state from the shared conversation store."""
+        if self.state_manager is None:
+            return
+
+        context = await self.state_manager.ensure_session(
+            session.session_id,
+            user_id=session.user_id,
+            user_profile={"language": session.language},
+        )
+
+        persisted_language = (
+            context.user_profile.get("language_pref")
+            or context.user_profile.get("language")
+            or context.language
+        )
+        if session.language == "auto" and persisted_language:
+            session.language = str(persisted_language)
+
+        for key, value in context.active_workflow.items():
+            session.context.setdefault(key, value)
+
+        if context.active_speaker_id:
+            session.context.setdefault("active_speaker_id", context.active_speaker_id)
+        if context.speaker_profiles:
+            session.context.setdefault(
+                "known_speakers",
+                sorted(context.speaker_profiles.keys()),
+            )
+            active_profile = context.speaker_profiles.get(
+                context.active_speaker_id or ""
+            )
+            if active_profile is not None:
+                if active_profile.label:
+                    session.context.setdefault(
+                        "active_speaker_label",
+                        active_profile.label,
+                    )
+                if active_profile.role:
+                    session.context.setdefault(
+                        "active_speaker_role",
+                        active_profile.role,
+                    )
+
+        if not session.history and context.recent_turns:
+            session.history = [
+                {"user": turn.user_text, "bot": turn.assistant_text}
+                for turn in context.recent_turns[-5:]
+            ]
+
+    def _apply_speaker_context(
+        self,
+        session: VoiceSession,
+        *,
+        speaker_id: str | None = None,
+        speaker_label: str | None = None,
+        speaker_role: str | None = None,
+    ) -> None:
+        """Apply per-turn speaker hints to the in-memory session context."""
+        if speaker_id:
+            session.context["active_speaker_id"] = speaker_id
+        if speaker_label:
+            session.context["active_speaker_label"] = speaker_label
+        if speaker_role:
+            session.context["active_speaker_role"] = speaker_role
+
+        known_speakers = list(session.context.get("known_speakers") or [])
+        if speaker_id and speaker_id not in known_speakers:
+            known_speakers.append(speaker_id)
+        if known_speakers:
+            session.context["known_speakers"] = known_speakers
+
+    async def _persist_shared_session(
+        self,
+        session: VoiceSession,
+        user_text: str,
+        response_text: str,
+        *,
+        speaker_id: str | None = None,
+        speaker_label: str | None = None,
+        speaker_role: str | None = None,
+    ) -> None:
+        """Persist reconnect-safe voice state after a completed turn."""
+        if self.state_manager is None:
+            return
+
+        resolved_speaker_id = speaker_id or session.context.get("active_speaker_id")
+        resolved_speaker_label = (
+            speaker_label or session.context.get("active_speaker_label")
+        )
+        resolved_speaker_role = (
+            speaker_role or session.context.get("active_speaker_role")
+        )
+
+        if any(
+            value is not None
+            for value in (
+                resolved_speaker_id,
+                resolved_speaker_label,
+                resolved_speaker_role,
+            )
+        ):
+            profile = await self.state_manager.update_active_speaker(
+                session.session_id,
+                speaker_id=resolved_speaker_id,
+                speaker_label=resolved_speaker_label,
+                speaker_role=resolved_speaker_role,
+                speaker_metadata={"transport": "voice_agent"},
+            )
+            if profile is not None:
+                session.context["active_speaker_id"] = profile.speaker_id
+                if profile.label:
+                    session.context["active_speaker_label"] = profile.label
+                if profile.role:
+                    session.context["active_speaker_role"] = profile.role
+                known_speakers = set(session.context.get("known_speakers") or [])
+                known_speakers.add(profile.speaker_id)
+                session.context["known_speakers"] = sorted(known_speakers)
+
+        await self.state_manager.ensure_session(
+            session.session_id,
+            user_id=session.user_id,
+            user_profile={
+                "language": session.language,
+                "language_pref": session.language,
+            },
+        )
+        await self.state_manager.update_user_profile(
+            session.session_id,
+            {
+                "language": session.language,
+                "language_pref": session.language,
+            },
+        )
+        await self.state_manager.update_active_workflow(
+            session.session_id,
+            dict(session.context),
+        )
+        await self.state_manager.update_voice_runtime(
+            session.session_id,
+            current_agent=session.context.get("routed_agent"),
+            language=session.language,
+        )
+        await self.state_manager.append_recent_voice_turn(
+            session.session_id,
+            VoiceTurn(
+                turn_id=f"voice-{uuid4().hex[:12]}",
+                user_text=user_text,
+                assistant_text=response_text,
+                language=session.language,
+                speaker_id=session.context.get("active_speaker_id"),
+                speaker_label=session.context.get("active_speaker_label"),
+                speaker_role=session.context.get("active_speaker_role"),
+                speaker_metadata={"transport": "voice_agent"},
+                timing={
+                    "orchestrated": (
+                        1.0 if bool(session.context.get("routed_agent")) else 0.0
+                    ),
+                },
+            ),
+        )
+
+    async def _transition_voice_state(
+        self,
+        session_id: str,
+        state: VoiceSessionState,
+        *,
+        reason: str,
+    ) -> None:
+        """Best-effort shared voice-state transition for REST/text flows."""
+        if self.state_manager is None:
+            return
+
+        try:
+            await self.state_manager.transition_voice_state(
+                session_id,
+                state,
+                source="voice_agent",
+                reason=reason,
+                actor="voice_agent",
+            )
+        except ValueError as exc:
+            logger.debug(
+                "Ignoring invalid voice state transition for {}: {}",
+                session_id,
+                exc,
+            )
 
     # ═══════════════════════════════════════════════════════════════
     # Backward-compatible _handle_* wrappers (used by unit tests)

@@ -5,6 +5,7 @@ Agent State Manager — session, conversation, and voice session management.
 import asyncio
 import hashlib
 import hmac
+import re
 import uuid
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -18,6 +19,9 @@ from src.memory.state_pkg.models import (
     Message,
     SessionExpiredError,
     VoicePlaybackState,
+    VoiceSpeakerProfile,
+    VoiceSessionState,
+    VoiceStateEvent,
     VoiceTurn,
 )
 
@@ -32,6 +36,7 @@ class AgentStateManager:
 
     MAX_MESSAGES = 50
     MAX_RECENT_VOICE_TURNS = 10
+    MAX_VOICE_STATE_EVENTS = 50
     SESSION_TTL = timedelta(hours=24)
     VOICE_SESSION_TTL_SECONDS: int = 300
     VOICE_SESSION_MAX_STALE_SECONDS: float = 300.0
@@ -42,6 +47,7 @@ class AgentStateManager:
         self._sessions: dict[str, ConversationContext] = {}
         self._executions: dict[str, AgentExecutionState] = {}
         self._voice_sessions: dict[str, str] = {}
+        self._voice_state_events: dict[str, list[VoiceStateEvent]] = {}
         logger.info("AgentStateManager initialized")
 
     async def _get_redis(self):
@@ -226,6 +232,7 @@ class AgentStateManager:
         context.voice_session_id = voice_session_id
         context.last_active_at = datetime.now()
         context.last_heartbeat_at = datetime.now()
+        context.voice_state = VoiceSessionState.IDLE
         if transport_mode is not None:
             context.transport_mode = transport_mode
         if language is not None:
@@ -293,6 +300,7 @@ class AgentStateManager:
                 context.reconnect_token_hash = None
                 context.transport_mode = None
                 context.playback_state = VoicePlaybackState.IDLE
+                context.voice_state = VoiceSessionState.IDLE
                 await self._persist_context(session_id, context)
 
     async def touch_voice_session(self, session_id: str, *, heartbeat: bool = False) -> None:
@@ -327,6 +335,10 @@ class AgentStateManager:
                     self._hash_reconnect_token(value) if value else None
                 )
                 continue
+            if key == "voice_state" and value is not None:
+                context.voice_state = self._coerce_voice_state(value)
+                context.playback_state = self._map_voice_state_to_playback(context.voice_state)
+                continue
             if hasattr(context, key):
                 setattr(context, key, value)
 
@@ -337,11 +349,128 @@ class AgentStateManager:
         await self._persist_context(session_id, context)
         return True
 
+    async def update_active_workflow(
+        self,
+        session_id: str,
+        workflow: Optional[dict[str, Any]],
+    ) -> bool:
+        """Replace the active voice workflow context for a session."""
+        context = await self.get_context(session_id)
+        if not context:
+            return False
+
+        context.active_workflow = dict(workflow or {})
+        context.updated_at = datetime.now()
+        context.last_active_at = context.updated_at
+        await self._persist_context(session_id, context)
+        return True
+
+    async def update_active_speaker(
+        self,
+        session_id: str,
+        *,
+        speaker_id: str | None = None,
+        speaker_label: str | None = None,
+        speaker_role: str | None = None,
+        speaker_confidence: float | None = None,
+        speaker_metadata: Optional[dict[str, Any]] = None,
+    ) -> VoiceSpeakerProfile | None:
+        """Upsert the active speaker for a grouped voice session."""
+        context = await self.get_context(session_id)
+        if not context:
+            return None
+
+        profile = self._upsert_speaker_profile(
+            context,
+            speaker_id=speaker_id,
+            speaker_label=speaker_label,
+            speaker_role=speaker_role,
+            speaker_confidence=speaker_confidence,
+            speaker_metadata=speaker_metadata,
+            increment_turn_count=False,
+        )
+        if profile is None:
+            return None
+
+        context.active_speaker_id = profile.speaker_id
+        context.updated_at = datetime.now()
+        context.last_active_at = context.updated_at
+        await self._persist_context(session_id, context)
+        return profile
+
+    async def transition_voice_state(
+        self,
+        session_id: str,
+        state: VoiceSessionState | str,
+        *,
+        source: str,
+        reason: Optional[str] = None,
+        actor: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> Optional[VoiceStateEvent]:
+        """Move a session through the canonical Sprint 10 voice state machine."""
+        context = await self.get_context(session_id)
+        if context is None:
+            return None
+
+        next_state = self._coerce_voice_state(state)
+        previous_state = context.voice_state
+        if not self._is_valid_voice_state_transition(previous_state, next_state):
+            raise ValueError(
+                f"Invalid voice state transition for {session_id}: "
+                f"{previous_state.value} -> {next_state.value}"
+            )
+
+        context.voice_state_sequence += 1
+        context.voice_state = next_state
+        context.playback_state = self._map_voice_state_to_playback(next_state)
+        context.updated_at = datetime.now()
+        context.last_active_at = context.updated_at
+        await self._persist_context(session_id, context)
+
+        event = VoiceStateEvent(
+            session_id=session_id,
+            sequence=context.voice_state_sequence,
+            state=next_state,
+            previous_state=previous_state,
+            source=source,
+            correlation_id=session_id,
+            reason=reason,
+            actor=actor,
+            metadata=dict(metadata or {}),
+        )
+        self._record_voice_state_event(event)
+        await self._publish_voice_state_event(event)
+        return event
+
+    def get_voice_state_events(self, session_id: str) -> list[VoiceStateEvent]:
+        """Return the in-memory voice-state event history for a session."""
+        return list(self._voice_state_events.get(session_id, ()))
+
     async def append_recent_voice_turn(self, session_id: str, turn: VoiceTurn) -> bool:
         """Persist a compact reconnect-safe voice turn and mirror it into message history."""
         context = await self.get_context(session_id)
         if not context:
             return False
+
+        profile = self._upsert_speaker_profile(
+            context,
+            speaker_id=turn.speaker_id,
+            speaker_label=turn.speaker_label,
+            speaker_role=turn.speaker_role,
+            speaker_confidence=turn.speaker_confidence,
+            speaker_metadata=turn.speaker_metadata,
+            increment_turn_count=bool(
+                turn.speaker_id or turn.speaker_label or context.active_speaker_id
+            ),
+        )
+        if profile is not None:
+            turn.speaker_id = profile.speaker_id
+            turn.speaker_label = profile.label
+            turn.speaker_role = profile.role
+            turn.speaker_confidence = profile.confidence
+            turn.speaker_metadata = dict(profile.metadata)
+            context.active_speaker_id = profile.speaker_id
 
         context.recent_turns.append(turn)
         if len(context.recent_turns) > self.MAX_RECENT_VOICE_TURNS:
@@ -363,6 +492,11 @@ class AgentStateManager:
                     "transport": "voice",
                     "turn_id": turn.turn_id,
                     "language": turn.language,
+                    "speaker_id": turn.speaker_id,
+                    "speaker_label": turn.speaker_label,
+                    "speaker_role": turn.speaker_role,
+                    "speaker_confidence": turn.speaker_confidence,
+                    "speaker_metadata": turn.speaker_metadata,
                 },
             )
         )
@@ -376,6 +510,11 @@ class AgentStateManager:
                     "language": turn.language,
                     "interrupted": turn.interrupted,
                     "timing": turn.timing,
+                    "speaker_id": turn.speaker_id,
+                    "speaker_label": turn.speaker_label,
+                    "speaker_role": turn.speaker_role,
+                    "speaker_confidence": turn.speaker_confidence,
+                    "speaker_metadata": turn.speaker_metadata,
                 },
             )
         )
@@ -391,7 +530,154 @@ class AgentStateManager:
         provided_hash = self._hash_reconnect_token(reconnect_token)
         return hmac.compare_digest(context.reconnect_token_hash, provided_hash)
 
+    def _upsert_speaker_profile(
+        self,
+        context: ConversationContext,
+        *,
+        speaker_id: str | None = None,
+        speaker_label: str | None = None,
+        speaker_role: str | None = None,
+        speaker_confidence: float | None = None,
+        speaker_metadata: Optional[dict[str, Any]] = None,
+        increment_turn_count: bool = False,
+    ) -> VoiceSpeakerProfile | None:
+        resolved_id = self._normalize_speaker_id(
+            speaker_id=speaker_id,
+            speaker_label=speaker_label,
+            fallback_speaker_id=context.active_speaker_id,
+        )
+        if not resolved_id:
+            return None
+
+        profile = context.speaker_profiles.get(resolved_id)
+        if profile is None:
+            profile = VoiceSpeakerProfile(
+                speaker_id=resolved_id,
+                label=speaker_label,
+                role=speaker_role,
+                confidence=speaker_confidence,
+                metadata=dict(speaker_metadata or {}),
+            )
+        else:
+            if speaker_label:
+                profile.label = speaker_label
+            if speaker_role:
+                profile.role = speaker_role
+            if speaker_confidence is not None:
+                profile.confidence = speaker_confidence
+            if speaker_metadata:
+                profile.metadata.update(speaker_metadata)
+
+        if increment_turn_count:
+            profile.turn_count += 1
+        profile.last_seen_at = datetime.now()
+        context.speaker_profiles[resolved_id] = profile
+        return profile
+
+    def _normalize_speaker_id(
+        self,
+        *,
+        speaker_id: str | None = None,
+        speaker_label: str | None = None,
+        fallback_speaker_id: str | None = None,
+    ) -> str:
+        if speaker_id:
+            return speaker_id.strip()
+        if speaker_label:
+            normalized = re.sub(r"[^a-z0-9]+", "-", speaker_label.lower()).strip("-")
+            return f"speaker:{normalized or 'group'}"
+        if fallback_speaker_id:
+            return fallback_speaker_id
+        return "speaker:primary"
+
     # ── Private helpers ───────────────────────────────────────
+
+    async def _publish_voice_state_event(self, event: VoiceStateEvent) -> None:
+        """Broadcast voice-state changes for bridge and UI consumers."""
+        redis = await self._get_redis()
+        if not redis:
+            return
+
+        payload = event.model_dump_json()
+        await redis.publish("voice:state", payload)
+        await redis.publish(f"voice:state:{event.session_id}", payload)
+
+    def _record_voice_state_event(self, event: VoiceStateEvent) -> None:
+        events = self._voice_state_events.setdefault(event.session_id, [])
+        events.append(event)
+        if len(events) > self.MAX_VOICE_STATE_EVENTS:
+            self._voice_state_events[event.session_id] = events[-self.MAX_VOICE_STATE_EVENTS:]
+
+    def _coerce_voice_state(self, value: VoiceSessionState | str) -> VoiceSessionState:
+        if isinstance(value, VoiceSessionState):
+            return value
+        return VoiceSessionState(value)
+
+    def _is_valid_voice_state_transition(
+        self,
+        previous: VoiceSessionState,
+        next_state: VoiceSessionState,
+    ) -> bool:
+        allowed = {
+            VoiceSessionState.IDLE: {
+                VoiceSessionState.IDLE,
+                VoiceSessionState.LISTENING,
+                VoiceSessionState.TRANSCRIBING,
+                VoiceSessionState.THINKING,
+            },
+            VoiceSessionState.LISTENING: {
+                VoiceSessionState.LISTENING,
+                VoiceSessionState.VAD_TRIGGERED,
+                VoiceSessionState.BARGE_IN,
+                VoiceSessionState.IDLE,
+            },
+            VoiceSessionState.VAD_TRIGGERED: {
+                VoiceSessionState.VAD_TRIGGERED,
+                VoiceSessionState.TRANSCRIBING,
+                VoiceSessionState.BARGE_IN,
+                VoiceSessionState.IDLE,
+            },
+            VoiceSessionState.TRANSCRIBING: {
+                VoiceSessionState.TRANSCRIBING,
+                VoiceSessionState.THINKING,
+                VoiceSessionState.BARGE_IN,
+                VoiceSessionState.IDLE,
+            },
+            VoiceSessionState.THINKING: {
+                VoiceSessionState.THINKING,
+                VoiceSessionState.SPEAKING,
+                VoiceSessionState.BARGE_IN,
+                VoiceSessionState.IDLE,
+            },
+            VoiceSessionState.SPEAKING: {
+                VoiceSessionState.SPEAKING,
+                VoiceSessionState.BARGE_IN,
+                VoiceSessionState.LISTENING,
+                VoiceSessionState.IDLE,
+            },
+            VoiceSessionState.BARGE_IN: {
+                VoiceSessionState.BARGE_IN,
+                VoiceSessionState.LISTENING,
+                VoiceSessionState.TRANSCRIBING,
+                VoiceSessionState.IDLE,
+            },
+        }
+        return next_state in allowed.get(previous, {next_state})
+
+    def _map_voice_state_to_playback(
+        self,
+        state: VoiceSessionState,
+    ) -> VoicePlaybackState:
+        mapping = {
+            VoiceSessionState.IDLE: VoicePlaybackState.IDLE,
+            VoiceSessionState.LISTENING: VoicePlaybackState.LISTENING,
+            VoiceSessionState.VAD_TRIGGERED: VoicePlaybackState.LISTENING,
+            VoiceSessionState.TRANSCRIBING: VoicePlaybackState.TRANSCRIBING,
+            VoiceSessionState.THINKING: VoicePlaybackState.THINKING,
+            VoiceSessionState.SPEAKING: VoicePlaybackState.SPEAKING,
+            VoiceSessionState.BARGE_IN: VoicePlaybackState.INTERRUPTED,
+        }
+        return mapping[state]
 
     async def _persist_context(self, session_id: str, context: ConversationContext) -> None:
         """Write context to Redis or in-memory store."""

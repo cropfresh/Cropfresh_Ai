@@ -2,8 +2,8 @@
 
 > **Last Updated:** 2026-03-24
 > **Phase:** Phase 2 - Business Services
-> **Sprint:** Sprint 09 (in progress)
-> **Next Sprint:** Sprint 09 - Semantic VAD, Continuity, and Session Recovery
+> **Sprint:** Sprint 10 (in progress)
+> **Next Sprint:** Sprint 11 - Voice Load Hardening and Observability
 
 ---
 
@@ -17,11 +17,11 @@
 | Memory System (Redis + in-memory) | Complete | 100% | Sprint 01 |
 | Voice Agent v1 (10 languages) | Complete | 95% | Sprint 01-04 |
 | VoiceAgent Multi-turn Flows | Complete | 90% | Sprint 04 |
-| Duplex WebSocket Voice Path | In Progress | 80% | Sprint 07 carryover |
+| Duplex WebSocket Voice Path | In Progress | 85% | Sprint 07 carryover |
 | Pipecat Voice Pipeline | In Progress | 60% | Sprint 07 (experimental) |
 | LiveKit Voice Bridge Foundation | Complete | 100% | Sprint 08 |
-| Semantic VAD + Session Recovery | In Progress | 95% | Sprint 09 |
-| Voice Orchestration State + Tools | Not Started | 0% | Sprint 10 |
+| Semantic VAD + Session Recovery | Complete | 100% | Sprint 09 |
+| Voice Orchestration State + Tools | In Progress | 65% | Sprint 10 |
 | Voice Load Hardening + Observability | Not Started | 0% | Sprint 11 |
 | LiveKit Scale + Deployment | Not Started | 0% | Sprint 12 |
 | Tool Registry + Shared Tools | Complete | 100% | Sprint 01-05 |
@@ -43,6 +43,8 @@
 
 | Date | Accomplishment |
 |------|----------------|
+| 2026-03-24 | Sprint 10 speaker-aware slice landed: grouped-turn speaker profiles, per-turn speaker metadata, REST speaker propagation, duplex `speaker_hint` plus `speaker_ack`, and focused grouped-speaker tests (`14 passed`) |
+| 2026-03-24 | Sprint 10 first slice landed: canonical voice-state transitions/events, router-first voice orchestration for price/listing/logistics/fallback, shared workflow memory reuse across REST plus duplex paths, and focused Sprint 10 tests (`9 passed`) |
 | 2026-03-24 | Sprint 09 continuity/recovery slice landed: comfort-noise fills, relay debug metadata, retry/backoff policy, client dead-peer recovery, and focused stale-session/heartbeat-timeout coverage |
 | 2026-03-24 | Sprint 09 benchmark/eval slice landed: fixed multilingual utterance set, artifact runner, rubric, and heuristic baseline matched `8/8` |
 | 2026-03-24 | Sprint 09 semantic relay slice landed: joint acoustic+semantic endpointing, timeout-safe hold/flush logic, and continuity metrics |
@@ -65,14 +67,14 @@
 
 ## Current Priorities
 
-1. **Sprint 09 source of truth:** Start from `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` now that Sprint 08 bridge foundation is closed.
-2. **Sprint 09:** Add semantic endpointing behind a feature flag on top of the current acoustic VAD contract.
-3. **Sprint 09:** Add continuity metrics, reconnect-safe session recovery, and stronger interruption handling without replacing `/api/v1/voice/ws/duplex` as the truthful fallback path.
-4. **Sprint 09:** Create the fixed multilingual benchmark set for `kn`, `hi`, `te`, and `ta` before claiming latency or voice-quality improvements.
-5. **Voice program guardrails:** Keep orchestration, load hardening, deployment, and full LiveKit cutover work inside Sprint 10-12 boundaries.
-6. **Sprint 06 carryover:** Run the ADCL golden-set review plus historical backtest using a real district order snapshot.
-7. **Sprint 06 carryover:** Verify gated eNAM behavior when credentials land and confirm IMD live advisories end to end.
-8. **Sprint 05 carryover:** Adaptive Query Router, AgriEmbeddingWrapper, and RAGAS baseline remain backlog debt after the voice bridge handoff.
+1. **Sprint 10 source of truth:** Start from `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`.
+2. **Sprint 10:** Expand the canonical voice-state machine across the remaining bridge-facing services and keep the FastAPI duplex path as the truthful fallback runtime.
+3. **Sprint 10:** Broaden router-first orchestration beyond the first price/listing/logistics/fallback slice without collapsing back into one monolithic voice handler.
+4. **Sprint 10:** Reuse the shared Redis conversation contract for workflow memory, routed-agent context, and reconnect-safe turn history on every voice entry path.
+5. **Sprint 10:** Extend the new speaker-aware hint/profile contract carefully while keeping full ML diarization and embeddings deferred until they can be benchmarked.
+6. **Voice program guardrails:** Keep load hardening, observability, and deployment work inside Sprint 11-12 boundaries.
+7. **Sprint 06 carryover:** Run the ADCL golden-set review plus historical backtest using a real district order snapshot.
+8. **Sprint 05 carryover:** Adaptive Query Router, AgriEmbeddingWrapper, and RAGAS baseline remain backlog debt after the current voice slice.
 
 ---
 
@@ -106,13 +108,13 @@
 
 ## Next Session Start Here
 
-1. Read `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`.
-2. Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` and `docs/features/livekit-voice-bridge.md` for the just-landed foundation contract.
-3. Read `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md`.
-4. Read `tracking/daily/2026-03-18.md` for the Sprint 08 closeout notes and verification snapshot.
-5. Cross-read `services/vad-service/app/api.py`, `services/vad-service/app/runtime.py`, and `services/voice-gateway/src/services/relay-coordinator.ts`.
-6. Review `services/voice-gateway/src/routes/relay.ts`, `services/voice-gateway/src/services/downstream-relay.ts`, and `static/assets/js/voice-agent-bootstrap.js`.
-7. Cross-read `docs/api/websocket-voice.md`, `docs/features/voice-pipeline.md`, `src/api/websocket/voice_pkg/router.py`, and `src/voice/duplex_pipeline.py`.
+1. Read `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`.
+2. Read `tracking/PROJECT_STATUS.md` and `tracking/daily/2026-03-24.md`.
+3. Review `src/memory/state_pkg/manager.py` and `src/memory/state_pkg/models.py`.
+4. Review `src/voice/orchestration/service.py` and `src/voice/orchestration/models.py`.
+5. Cross-read `src/agents/voice/agent.py`, `src/api/rest/voice_runtime.py`, and `src/api/runtime/services.py`.
+6. Cross-read `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/api/rest/voice.py`.
+7. Run `uv run pytest tests/unit/test_voice_state_machine.py tests/unit/test_voice_speaker_state.py tests/unit/test_voice_orchestrator.py tests/unit/test_voice_agent_stateful_runtime.py tests/unit/test_voice_duplex_orchestration.py tests/api/test_voice_rest_speaker_context.py`.
 
 ---
 

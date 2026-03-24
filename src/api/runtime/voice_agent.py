@@ -20,6 +20,8 @@ def build_voice_agent(
     adcl_agent: Any = None,
     registration_service: Any = None,
     weather_api_key: str = "",
+    state_manager: Any = None,
+    orchestrator: Any = None,
 ) -> VoiceAgent:
     """Build a shared VoiceAgent with the app's runtime services."""
     stt = MultiProviderSTT(
@@ -43,4 +45,6 @@ def build_voice_agent(
         agronomy_agent=agronomy_agent,
         adcl_agent=adcl_agent,
         registration_service=registration_service,
+        state_manager=state_manager,
+        orchestrator=orchestrator,
     )
