@@ -20,6 +20,13 @@ from src.evaluation.ragas_evaluator import (
     create_ragas_evaluator,
 )
 from src.evaluation.report_generator import ReportGenerator
+from src.evaluation.voice_benchmark_models import (
+    VoiceBenchmarkArtifact,
+    VoiceBenchmarkEntry,
+    VoiceBenchmarkObservation,
+    VoiceBenchmarkReport,
+)
+from src.evaluation.voice_benchmark_runner import VoiceBenchmarkRunner
 
 __all__ = [
     # Models
@@ -38,4 +45,9 @@ __all__ = [
     "ReportGenerator",
     # Runner
     "EvalRunner",
+    "VoiceBenchmarkEntry",
+    "VoiceBenchmarkObservation",
+    "VoiceBenchmarkArtifact",
+    "VoiceBenchmarkReport",
+    "VoiceBenchmarkRunner",
 ]

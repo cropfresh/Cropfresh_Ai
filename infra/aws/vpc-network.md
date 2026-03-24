@@ -1,4 +1,4 @@
-# AWS VPC & Networking — CropFresh AI
+# AWS VPC and Networking - CropFresh AI
 
 Region: `ap-south-1` (Mumbai)
 
@@ -6,34 +6,31 @@ Region: `ap-south-1` (Mumbai)
 
 ## VPC Layout
 
-```
+```text
 VPC: cropfresh-vpc
 CIDR: 10.0.0.0/16
 
-Availability Zones: ap-south-1a, ap-south-1b (2 AZs for RDS Multi-AZ at Phase 5)
+Availability Zones: ap-south-1a, ap-south-1b
 
-┌────────────────────────────────────────────────────────────────┐
-│  cropfresh-vpc  (10.0.0.0/16)                                  │
-│                                                                 │
-│  ┌─────────────────────────┐  ┌─────────────────────────────┐  │
-│  │   Public Subnet 1a      │  │   Public Subnet 1b          │  │
-│  │   10.0.1.0/24           │  │   10.0.2.0/24               │  │
-│  │   (NAT Gateway)         │  │   (NAT Gateway standby)     │  │
-│  └─────────────────────────┘  └─────────────────────────────┘  │
-│                                                                 │
-│  ┌─────────────────────────┐  ┌─────────────────────────────┐  │
-│  │   Private Subnet 1a     │  │   Private Subnet 1b         │  │
-│  │   10.0.11.0/24          │  │   10.0.12.0/24              │  │
-│  │   RDS PostgreSQL        │  │   RDS standby (Phase 5)     │  │
-│  └─────────────────────────┘  └─────────────────────────────┘  │
-│                                                                 │
-│  App Runner VPC Connector → attached to private subnets        │
-│  (App Runner itself is serverless, runs outside VPC)           │
-└────────────────────────────────────────────────────────────────┘
-
-Internet Gateway → Public Subnets
-NAT Gateway      → Private Subnets outbound (Groq/Bedrock API calls)
++------------------------------------------------------------------+
+| cropfresh-vpc (10.0.0.0/16)                                      |
+|                                                                  |
+|  Public Subnet 1a          Public Subnet 1b                      |
+|  10.0.1.0/24               10.0.2.0/24                           |
+|  NAT Gateway               NAT standby                           |
+|                                                                  |
+|  Private Subnet 1a         Private Subnet 1b                     |
+|  10.0.11.0/24              10.0.12.0/24                          |
+|  RDS PostgreSQL            RDS standby / future private services |
+|                                                                  |
+|  App Runner VPC Connector -> attached to private subnets         |
++------------------------------------------------------------------+
 ```
+
+Internet Gateway -> Public subnets
+NAT Gateway -> Private subnets outbound for Groq, Together, Qdrant, Neo4j, Redis, and other external APIs
+
+If a private vLLM or GPU inference service is deployed inside AWS, keep that traffic inside the VPC instead of sending it through NAT.
 
 ---
 
@@ -43,27 +40,20 @@ NAT Gateway      → Private Subnets outbound (Groq/Bedrock API calls)
 
 Attached to: AWS RDS PostgreSQL
 
-| Direction | Protocol | Port | Source                   | Purpose          |
-| --------- | -------- | ---- | ------------------------ | ---------------- |
-| Inbound   | TCP      | 5432 | `cropfresh-apprunner-sg` | App Runner → RDS |
-| Outbound  | All      | All  | —                        | —                |
-
-```bash
-aws ec2 create-security-group \
-  --group-name cropfresh-rds-sg \
-  --description "CropFresh RDS - allow App Runner only" \
-  --vpc-id vpc-XXXXX
-```
+| Direction | Protocol | Port | Source | Purpose |
+|-----------|----------|------|--------|---------|
+| Inbound | TCP | 5432 | `cropfresh-apprunner-sg` | App Runner -> RDS |
+| Outbound | All | All | - | Default return traffic |
 
 ### `cropfresh-apprunner-sg`
 
 Attached to: App Runner VPC Connector
 
-| Direction | Protocol | Port  | Source             | Purpose                                       |
-| --------- | -------- | ----- | ------------------ | --------------------------------------------- |
-| Outbound  | TCP      | 5432  | `cropfresh-rds-sg` | App Runner → RDS                              |
-| Outbound  | TCP      | 443   | 0.0.0.0/0          | Groq, Bedrock, Qdrant, Neo4j, Redis API calls |
-| Outbound  | TCP      | 13641 | 0.0.0.0/0          | Redis Cloud (port 13641)                      |
+| Direction | Protocol | Port | Source | Purpose |
+|-----------|----------|------|--------|---------|
+| Outbound | TCP | 5432 | `cropfresh-rds-sg` | App Runner -> PostgreSQL |
+| Outbound | TCP | 443 | `0.0.0.0/0` | Groq, Together, Qdrant, Neo4j, Redis, general HTTPS egress |
+| Outbound | TCP | 13641 | `0.0.0.0/0` | Redis Cloud, if used |
 
 ---
 
@@ -76,10 +66,11 @@ aws apprunner create-vpc-connector \
   --security-groups sg-APPRUNNER-ID
 ```
 
-The VPC Connector attaches App Runner instances to private subnets, giving them:
+The VPC connector gives App Runner access to:
 
-- Access to RDS PostgreSQL (private subnet, no public exposure)
-- Outbound internet via NAT Gateway for external API calls (Groq, Bedrock, Qdrant, Redis Cloud, Neo4j)
+- Private PostgreSQL in the VPC
+- Internal AWS services through VPC networking
+- Outbound internet through NAT for external model and data providers
 
 ---
 
@@ -96,22 +87,30 @@ aws rds create-db-subnet-group \
 
 ## Route 53 DNS Entries
 
-| Record             | Type      | Value                                   | TTL |
-| ------------------ | --------- | --------------------------------------- | --- |
-| `api.cropfresh.in` | A (Alias) | API Gateway HTTP API custom domain      | —   |
-| `ws.cropfresh.in`  | A (Alias) | API Gateway WebSocket API custom domain | —   |
-| `cropfresh.in`     | A (Alias) | CloudFront distribution (web frontend)  | —   |
-| `www.cropfresh.in` | CNAME     | `cropfresh.in`                          | 300 |
+| Record | Type | Value | TTL |
+|--------|------|-------|-----|
+| `api.cropfresh.in` | A (Alias) | API custom domain | - |
+| `ws.cropfresh.in` | A (Alias) | Websocket custom domain | - |
+| `cropfresh.in` | A (Alias) | Web frontend or CloudFront | - |
+| `www.cropfresh.in` | CNAME | `cropfresh.in` | 300 |
 
 ---
 
 ## Cost Estimate
 
-| Component                   | Est. Monthly                |
-| --------------------------- | --------------------------- |
-| NAT Gateway (1x, Phase 2–4) | ~$35                        |
-| App Runner VPC Connector    | $0 (included in App Runner) |
-| Route 53 Hosted Zone        | ~$0.50                      |
-| **Total Networking**        | **~$35/mo**                 |
+| Component | Estimated Monthly Cost |
+|-----------|------------------------|
+| NAT Gateway (Phase 2-4) | ~`$35` |
+| App Runner VPC Connector | Included in App Runner |
+| Route 53 Hosted Zone | ~`$0.50` |
+| **Total networking** | **~`$35/mo`** |
 
-> ⚠️ NAT Gateway is the most expensive networking component. At Phase 5, evaluate replacing with VPC Endpoints for AWS services (S3, Secrets Manager, Bedrock) to reduce NAT traffic costs.
+---
+
+## Optimization Note
+
+NAT Gateway remains the biggest networking cost driver. Prefer:
+
+- VPC endpoints for AWS-native services such as S3 and Secrets Manager
+- Private connectivity for any self-hosted vLLM or GPU inference service
+- Only using outbound NAT for providers that truly require public HTTPS egress

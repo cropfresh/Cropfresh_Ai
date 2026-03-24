@@ -34,14 +34,16 @@ class PriceNormalizer:
     @staticmethod
     def _normalize_commodity(raw_name: str) -> str:
         """Map raw commodity to standard ID/name."""
-        if not raw_name: return "Unknown"
+        if not raw_name:
+            return "Unknown"
         clean_name = raw_name.strip().lower()
         return PriceNormalizer.COMMODITY_MAP.get(clean_name, raw_name.strip().title())
 
     @staticmethod
     def _normalize_unit(raw_unit: str) -> str:
         """Standardize weight and currency units."""
-        if not raw_unit: return "Unknown"
+        if not raw_unit:
+            return "Unknown"
         clean_unit = raw_unit.strip().lower()
         return PriceNormalizer.UNIT_MAP.get(clean_unit, raw_unit.strip())
 

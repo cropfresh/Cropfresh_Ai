@@ -17,14 +17,13 @@ Author: CropFresh AI Team
 Version: 1.0.0
 """
 
-import asyncio
 from typing import Optional
 
 from loguru import logger
 
 try:
-    from mcp.server import Server
-    from mcp.types import TextContent, Tool
+    from mcp.server.fastmcp import FastMCP
+
     HAS_MCP = True
 except ImportError:
     HAS_MCP = False
@@ -35,16 +34,15 @@ from src.agents.web_scraping_agent import WebScrapingAgent
 from src.tools.agri_scrapers import AgriculturalDataAPI
 
 # Initialize MCP server
+mcp: Optional[FastMCP] = None
 if HAS_MCP:
-    server = Server("cropfresh-browser")
-else:
-    server = None
+    mcp = FastMCP("cropfresh-browser")
 
 
 # Global instances (lazy initialized)
 _scraper: Optional[WebScrapingAgent] = None
 _browser: Optional[BrowserAgent] = None
-_agri_api: Optional[AgriculturalDataAPI] = None
+_agri_api: Optional["AgriculturalDataAPI"] = None
 
 
 async def get_scraper() -> WebScrapingAgent:
@@ -79,7 +77,7 @@ def get_agri_api() -> AgriculturalDataAPI:
 
 if HAS_MCP:
 
-    @server.tool()
+    @mcp.tool()
     async def navigate_to_url(url: str) -> str:
         """
         Navigate browser to a URL and return page content as markdown.
@@ -103,8 +101,7 @@ if HAS_MCP:
             logger.error("navigate_to_url failed: {}", str(e))
             return f"Error: {str(e)}"
 
-
-    @server.tool()
+    @mcp.tool()
     async def scrape_structured_data(
         url: str,
         data_description: str,
@@ -141,8 +138,7 @@ if HAS_MCP:
             logger.error("scrape_structured_data failed: {}", str(e))
             return {"error": str(e)}
 
-
-    @server.tool()
+    @mcp.tool()
     async def take_screenshot(url: str, filename: Optional[str] = None) -> str:
         """
         Take a screenshot of a webpage.
@@ -157,15 +153,19 @@ if HAS_MCP:
         try:
             browser = await get_browser()
 
-            await browser.execute_action(BrowserAction(
-                action=ActionType.GOTO,
-                value=url,
-            ))
+            await browser.execute_action(
+                BrowserAction(
+                    action=ActionType.GOTO,
+                    value=url,
+                )
+            )
 
-            result = await browser.execute_action(BrowserAction(
-                action=ActionType.SCREENSHOT,
-                value=filename,
-            ))
+            result = await browser.execute_action(
+                BrowserAction(
+                    action=ActionType.SCREENSHOT,
+                    value=filename,
+                )
+            )
 
             if result.success:
                 return result.screenshot_path or "Screenshot taken"
@@ -176,12 +176,11 @@ if HAS_MCP:
             logger.error("take_screenshot failed: {}", str(e))
             return f"Error: {str(e)}"
 
-
-    @server.tool()
+    @mcp.tool()
     async def get_mandi_prices(
         commodity: str,
         state: Optional[str] = None,
-    ) -> list[dict]:
+    ) -> dict:
         """
         Get current mandi prices for a commodity.
 
@@ -190,24 +189,26 @@ if HAS_MCP:
             state: Optional state filter
 
         Returns:
-            List of price records with mandi, price, and date
+            Dictionary with price records
         """
         try:
             api = get_agri_api()
-            prices = await api.get_mandi_prices(commodity, state)
+            result = await api.get_mandi_prices(commodity, state)
 
-            return [p.model_dump() for p in prices]
+            if result.success:
+                return {"data": result.data, "record_count": result.record_count}
+            else:
+                return {"error": result.error}
 
         except Exception as e:
             logger.error("get_mandi_prices failed: {}", str(e))
-            return [{"error": str(e)}]
+            return {"error": str(e)}
 
-
-    @server.tool()
+    @mcp.tool()
     async def get_weather(
         state: str,
         district: Optional[str] = None,
-    ) -> list[dict]:
+    ) -> dict:
         """
         Get weather forecast for a location.
 
@@ -220,16 +221,18 @@ if HAS_MCP:
         """
         try:
             api = get_agri_api()
-            weather = await api.get_weather(state, district)
+            result = await api.get_weather(state, district)
 
-            return [w.model_dump() for w in weather]
+            if result.success:
+                return {"data": result.data, "record_count": result.record_count}
+            else:
+                return {"error": result.error}
 
         except Exception as e:
             logger.error("get_weather failed: {}", str(e))
-            return [{"error": str(e)}]
+            return {"error": str(e)}
 
-
-    @server.tool()
+    @mcp.tool()
     async def get_agri_news(
         source: str = "rural_voice",
         limit: int = 5,
@@ -259,7 +262,8 @@ if HAS_MCP:
 # Server Lifecycle
 # ============================================================================
 
-async def cleanup():
+
+async def cleanup() -> None:
     """Clean up resources on shutdown."""
     global _scraper, _browser, _agri_api
 
@@ -278,28 +282,23 @@ async def cleanup():
     logger.info("MCP Browser Server resources cleaned up")
 
 
-def run_server():
+def run_server() -> None:
     """Run the MCP server."""
-    if not HAS_MCP:
+    if mcp is None:
         logger.error("MCP SDK not installed. Run: pip install mcp")
         return
 
-    import signal
-
-    loop = asyncio.get_event_loop()
-
-    # Handle shutdown signals
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(cleanup()))
-
     try:
         logger.info("Starting CropFresh MCP Browser Server...")
-        server.run()
+        mcp.run()
     except KeyboardInterrupt:
         logger.info("Server shutdown requested")
-    finally:
-        loop.run_until_complete(cleanup())
+
+
+def main() -> None:
+    """Main entry point for the MCP server."""
+    run_server()
 
 
 if __name__ == "__main__":
-    run_server()
+    main()

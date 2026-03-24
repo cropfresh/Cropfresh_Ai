@@ -1,77 +1,123 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CropFresh Voice UI</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/theme.css">
-  <link rel="stylesheet" href="./assets/css/voice-ui.css">
-</head>
-<body>
-  <div class="app-shell voice-layout">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-logo">🎙</span>
-        <div>
-          <div class="brand-title">Voice Test UI</div>
-          <div class="brand-subtitle">REST voice pipeline · STT + TTS validation</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropFresh Voice UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/suite/critical-shell.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/suite.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/lab-pages.css?v=20260318-shellfix" />
+  </head>
+  <body data-suite-page="voice-ui">
+    <div class="suite-frame">
+      <aside class="suite-rail">
+        <div class="suite-rail-brand">
+          <a class="suite-rail-mark" href="./index.html">
+            <span class="suite-rail-mark-badge">VU</span>
+            <div>
+              <span class="suite-rail-label">Freemium Lab</span>
+              <h2 class="suite-rail-title">Quick Voice QA Lane</h2>
+            </div>
+          </a>
+          <p class="suite-rail-copy">A lighter, faster validation page for health, short recordings, and synthesis checks in the same connected UI family.</p>
         </div>
+        <nav class="suite-rail-nav">
+          <a class="suite-rail-link" href="./index.html"><strong>Dashboard</strong><small>Suite switchboard and quick ops.</small></a>
+          <a class="suite-rail-link" href="./voice_agent.html"><strong>Voice Hub</strong><small>Full voice operator console.</small></a>
+          <a class="suite-rail-link" href="./vision_lab.html"><strong>Vision Lab</strong><small>Jump into grading after voice tests.</small></a>
+          <a class="suite-rail-link" href="./premium_voice.html"><strong>Premium Voice</strong><small>Freemium live customer-story demo.</small></a>
+          <a class="suite-rail-link" href="./rag_test.html"><strong>RAG Lab</strong><small>Knowledge validation and ingestion.</small></a>
+          <a class="suite-rail-link" href="./voice_realtime.html"><strong>Realtime</strong><small>Streaming trace and token view.</small></a>
+          <a class="suite-rail-link active" href="./voice_test_ui.html"><strong>Voice UI</strong><small>Fast round-trip sanity checks.</small></a>
+        </nav>
+        <div class="suite-rail-panels">
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Primary Use</span>
+            <p>Best for quick multilingual record, health, and TTS checks before moving into heavier live demos.</p>
+          </article>
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Freemium Cue</span>
+            <p>Simple enough for quick use, but polished enough to feel like a real product utility lane.</p>
+          </article>
+        </div>
+        <p class="suite-rail-footer">This is the quickest way to validate the voice stack without the full operator console.</p>
+      </aside>
+      <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-logo">VU</span>
+          <div>
+            <div class="brand-title">Voice UI Test</div>
+            <div class="brand-subtitle">Fast REST checks for health, voice process, and synthesis</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="topbar-tag">Quick checks</span>
+          <span class="topbar-tag">Recorder + TTS</span>
+          <div class="status-pill online"><span class="dot"></span><span data-status-text>Voice UI</span></div>
+        </div>
+      </header>
+
+      <section class="hero page-hero">
+        <div>
+          <p class="eyebrow">REST voice validation</p>
+          <h1>Use a cleaner utility page for quick voice health, processing, and synthesis checks.</h1>
+          <p>Everything here stays practical, but the layout now feels like part of the premium suite.</p>
+        </div>
+        <div class="hero-panel"><span class="mini-stat">Health</span><span class="mini-stat">Voice process</span><span class="mini-stat">Text to speech</span></div>
+      </section>
+
+      <section class="lab-grid">
+        <article class="card stack">
+          <div class="input-row"><select id="voiceLanguage" class="select"><option value="auto">Auto</option><option value="hi">Hindi</option><option value="en">English</option><option value="kn">Kannada</option><option value="te">Telugu</option><option value="ta">Tamil</option></select><button id="btnVoiceHealth" class="btn btn-secondary">Check health</button><button id="btnRecordToggle" class="btn btn-primary">Start recording</button></div>
+          <p class="voice-meta">Recorder state: <span id="voiceState">Idle</span></p>
+          <div id="voiceHealthResult" class="result"></div>
+          <div id="voiceProcessResult" class="result"></div>
+        </article>
+        <article class="card stack"><div><label class="label" for="ttsText">Text</label><textarea id="ttsText" class="textarea">Namaskara. CropFresh voice test is working.</textarea></div><button id="btnTts" class="btn btn-primary">Synthesize</button><audio id="ttsAudio" controls style="width: 100%; display: none"></audio><div id="ttsResult" class="result"></div></article>
+      </section>
+
+      <article class="card stack"><div><h3 class="card-title">Voice conversation stream</h3><p class="card-desc">Incoming transcription and response text appear here after each request.</p></div><div id="voiceChatStream" class="chat-stream"></div></article>
+
+      <section class="grid grid-2">
+        <article class="card">
+          <span class="card-kicker">Recommended flow</span>
+          <h3 class="card-title">How to use this page quickly</h3>
+          <p class="card-desc">Check health first, record one short utterance, then test TTS with the same language for a fast round-trip sanity check.</p>
+        </article>
+        <article class="card">
+          <span class="card-kicker">Language lane</span>
+          <h3 class="card-title">Best for short multilingual checks</h3>
+          <div class="badge-strip">
+            <span class="mini-stat">Kannada</span>
+            <span class="mini-stat">Hindi</span>
+            <span class="mini-stat">Telugu</span>
+            <span class="mini-stat">Tamil</span>
+            <span class="mini-stat">English</span>
+          </div>
+        </article>
+      </section>
+
+      <footer class="page-footer">
+        <div>
+          <div class="page-footer-copy">Voice UI Test</div>
+          <div class="page-footer-note">Fast health, record, and synthesis validation with a cleaner premium utility layout.</div>
+        </div>
+        <div class="page-footer-links">
+          <a href="./voice_agent.html">Voice Hub</a>
+          <a href="./premium_voice.html">Premium Voice</a>
+          <a href="./index.html">Dashboard</a>
+        </div>
+      </footer>
       </div>
-      <div class="status-pill online">
-        <span class="dot"></span>
-        <span data-status-text>Voice Test</span>
-      </div>
-    </header>
-
-    <nav class="nav-links">
-      <a href="./index.html" class="nav-link">🏠 Dashboard</a>
-      <a href="./rag_test.html" class="nav-link">🧪 RAG Lab</a>
-      <a href="./voice_agent.html" class="nav-link">🎙 Voice Agent</a>
-      <a href="./voice_test_ui.html" class="nav-link active">🎤 Voice UI</a>
-      <a href="./voice_realtime.html" class="nav-link">⚡ Realtime</a>
-      <a href="/docs" target="_blank" class="nav-link">📘 Swagger</a>
-    </nav>
-
-    <article class="card">
-      <h3 class="card-title">Voice Health + Capture</h3>
-      <p class="card-desc">Record short voice queries and test `/api/v1/voice/process` response pipeline.</p>
-      <div class="input-row">
-        <select id="voiceLanguage" class="select">
-          <option value="auto">Auto</option>
-          <option value="hi">Hindi</option>
-          <option value="en">English</option>
-          <option value="kn">Kannada</option>
-          <option value="te">Telugu</option>
-          <option value="ta">Tamil</option>
-        </select>
-        <button id="btnVoiceHealth" class="btn btn-secondary">Check Health</button>
-        <button id="btnRecordToggle" class="btn btn-primary">Start Recording</button>
-      </div>
-      <p class="voice-meta" style="margin-top: 8px;">Recorder state: <span id="voiceState">Idle</span></p>
-      <div id="voiceHealthResult" class="result"></div>
-      <div id="voiceProcessResult" class="result"></div>
-    </article>
-
-    <article class="card">
-      <h3 class="card-title">Text to Speech</h3>
-      <p class="card-desc">Uses `/api/v1/voice/synthesize` with selected language.</p>
-      <label class="label" for="ttsText">Text</label>
-      <textarea id="ttsText" class="textarea" rows="3">ನಮಸ್ಕಾರ! CropFresh voice test is working.</textarea>
-      <button id="btnTts" class="btn btn-primary" style="margin-top: 10px;">Synthesize</button>
-      <audio id="ttsAudio" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
-      <div id="ttsResult" class="result"></div>
-    </article>
-
-    <article class="card">
-      <h3 class="card-title">Voice Conversation Stream</h3>
-      <p class="card-desc">Displays transcription and assistant responses from processing result.</p>
-      <div id="voiceChatStream" class="chat-stream"></div>
-    </article>
-  </div>
-  <script src="./assets/js/shared.js"></script>
-  <script src="./assets/js/voice-ui.js"></script>
-</body>
+    </div>
+    <script src="./assets/js/shared.js"></script>
+    <script src="./assets/js/voice-ui.js"></script>
+  </body>
 </html>

@@ -1,0 +1,186 @@
+.suite-frame {
+  display: grid;
+  grid-template-columns: minmax(248px, 290px) minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 24px 24px 42px;
+}
+
+.suite-frame > .app-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0 0 24px;
+}
+
+.suite-rail {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: grid;
+  gap: 18px;
+  min-height: calc(100vh - 48px);
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(10, 18, 14, 0.92), rgba(13, 24, 19, 0.82));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px);
+}
+
+.suite-rail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at top right, var(--rail-glow, rgba(245, 185, 75, 0.14)), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 32%);
+}
+
+.suite-rail-brand,
+.suite-rail-panels,
+.suite-rail-nav,
+.suite-rail-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.suite-rail-brand {
+  display: grid;
+  gap: 14px;
+}
+
+.suite-rail-mark {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.suite-rail-mark-badge {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #08120f;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, var(--accent), var(--rail-accent-2, #a8f2cf));
+  box-shadow: 0 18px 40px var(--rail-shadow, rgba(245, 185, 75, 0.18));
+}
+
+.suite-rail-label {
+  display: inline-flex;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.suite-rail-title {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.12;
+}
+
+.suite-rail-copy {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.65;
+}
+
+.suite-rail-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.suite-rail-link {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.suite-rail-link strong {
+  font-size: 0.96rem;
+  line-height: 1.1;
+}
+
+.suite-rail-link small {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.suite-rail-link:hover,
+.suite-rail-link.active {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  box-shadow: 0 18px 36px var(--rail-shadow-soft, rgba(245, 185, 75, 0.12));
+}
+
+.suite-rail-panels {
+  display: grid;
+  gap: 12px;
+}
+
+.suite-rail-panel {
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.suite-rail-panel-label {
+  display: inline-flex;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.suite-rail-panel p,
+.suite-rail-footer {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.58;
+}
+
+.suite-rail-footer {
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 1120px) {
+  .suite-frame {
+    grid-template-columns: 1fr;
+    padding: 20px 18px 34px;
+  }
+
+  .suite-rail {
+    position: relative;
+    top: auto;
+    min-height: auto;
+  }
+
+  .suite-rail-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .suite-frame {
+    padding: 16px 14px 28px;
+  }
+
+  .suite-rail-nav {
+    grid-template-columns: 1fr;
+  }
+}

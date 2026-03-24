@@ -182,15 +182,15 @@ Triples:"""
 
         found_crops = [c for c in crops if c in text_lower]
         found_pests = [p for p in pests if p in text_lower]
-        found_locs = [l for l in locations if l in text_lower]
+        found_locations = [location for location in locations if location in text_lower]
 
         # Create nodes
         for c in found_crops:
             nodes.append(GraphNode(id=c, label=c.title(), type=EntityType.CROP))
         for p in found_pests:
             nodes.append(GraphNode(id=p, label=p.title(), type=EntityType.PEST))
-        for l in found_locs:
-            nodes.append(GraphNode(id=l, label=l.title(), type=EntityType.LOCATION))
+        for location in found_locations:
+            nodes.append(GraphNode(id=location, label=location.title(), type=EntityType.LOCATION))
 
         # Create edges (heuristic)
         # If crop and pest appear, link them
@@ -201,10 +201,10 @@ Triples:"""
                     target_id=c,
                     type=RelationType.AFFECTS
                 ))
-            for l in found_locs:
+            for location in found_locations:
                 edges.append(GraphEdge(
                     source_id=c,
-                    target_id=l,
+                    target_id=location,
                     type=RelationType.GROWS_IN
                 ))
 

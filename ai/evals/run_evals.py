@@ -1,1 +1,10 @@
-﻿"""Main agent evaluation runner."""`n`ndef run_evals(agent_name: str | None = None):`n    """Run evaluations for specified agent or all agents."""`n    print(f"Running evals for: {agent_name or `"all`"}")
+"""Compatibility entrypoint for the CI evaluation workflow."""
+
+from __future__ import annotations
+
+import asyncio
+
+from src.evaluation.eval_runner import _main
+
+if __name__ == "__main__":
+    asyncio.run(_main())

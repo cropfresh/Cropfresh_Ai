@@ -33,6 +33,7 @@ HITL_CONFIDENCE_THRESHOLD = 0.7
 
 class GradeAssessment(BaseModel):
     """Result of a single produce quality assessment."""
+
     listing_id: str
     commodity: str
     grade: str
@@ -48,6 +49,7 @@ class GradeAssessment(BaseModel):
 
 class QualityReport(BaseModel):
     """Full quality report that can be stored as a Digital Twin."""
+
     assessment: GradeAssessment
     image_count: int = 0
     method: str = "manual"  # "vision" | "rule_based" | "manual"
@@ -131,7 +133,7 @@ Grade definitions:
             {"role": "system", "content": self._get_system_prompt()},
             {"role": "user", "content": query},
         ]
-        response_text = await self.generate_with_llm(messages)
+        response_text = await self.generate_with_llm(messages, context=context)
 
         return AgentResponse(
             content=response_text,
@@ -189,7 +191,9 @@ Grade definitions:
                 image_data = None
 
         if image_data:
-            quality_result = await self.vision_pipeline.assess_quality(image_data, commodity, description)
+            quality_result = await self.vision_pipeline.assess_quality(
+                image_data, commodity, description
+            )
             image_count = 1
         else:
             quality_result = await self.vision_pipeline.assess_description(commodity, description)
@@ -265,7 +269,10 @@ Grade definitions:
             logger.debug(
                 "HITL required for listing {} (conf={:.2f} grade={} defects={}) — "
                 "no HITLNotificationService injected; log-only mode",
-                listing_id, confidence, grade, defect_count,
+                listing_id,
+                confidence,
+                grade,
+                defect_count,
             )
 
     # ─────────────────────────────────────────────────────────
@@ -305,7 +312,9 @@ Grade definitions:
         )
         logger.info(
             "Departure twin {} linked to listing {} (grade={})",
-            twin.twin_id, listing_id, twin.grade,
+            twin.twin_id,
+            listing_id,
+            twin.grade,
         )
         return twin
 
@@ -334,7 +343,8 @@ Grade definitions:
         """
         logger.info(
             "Comparing twin {} against {} arrival photo(s)",
-            twin_id, len(arrival_photos),
+            twin_id,
+            len(arrival_photos),
         )
         return await self.twin_engine.compare_arrival(
             twin_id=twin_id,

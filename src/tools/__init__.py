@@ -16,8 +16,12 @@ Author: CropFresh AI Team
 Version: 3.1.0
 """
 
-# Import tools to trigger auto-registration
-from src.tools import calculator, deep_research, weather, web_search
+# Import tools to trigger auto-registration for the legacy always-on tools.
+# NOTE: multi_source_rates is imported lazily to avoid circular imports from rate connectors.
+import src.tools.calculator  # noqa: F401
+import src.tools.deep_research  # noqa: F401
+import src.tools.weather  # noqa: F401
+import src.tools.web_search  # noqa: F401
 from src.tools.agmarknet import AgmarknetPrice, AgmarknetTool
 from src.tools.deep_research import DeepResearchResult, DeepResearchTool
 
@@ -85,4 +89,3 @@ __all__ = [
     "DeepResearchTool",
     "DeepResearchResult",
 ]
-

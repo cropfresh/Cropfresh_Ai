@@ -13,6 +13,11 @@ from src.memory.state_pkg.models import (
     ConversationContext,
     Message,
     SessionExpiredError,
+    VoicePlaybackState,
+    VoiceSessionState,
+    VoiceSpeakerProfile,
+    VoiceStateEvent,
+    VoiceTurn,
 )
 
 __all__ = [
@@ -21,5 +26,10 @@ __all__ = [
     "ConversationContext",
     "Message",
     "SessionExpiredError",
+    "VoicePlaybackState",
+    "VoiceSpeakerProfile",
+    "VoiceSessionState",
+    "VoiceStateEvent",
+    "VoiceTurn",
     "extract_entities",
 ]

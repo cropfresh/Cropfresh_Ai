@@ -132,7 +132,7 @@ class CropVisionPipeline:
         # Stage 2 — real DINOv2 grade classification + YOLO ensemble override
         # FR9: unpack 3-tuple (grade, confidence, confidence_vector)
         grade, confidence, confidence_vector = self.grade_classifier.classify(
-            image, detected_defects=detection.defects
+            image, commodity=commodity, detected_defects=detection.defects
         )
 
         hitl_required = (

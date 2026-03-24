@@ -20,6 +20,8 @@ from typing import Any, Callable, Optional, get_type_hints
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from src.tools.registry_types import get_annotation_name
+
 
 class ToolParameter(BaseModel):
     """Single tool parameter definition."""
@@ -114,7 +116,7 @@ class ToolRegistry:
                 if param_name in ("self", "cls"):
                     continue
 
-                param_type = hints.get(param_name, Any).__name__ if param_name in hints else "any"
+                param_type = get_annotation_name(hints[param_name]) if param_name in hints else "any"
 
                 # Get default value
                 has_default = param.default is not inspect.Parameter.empty
@@ -130,7 +132,7 @@ class ToolRegistry:
 
             # Determine return type
             return_type = hints.get("return", Any)
-            return_type_name = return_type.__name__ if hasattr(return_type, "__name__") else "any"
+            return_type_name = get_annotation_name(return_type)
 
             # Create definition
             definition = ToolDefinition(

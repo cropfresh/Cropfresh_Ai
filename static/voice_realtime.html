@@ -1,58 +1,117 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CropFresh Voice Realtime</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/theme.css">
-  <link rel="stylesheet" href="./assets/css/voice-realtime.css">
-</head>
-<body>
-  <div class="app-shell rt-layout">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-logo">⚡</span>
-        <div>
-          <div class="brand-title">Live Streaming Chat</div>
-          <div class="brand-subtitle">ChatGPT-style realtime token streaming using SSE</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropFresh Realtime Stream</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/suite/critical-shell.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/suite.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/lab-pages.css?v=20260318-shellfix" />
+  </head>
+  <body data-suite-page="realtime">
+    <div class="suite-frame">
+      <aside class="suite-rail">
+        <div class="suite-rail-brand">
+          <a class="suite-rail-mark" href="./index.html">
+            <span class="suite-rail-mark-badge">RT</span>
+            <div>
+              <span class="suite-rail-label">Freemium Lab</span>
+              <h2 class="suite-rail-title">Streaming Trace Lane</h2>
+            </div>
+          </a>
+          <p class="suite-rail-copy">Use this lane to inspect token-by-token assistant output while staying inside the same premium testing shell.</p>
         </div>
-      </div>
-      <div class="status-pill offline" id="wsStatusPill">
-        <span class="dot"></span>
-        <span data-status-text>Idle</span>
-      </div>
-    </header>
+        <nav class="suite-rail-nav">
+          <a class="suite-rail-link" href="./index.html"><strong>Dashboard</strong><small>Main switchboard and fast checks.</small></a>
+          <a class="suite-rail-link" href="./voice_agent.html"><strong>Voice Hub</strong><small>Primary operator voice console.</small></a>
+          <a class="suite-rail-link" href="./vision_lab.html"><strong>Vision Lab</strong><small>Validate quality model handoffs.</small></a>
+          <a class="suite-rail-link" href="./premium_voice.html"><strong>Premium Voice</strong><small>Freemium-ready spoken demo surface.</small></a>
+          <a class="suite-rail-link" href="./rag_test.html"><strong>RAG Lab</strong><small>Validate knowledge before streaming it.</small></a>
+          <a class="suite-rail-link active" href="./voice_realtime.html"><strong>Realtime</strong><small>Inspect tokens and streamed chat behavior.</small></a>
+          <a class="suite-rail-link" href="./voice_test_ui.html"><strong>Voice UI</strong><small>Quick recorder and TTS checks.</small></a>
+        </nav>
+        <div class="suite-rail-panels">
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Primary Use</span>
+            <p>Best for checking token cadence, streaming readability, and the agent chosen for a live answer.</p>
+          </article>
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Freemium Cue</span>
+            <p>Looks like a premium monitoring lane rather than a minimal developer sandbox.</p>
+          </article>
+        </div>
+        <p class="suite-rail-footer">Streaming should feel observable and premium, not fragile or purely technical.</p>
+      </aside>
+      <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-logo">RT</span>
+          <div>
+            <div class="brand-title">Realtime Stream</div>
+            <div class="brand-subtitle">Server-sent token streaming for fast chat validation</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="topbar-tag">Token stream</span>
+          <span class="topbar-tag">Live assistant trace</span>
+          <div class="status-pill offline" id="wsStatusPill"><span class="dot"></span><span data-status-text>Idle</span></div>
+        </div>
+      </header>
 
-    <nav class="nav-links">
-      <a href="./index.html" class="nav-link">🏠 Dashboard</a>
-      <a href="./rag_test.html" class="nav-link">🧪 RAG Lab</a>
-      <a href="./voice_agent.html" class="nav-link">🎙 Voice Agent</a>
-      <a href="./voice_test_ui.html" class="nav-link">🎤 Voice UI</a>
-      <a href="./voice_realtime.html" class="nav-link active">⚡ Realtime</a>
-      <a href="/docs" target="_blank" class="nav-link">📘 Swagger</a>
-    </nav>
+      <section class="hero page-hero">
+        <div>
+          <p class="eyebrow">Live assistant streaming</p>
+          <h1>Watch assistant tokens arrive in real time with a cleaner premium shell.</h1>
+          <p>This page stays simple on purpose, but it now looks connected to the rest of the static suite.</p>
+        </div>
+        <div class="hero-panel"><span class="mini-stat" id="streamAgent">Agent: -</span><span class="mini-stat" id="streamSession">Session: -</span></div>
+      </section>
 
-    <article class="card">
-      <h3 class="card-title">Streaming Conversation</h3>
-      <p class="card-desc">Send a message and watch assistant tokens appear in real-time.</p>
-      <div id="chatStream" class="chat-stream"></div>
-      <div class="stream-metadata">
-        <span id="streamAgent">Agent: —</span>
-        <span id="streamSession">Session: —</span>
+      <article class="card stack">
+        <div><h3 class="card-title">Streaming conversation</h3><p class="card-desc">Send a message and inspect token-by-token output.</p></div>
+        <div id="chatStream" class="chat-stream"></div>
+        <label class="label" for="streamPrompt">Your message</label>
+        <textarea id="streamPrompt" class="textarea">What is the current tomato price and should I sell now?</textarea>
+        <div class="chat-controls"><button id="btnSendStream" class="btn btn-primary">Send</button><button id="btnStopStream" class="btn btn-secondary">Stop</button><button id="btnClearStream" class="btn btn-secondary">Clear</button></div>
+      </article>
+
+      <section class="grid grid-2">
+        <article class="card">
+          <span class="card-kicker">Suggested prompts</span>
+          <h3 class="card-title">Good streaming checks</h3>
+          <p class="card-desc">Try one question that should route to commerce and one that should route to agronomy.</p>
+          <div class="badge-strip">
+            <span class="mini-stat">Tomato price in Mysuru today</span>
+            <span class="mini-stat">How do I stop leaf curl in chilli?</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="card-kicker">What to watch</span>
+          <h3 class="card-title">Streaming quality signals</h3>
+          <p class="card-desc">Check agent choice, token cadence, and whether the answer stays readable while still arriving fast.</p>
+        </article>
+      </section>
+
+      <footer class="page-footer">
+        <div>
+          <div class="page-footer-copy">Realtime Stream</div>
+          <div class="page-footer-note">Focused token-by-token validation in the same premium shell as the rest of the static suite.</div>
+        </div>
+        <div class="page-footer-links">
+          <a href="./voice_agent.html">Voice Hub</a>
+          <a href="./premium_voice.html">Premium Voice</a>
+          <a href="./index.html">Dashboard</a>
+        </div>
+      </footer>
       </div>
-      <label class="label" for="streamPrompt">Your message</label>
-      <textarea id="streamPrompt" class="textarea" rows="3" placeholder="Ask anything...">What is the current tomato price and should I sell now?</textarea>
-      <div class="chat-controls">
-        <button id="btnSendStream" class="btn btn-primary">Send</button>
-        <button id="btnStopStream" class="btn btn-secondary">Stop</button>
-        <button id="btnClearStream" class="btn btn-secondary">Clear</button>
-      </div>
-    </article>
-  </div>
-  <script src="./assets/js/shared.js"></script>
-  <script src="./assets/js/voice-realtime.js"></script>
-</body>
+    </div>
+    <script src="./assets/js/shared.js"></script>
+    <script src="./assets/js/voice-realtime.js"></script>
+  </body>
 </html>

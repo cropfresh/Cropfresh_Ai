@@ -1,1 +1,0 @@
-﻿"""Latency metric calculator."""

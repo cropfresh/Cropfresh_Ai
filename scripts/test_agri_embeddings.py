@@ -12,8 +12,8 @@ Usage:
     uv run python scripts/test_agri_embeddings.py
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -22,7 +22,7 @@ NORMALIZATION_ONLY = "--normalization-only" in sys.argv
 
 def test_term_normalization():
     """Test that bilingual terms are correctly expanded."""
-    from ai.rag.agri_embeddings import AgriEmbeddingWrapper
+    from src.rag.agri_embeddings import AgriEmbeddingWrapper
 
     wrapper = AgriEmbeddingWrapper.__new__(AgriEmbeddingWrapper)
     wrapper.TERM_MAP = AgriEmbeddingWrapper.TERM_MAP
@@ -74,7 +74,7 @@ def test_term_normalization():
 
 def test_domain_stats():
     """Test the domain stats method."""
-    from ai.rag.agri_embeddings import AgriEmbeddingWrapper
+    from src.rag.agri_embeddings import AgriEmbeddingWrapper
 
     # Access stats without loading the model
     wrapper = AgriEmbeddingWrapper.__new__(AgriEmbeddingWrapper)
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         print("Loading BGE-M3 model for embedding tests...")
         print("(This may take a moment on first run)\n")
         try:
-            from ai.rag.agri_embeddings import get_agri_embedding_manager
+            from src.rag.agri_embeddings import get_agri_embedding_manager
             wrapper = get_agri_embedding_manager()
             all_passed &= test_embedding(wrapper)
         except Exception as e:

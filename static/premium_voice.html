@@ -4,96 +4,248 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CropFresh Premium Voice</title>
+    <meta name="description" content="Freemium-style live demo for CropFresh's duplex multilingual voice agent." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./assets/css/premium-voice.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./assets/css/premium-voice/critical-rail.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/premium-voice.css?v=20260318-shellfix" />
   </head>
-  <body class="voice-mode">
-    <header class="voice-header">
-      <nav class="voice-nav">
-        <a href="./index.html">Dashboard</a>
-        <a href="./voice_agent.html">Test Lab</a>
-        <a href="./premium_voice.html" class="active">Premium Voice</a>
-      </nav>
-      <div class="voice-metrics">
-        <span id="metricLatency" title="VAD-to-First-Audio Latency"
-          >⏱ --ms</span
-        >
-        <span id="wsStatusPill">⚫ Offline</span>
-        <select
-          id="langSelect"
-          style="
-            background: transparent;
-            color: #fff;
-            border: none;
-            outline: none;
-            font-family: inherit;
-            cursor: pointer;
-          "
-        >
-          <option value="hi" style="color: #000">HI</option>
-          <option value="en" style="color: #000">EN</option>
-          <option value="kn" style="color: #000">KN</option>
-          <option value="te" style="color: #000">TE</option>
-          <option value="ta" style="color: #000">TA</option>
-        </select>
-      </div>
-    </header>
-
-    <main class="voice-stage">
-      <div class="orb-container">
-        <div class="voice-orb" id="voiceOrb" title="Tap to Toggle Microphone">
-          <!-- SVG inner icon optional -->
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="opacity: 0.5"
-          >
-            <path
-              d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"
-            ></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" y1="19" x2="12" y2="22"></line>
-          </svg>
+  <body
+    class="voice-mode"
+    data-suite-page="premium-voice"
+    data-voice-state="idle"
+    data-voice-gateway-url="http://localhost:3101"
+  >
+    <div class="premium-suite-frame">
+      <aside class="premium-suite-rail">
+        <div class="premium-suite-brand">
+          <a class="premium-suite-mark" href="./premium_voice.html">
+            <span class="premium-suite-badge">PV</span>
+            <div>
+              <span class="premium-suite-label">Freemium Voice Lab</span>
+              <h2>Premium Demo Lane</h2>
+            </div>
+          </a>
+          <p class="premium-suite-copy">This is the most product-facing static page, so it now sits inside the same connected testing suite as the operator tools.</p>
         </div>
-      </div>
-
-      <div class="transcript-box">
-        <div id="transcriptUser" class="transcript-line transcript-user"></div>
-        <div id="transcriptAgent" class="transcript-line transcript-agent">
-          Tap the orb to start connecting...
+        <nav class="premium-suite-nav">
+          <a class="premium-suite-link" href="./index.html"><strong>Dashboard</strong><small>Operator switchboard and quick checks.</small></a>
+          <a class="premium-suite-link" href="./voice_agent.html"><strong>Voice Hub</strong><small>Full REST, duplex, TTS, and inspector console.</small></a>
+          <a class="premium-suite-link" href="./vision_lab.html"><strong>Vision Lab</strong><small>Quality grading and listing handoff lane.</small></a>
+          <a class="premium-suite-link active" href="./premium_voice.html"><strong>Premium Voice</strong><small>Freemium-ready live customer story and spoken demo.</small></a>
+          <a class="premium-suite-link" href="./voice_test_ui.html"><strong>Voice UI</strong><small>Quick multilingual record and TTS checks.</small></a>
+          <a class="premium-suite-link" href="./voice_realtime.html"><strong>Realtime</strong><small>Streaming trace for live answers.</small></a>
+          <a class="premium-suite-link" href="./rag_test.html"><strong>RAG Lab</strong><small>Knowledge and routing workflows.</small></a>
+        </nav>
+        <div class="premium-suite-panels">
+          <article class="premium-suite-panel">
+            <strong>Freemium Story</strong>
+            <p>Give this page the confidence and polish of a product preview while keeping the AI testing signals visible.</p>
+          </article>
+          <article class="premium-suite-panel">
+            <strong>Best For</strong>
+            <p>Live multilingual demos where the UI should feel premium, guided, and believable to non-engineering viewers.</p>
+          </article>
         </div>
-      </div>
-
-      <div class="voice-controls">
-        <button class="control-btn" id="btnConnectToggle">
-          <span class="icon">⚡</span> <span id="btnConnectText">Connect</span>
-        </button>
-        <div class="feedback-panel" id="feedbackPanel">
-          <button class="feedback-btn" id="btnFeedbackUp" title="Good Response">
-            👍
-          </button>
-          <button
-            class="feedback-btn"
-            id="btnFeedbackDown"
-            title="Bad Response"
-          >
-            👎
-          </button>
+        <p class="premium-suite-footer">The whole suite now flows into this demo lane without breaking the shared product identity.</p>
+      </aside>
+      <div class="voice-shell">
+      <header class="voice-header">
+        <div class="brand-lockup">
+          <span class="brand-badge">Freemium Preview</span>
+          <a class="brand-title" href="./premium_voice.html">CropFresh Premium Voice</a>
         </div>
-      </div>
-    </main>
+        <div class="hero-badges voice-header-tags">
+          <span class="mini-pill">Connected suite</span>
+          <span class="mini-pill">Freemium-ready</span>
+          <span class="mini-pill">Indic voice demo</span>
+        </div>
+      </header>
+      <main class="voice-main">
+        <section class="hero-grid">
+          <section class="hero-copy panel">
+            <p class="eyebrow">Human-sounding regional voice for crop commerce</p>
+            <h1>Make the live demo feel like a real freemium product, not just a test harness.</h1>
+            <p class="hero-text">
+              This surface is the fast path for live duplex trials: lower-friction onboarding,
+              visible latency signals, and a more premium-feeling conversation stage for Hindi,
+              Kannada, Telugu, Tamil, and English.
+            </p>
+            <div class="hero-badges">
+              <span class="mini-pill">Duplex Streaming</span>
+              <span class="mini-pill">Live Latency Cards</span>
+              <span class="mini-pill">Indic Language Ready</span>
+            </div>
+            <div class="feature-strip">
+              <article class="feature-card">
+                <span class="feature-label">Free tier feel</span>
+                <strong>Clean, guided, confidence-building</strong>
+                <p>Quick to try, easy to understand, no lab-only visual clutter.</p>
+              </article>
+              <article class="feature-card">
+                <span class="feature-label">Premium signals</span>
+                <strong>Latency, transcript, and session story</strong>
+                <p>Shows performance quality in a way buyers and operators can trust.</p>
+              </article>
+            </div>
+          </section>
 
-    <script src="./assets/js/voice-agent-duplex.js"></script>
+          <section class="console-stack">
+            <article class="panel live-console">
+              <div class="panel-head">
+                <div>
+                  <p class="panel-kicker">Live Console</p>
+                  <h2 id="voiceStageLabel">Ready for live voice</h2>
+                  <p id="voiceStatusCopy">
+                    Tap the orb or connect the session to start a duplex conversation.
+                  </p>
+                </div>
+                <div class="hero-badges voice-header-tags">
+                  <span id="bridgeModePill" class="mini-pill" data-transport-mode="fallback_ws">
+                    Fallback WS
+                  </span>
+                  <span id="wsStatusPill" class="status-pill" data-state="offline">Offline</span>
+                </div>
+              </div>
+
+              <div class="metric-row">
+                <div class="metric-card">
+                  <span class="metric-label">First audio</span>
+                  <span id="metricLatency" class="metric-value">FIRST --ms</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Transcription</span>
+                  <span id="metricTranscription" class="metric-value">STT --ms</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Total turn</span>
+                  <span id="metricTotal" class="metric-value">TOTAL --ms</span>
+                </div>
+              </div>
+
+              <div class="stage-grid">
+                <div class="orb-panel">
+                  <div class="orb-rings">
+                    <div class="voice-orb" id="voiceOrb" title="Tap to toggle microphone">
+                      <svg
+                        width="44"
+                        height="44"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="22"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <p class="orb-caption">Orb state shifts with listening, thinking, and speaking.</p>
+                </div>
+
+                <div class="transcript-panel">
+                  <label class="transcript-label">Farmer said</label>
+                  <div id="transcriptUser" class="transcript-line transcript-user"></div>
+                  <label class="transcript-label">Agent replied</label>
+                  <div id="transcriptAgent" class="transcript-line transcript-agent">
+                    Welcome to CropFresh Premium Voice. Start a session to hear the live agent.
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-row">
+                <button class="control-btn control-btn-primary" id="btnConnectToggle">
+                  <span class="button-quiet">Live session</span>
+                  <span id="btnConnectText">Connect</span>
+                </button>
+                <label class="language-select" for="langSelect">
+                  <span>Language</span>
+                  <select id="langSelect">
+                    <option value="hi">Hindi</option>
+                    <option value="en">English</option>
+                    <option value="kn">Kannada</option>
+                    <option value="te">Telugu</option>
+                    <option value="ta">Tamil</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="feedback-panel" id="feedbackPanel">
+                <button class="feedback-btn" id="btnFeedbackUp" title="Good response">Helpful</button>
+                <button class="feedback-btn" id="btnFeedbackDown" title="Needs work">Needs work</button>
+              </div>
+            </article>
+
+            <article class="panel timeline-panel">
+              <div class="panel-head panel-head-compact">
+                <div>
+                  <p class="panel-kicker">Session Timeline</p>
+                  <h3>What happened this turn</h3>
+                </div>
+                <span class="mini-pill">Live events</span>
+              </div>
+              <div class="event-timeline">
+                <div class="event-row">
+                  <span class="event-time">Now</span>
+                  <span class="event-text">Premium voice client initialized and waiting for session start.</span>
+                </div>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <section class="benefit-grid">
+          <article class="panel info-card">
+            <p class="panel-kicker">Freemium Design Cues</p>
+            <h3>Why this should feel more product-ready</h3>
+            <ul class="detail-list">
+              <li>Guided hero copy instead of test-only framing.</li>
+              <li>Clear live console with premium metrics and richer feedback affordances.</li>
+              <li>Visible session narrative so latency and quality are easy to understand.</li>
+            </ul>
+          </article>
+
+          <article class="panel info-card">
+            <p class="panel-kicker">Language Readiness</p>
+            <h3>Supported live trial lanes</h3>
+            <div class="language-grid">
+              <span>Hindi</span>
+              <span>English</span>
+              <span>Kannada</span>
+              <span>Telugu</span>
+              <span>Tamil</span>
+            </div>
+          </article>
+
+          <article class="panel info-card">
+            <p class="panel-kicker">Suggested Demo Prompts</p>
+            <h3>Use realistic farmer asks during testing</h3>
+            <div class="prompt-list">
+              <span class="prompt-chip">What is today's onion mandi price in Kolar?</span>
+              <span class="prompt-chip">Tell me in Hindi how to improve tomato quality.</span>
+              <span class="prompt-chip">Kannada crop advisory with a natural voice reply.</span>
+            </div>
+          </article>
+        </section>
+
+        <footer class="voice-footer panel">
+          <div>
+            <p class="panel-kicker">Static Suite</p>
+            <h3>Keep the premium voice demo connected to the rest of the product story.</h3>
+          </div>
+          <div class="voice-footer-links">
+            <a href="./index.html">Dashboard</a>
+            <a href="./voice_agent.html">Voice Hub</a>
+            <a href="./voice_test_ui.html">Voice UI</a>
+          </div>
+        </footer>
+      </main>
+      </div>
+    </div>
+    <script type="module" src="./assets/js/voice-agent-duplex.js"></script>
   </body>
 </html>

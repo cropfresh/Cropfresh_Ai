@@ -1,101 +1,106 @@
-# CropFresh AI — Environment Variables
+# CropFresh AI - Environment Variables
 
-> All environment variables from `src/api/config.py` (`Settings` class).
-> Copy `.env.example` → `.env` and fill in your values.
+> **Last Updated:** 2026-03-17
+> **Source of truth:** `src/api/config.py` (`Settings`)
 
----
-
-## LLM Provider
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LLM_PROVIDER` | `groq` | LLM backend: `groq`, `bedrock`, `together`, `vllm` |
-| `GROQ_API_KEY` | — | Groq Cloud API key |
-| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model ID |
-| `AWS_REGION` | `us-east-1` | AWS region for Bedrock |
-| `AWS_ACCESS_KEY_ID` | — | AWS access key |
-| `AWS_SECRET_ACCESS_KEY` | — | AWS secret key |
-| `BEDROCK_MODEL_ID` | `anthropic.claude-3-haiku-20240307-v1:0` | Bedrock model |
-| `TOGETHER_API_KEY` | — | Together.ai API key |
-| `TOGETHER_MODEL` | `meta-llama/Llama-3.3-70B-Instruct-Turbo` | Together model |
-| `VLLM_BASE_URL` | `http://localhost:8001/v1` | vLLM server URL |
+Copy `.env.example` to `.env`, then override only what you need for your environment.
 
 ---
 
-## Databases
+## Recommended LLM Setup
 
-### Qdrant (Vector DB)
+The code still defaults to `bedrock` today, but the recommended operating direction is now:
+
+- `LLM_PROVIDER=groq`
+- or `LLM_PROVIDER=vllm`
+- or `LLM_PROVIDER=together`
+
+Migration note: Bedrock references still exist in code as of March 17, 2026, but Sprint 07 removes Bedrock from runtime policy, docs, and fallbacks.
+
+| Variable | Default in code | Recommended use |
+|----------|-----------------|-----------------|
+| `LLM_PROVIDER` | `bedrock` | Set to `groq`, `vllm`, or `together` |
+| `LLM_MODEL` | `claude-sonnet-4` | Pick a model that matches the selected provider |
+| `GROQ_API_KEY` | empty | Required when `LLM_PROVIDER=groq` |
+| `TOGETHER_API_KEY` | empty | Required when `LLM_PROVIDER=together` |
+| `VLLM_BASE_URL` | `http://localhost:8000/v1` | Required when `LLM_PROVIDER=vllm` |
+| `AWS_REGION` | `ap-south-1` | Legacy Bedrock and AWS infra region setting |
+| `AWS_PROFILE` | empty | Optional AWS profile for local AWS SDK use |
+| `BEDROCK_ROUTER_MODEL` | `claude-haiku` | Legacy Bedrock-only routing setting |
+
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are not top-level app settings here, but the AWS SDK may still read them if the legacy Bedrock path is active.
+
+---
+
+## Data Stores
+
+### PostgreSQL / Aurora
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `QDRANT_HOST` | `localhost` | Qdrant host |
-| `QDRANT_PORT` | `6333` | Qdrant gRPC port |
-| `QDRANT_API_KEY` | — | API key (Cloud only) |
-| `QDRANT_COLLECTION` | `agri_knowledge` | Default collection |
-
-### PostgreSQL
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PG_HOST` | `localhost` | PostgreSQL host |
-| `PG_PORT` | `5432` | PostgreSQL port |
+| `PG_HOST` | empty | Database host |
+| `PG_PORT` | `5432` | Database port |
 | `PG_DATABASE` | `cropfresh` | Database name |
-| `PG_USER` | `cropfresh` | Database user |
-| `PG_PASSWORD` | — | Database password |
+| `PG_USER` | `cropfresh_app` | Database user |
+| `PG_PASSWORD` | empty | Database password |
+| `PG_USE_IAM_AUTH` | `false` | Use IAM auth for Aurora when enabled |
 
-### Neo4j (Graph DB)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NEO4J_URI` | `bolt://localhost:7687` | Neo4j bolt URI |
-| `NEO4J_USER` | `neo4j` | Neo4j username |
-| `NEO4J_PASSWORD` | — | Neo4j password |
-
-### Redis (Cache)
+### Redis
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `REDIS_URL` | `redis://localhost:6379/0` | Redis connection URL |
 
-### Supabase
+### Qdrant
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SUPABASE_URL` | — | Supabase project URL |
-| `SUPABASE_KEY` | — | Supabase anon key |
+| `QDRANT_HOST` | `localhost` | Qdrant host |
+| `QDRANT_PORT` | `6333` | Qdrant port |
+| `QDRANT_API_KEY` | empty | Qdrant Cloud API key |
+| `QDRANT_COLLECTION` | `agri_knowledge` | Default collection |
+
+### Neo4j
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEO4J_URI` | empty | Neo4j connection string |
+| `NEO4J_USER` | `neo4j` | Neo4j username |
+| `NEO4J_PASSWORD` | empty | Neo4j password |
+
+### Legacy Migration Fields
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SUPABASE_URL` | empty | Legacy migration-period field |
+| `SUPABASE_KEY` | empty | Legacy migration-period field |
 
 ---
 
-## API Settings
+## API and Runtime Settings
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `API_HOST` | `0.0.0.0` | Bind host |
-| `API_PORT` | `8000` | Bind port |
-| `ENVIRONMENT` | `development` | `development`, `staging`, `production` |
+| `API_PORT` | `8080` | App port when not overridden by the launch command |
+| `ENVIRONMENT` | `development` | `development`, `staging`, or `production` |
+| `DEBUG` | `false` | Enables debug behavior |
 | `LOG_LEVEL` | `INFO` | Logging level |
-| `ALLOWED_ORIGINS` | `["*"]` | CORS allowed origins (never `*` in production) |
-| `API_KEY` | — | API key for `X-API-Key` auth |
-| `API_KEY_HEADER` | `X-API-Key` | Auth header name |
+| `API_KEY` | empty | `X-API-Key` secret for non-dev routes |
+| `ALLOWED_ORIGINS` | `*` | Comma-separated CORS origins |
 
 ---
 
-## Embeddings
+## Models and Voice Runtime
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Embedding model name |
-| `EMBEDDING_DEVICE` | `cpu` | Device: `cpu` or `cuda` |
+| `EMBEDDING_DEVICE` | `cpu` | `cpu` or `cuda` |
+| `WHISPER_MODEL_SIZE` | `large-v3-turbo` | Default STT model size hint |
+| `YOLO_MODEL_PATH` | `models/yolov11m.pt` | Vision model path |
 
----
-
-## Voice
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `WHISPER_MODEL_SIZE` | `base` | Whisper model: `tiny`, `base`, `small`, `medium`, `large` |
-| `DEFAULT_LANGUAGE` | `kn` | Default voice language |
-| `VAD_THRESHOLD` | `0.5` | Silero VAD sensitivity |
+Note: VAD thresholds and duplex transport settings are not centralized in `Settings` yet. They are still configured in code and should be documented with the voice sprint work.
 
 ---
 
@@ -103,19 +108,38 @@
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LANGSMITH_API_KEY` | — | LangSmith tracing key |
-| `LANGSMITH_PROJECT` | `cropfresh-ai` | LangSmith project name |
-| `OTEL_ENDPOINT` | — | OpenTelemetry collector URL |
-| `PROMETHEUS_ENABLED` | `true` | Enable Prometheus metrics |
+| `OTEL_ENDPOINT` | empty | OpenTelemetry collector endpoint |
+| `LANGSMITH_TRACING` | `true` | Enables LangSmith tracing |
+| `LANGSMITH_ENDPOINT` | `https://api.smith.langchain.com` | LangSmith endpoint |
+| `LANGSMITH_API_KEY` | empty | LangSmith API key |
+| `LANGSMITH_PROJECT` | `Cropfresh Ai` | LangSmith project name |
 
 ---
 
-## Feature Flags
+## Feature and Scraping Flags
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ENABLE_VOICE` | `true` | Enable voice endpoints |
-| `ENABLE_RAG` | `true` | Enable RAG pipeline |
-| `ENABLE_GRAPH_RAG` | `false` | Enable Neo4j graph retrieval |
-| `ENABLE_SCRAPING` | `true` | Enable live scraping |
-| `ENABLE_AUTONOMOUS` | `false` | Enable autonomous goal agent |
+| `USE_ADAPTIVE_ROUTER` | `true` | Enable the adaptive query router |
+| `USE_REDIS_CACHE` | `true` | Enable Redis-backed response caching |
+| `ENABLE_RERANKER` | `true` | Enable reranking |
+| `SCRAPING_RATE_LIMIT` | `30` | Request budget for scraping |
+| `SCRAPING_CACHE_TTL` | `300` | Scraper cache TTL in seconds |
+
+---
+
+## 2026-03-24 Update - CI and Scraper Workflow Variables
+
+### Scheduled Scraper Workflow
+
+- The GitHub Actions scraper workflow now reuses the Aurora variables above when it runs `python -m src.scrapers`.
+- `PG_HOST` is the on/off switch for persistence in that workflow. If it is empty, the scraper CLI runs in no-persistence smoke mode.
+- The workflow currently defaults `PG_DATABASE=postgres`, `PG_USER=postgres`, `PG_PORT=5432`, and `PG_USE_IAM_AUTH=false` unless you override them in the workflow environment.
+- `AWS_REGION` is also reused by the scraper CLI when IAM auth is enabled for Aurora.
+
+### Opt-In Realtime Smoke Tests
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VOICE_REALTIME_E2E` | unset | Set to `1` to run the websocket realtime smoke tests against a live server |
+| `VOICE_REALTIME_E2E_URL` | `ws://127.0.0.1:8000/api/v1/voice/ws` | Override the live websocket target for those smoke tests |

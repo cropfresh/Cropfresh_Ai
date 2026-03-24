@@ -1,43 +1,322 @@
-# CropFresh AI — Development Workflow & Status Guide
+﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-03 (11:58 IST)
+> **Last Updated:** 2026-03-24 (Sprint 10 retro template update landed)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
 
 ---
 
-## 📂 Documentation Map
+## Latest Session Snapshot
+
+**2026-03-24 - Sprint 10 Retro Template Update**
+
+- Added `tracking/retros/sprint-10-retro.md` using the exact repo retrospective template instead of a custom format.
+- Captured the Sprint 10 wins around the shared state machine, router-first orchestration, grouped-speaker continuity, and focused test discipline.
+- Kept the retro honest about the remaining weaknesses: sprint date drift, orchestration still inside the FastAPI runtime, narrow tool scope, and limited latency/routing instrumentation.
+- Left the action items pointed at proper Sprint 10 closeout alignment plus the bridge-facing observability and state propagation work needed before Sprint 11 expands load hardening.
+- No code or tests changed in this session; this handoff is documentation-only.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/retros/sprint-10-retro.md`
+- Cross-check `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` and `tracking/PROJECT_STATUS.md`
+- Decide whether to formally close Sprint 10 now or keep it open for one more implementation slice
+- If keeping it open, start the next slice from the Sprint 10 action items captured in the new retro
+
+**2026-03-24 - Sprint 10 Speaker-Aware Grouped-Turn Slice**
+
+- Extended the shared Sprint 10 state contract with `VoiceSpeakerProfile`, active-speaker tracking, and per-turn speaker metadata so grouped calls can preserve speaker continuity without adding full ML diarization yet.
+- Wired speaker hints through the REST voice path, voice-agent persistence layer, and orchestration context builder so routed agents receive the active speaker and known-speaker state on later turns.
+- Extended the duplex websocket flow with `speaker_hint` intake, `speaker_ack` responses, and speaker-aware grouped-turn persistence before orchestration runs.
+- Added focused coverage for shared speaker-state management, REST speaker propagation, voice-agent grouped-turn persistence, and duplex grouped-speaker behavior.
+- Verified the slice with focused pytest coverage across the state, REST, agent, orchestrator, and websocket paths (`14 passed`).
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`
+- Read `tracking/PROJECT_STATUS.md` and `tracking/daily/2026-03-24.md`
+- Review `src/memory/state_pkg/manager.py`, `src/agents/voice/agent.py`, `src/api/rest/voice.py`, and `src/api/websocket/voice_pkg/router.py`
+- Run `uv run pytest tests/unit/test_voice_state_machine.py tests/unit/test_voice_speaker_state.py tests/unit/test_voice_orchestrator.py tests/unit/test_voice_agent_stateful_runtime.py tests/unit/test_voice_duplex_orchestration.py tests/api/test_voice_rest_speaker_context.py`
+
+**2026-03-24 - Sprint 10 Voice Orchestration, State, and Tools First Slice**
+
+- Added the canonical Sprint 10 voice-state contract to the shared state manager, including `VoiceSessionState`, `VoiceStateEvent`, transition validation, event history, and Redis pub/sub broadcasting.
+- Added the new router-first voice orchestration service for price, listing, logistics, and supervisor fallback flows, with shared persona metadata for Priya, Arjun, Ravi, and Admin.
+- Wired the shared workflow memory contract into the REST voice path, fallback voice runtime, and duplex websocket flow so routed-agent context and reconnect-safe turn history persist across turns.
+- Added an orchestrated duplex text-response helper so websocket turns can bypass the LLM stream while preserving timing events, playback updates, history, and interruption behavior.
+- Verified the slice with focused pytest coverage for the state machine, orchestrator routing, shared voice-session hydration, and duplex orchestration path (`9 passed`).
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`
+- Read `tracking/PROJECT_STATUS.md` and `tracking/daily/2026-03-24.md`
+- Review `src/memory/state_pkg/manager.py`, `src/voice/orchestration/service.py`, `src/agents/voice/agent.py`, and `src/api/websocket/voice_pkg/router.py`
+- Run `uv run pytest tests/unit/test_voice_state_machine.py tests/unit/test_voice_orchestrator.py tests/unit/test_voice_agent_stateful_runtime.py tests/unit/test_voice_duplex_orchestration.py`
+
+**2026-03-24 - Sprint 09 Retro Template Update**
+
+- Added `tracking/retros/sprint-09-retro.md` using the current minimal retro template so Sprint 09 now has a properly formatted retrospective artifact.
+- Kept the retro honest about what shipped well, what still needs improvement, and the one remaining manual checkpoint: a live browser-timed validation of the `150ms` barge-in target.
+- Left older retros untouched; this update only created the Sprint 09 retro in the current template format.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/retros/sprint-09-retro.md`
+- Cross-check `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` and `tracking/daily/2026-03-24.md`
+
+**2026-03-24 - Sprint 09 Continuity and Recovery Completion Slice**
+
+- Closed the remaining Sprint 09 implementation gaps around continuity and reconnect handling by adding comfort-noise relay fills, explicit recovery policy metadata on gateway bootstrap responses, and focused stale-session plus heartbeat-timeout tests.
+- Upgraded the premium duplex browser helpers so reconnects refresh bootstrap state, dead peers are detected from missing heartbeat acknowledgements, browser online/offline transitions trigger recovery, and playback now fades down cleanly before stopping on barge-in.
+- Added relay debug metadata so continuity gap size, fill mode, ring-buffer watermark, and interruption timing are directly inspectable from the bridge response contract instead of living only inside raw downstream payloads.
+- Verified the slice with focused Python tests, static contract checks, targeted gateway Vitest coverage, and a fresh `npm run build` in `services/voice-gateway/`.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` and `tracking/daily/2026-03-24.md`
+- Review `services/voice-gateway/src/audio/relay-session.ts`, `services/voice-gateway/src/routes/relay-debug.ts`, and `services/voice-gateway/src/services/session-bootstrap.ts`
+- Review `static/assets/js/duplex/socket.js`, `static/assets/js/duplex/playback.js`, and `tests/unit/test_voice_duplex_recovery.py`
+- Cross-read `docs/features/livekit-voice-bridge.md` and `docs/api/websocket-voice.md`
+
+**2026-03-18 - Sprint 08 Relay Integration and Closeout**
+
+- Wired the gateway ring buffer and RMS gate into real relay frame/flush/reset routes so buffered PCM can flow into the existing duplex websocket runtime instead of stopping at utility-only buffering.
+- Added FastAPI analyze/reset endpoints to `services/vad-service/` so the Sprint 08 acoustic segmenter is available over both gRPC and a small HTTP compatibility surface.
+- Updated `static/voice_agent.html` plus new bootstrap JS so the Voice Hub now follows the same gateway-bootstrap-first, websocket-fallback truth as the premium static demo, including reconnect-token reuse and heartbeat.
+- Verified the Sprint 08 closeout slice with targeted Python tests, gateway TypeScript build, and the gateway Vitest suite; Windows sandbox restrictions still required an unrestricted test run for Vitest.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` for the completed foundation contract and `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` for the next sprint.
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`.
+- Review `services/voice-gateway/src/routes/relay.ts`, `services/voice-gateway/src/services/relay-coordinator.ts`, and `services/voice-gateway/src/services/downstream-relay.ts`.
+- Review `services/vad-service/app/api.py`, `services/vad-service/app/runtime.py`, and `static/assets/js/voice-agent-bootstrap.js`.
+- Cross-read `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`.
+
+**2026-03-18 - Sprint 08 Bridge Services and Premium Bootstrap**
+
+- Added `services/voice-gateway/` with a strict TypeScript scaffold, `/sessions/bootstrap`, `/health`, `/ready`, `/metrics`, and the initial ring-buffer plus RMS-gate utilities.
+- Added `services/vad-service/` with FastAPI probes, `/v1/vad/config`, the Sprint 08 segmenter, generated protobuf files, and the initial gRPC server surface.
+- Updated `static/premium_voice.html` and the duplex JS modules so the premium static client now requests gateway bootstrap metadata first and visibly falls back to the existing duplex websocket.
+- Added local Dockerfiles, compose entries, and Prometheus scraping for the new gateway service so the Sprint 08 slice is runnable in local dev.
+- Verified the new Python, static, and Node slices; the existing Pipecat baseline failures remain outside this Sprint 08 implementation change.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`
+- Review `services/voice-gateway/src/server.ts`, `services/voice-gateway/src/services/session-bootstrap.ts`, and `services/vad-service/app/run_service.py`
+- Review `static/assets/js/duplex/bootstrap.js`, `static/assets/js/duplex/socket.js`, and `static/premium_voice.html`
+- Cross-read `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`
+
+**2026-03-18 - Sprint 09-12 Voice Program Docs Alignment**
+
+- Added `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`, `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`, `tracking/sprints/sprint-11-voice-load-hardening-and-observability.md`, and `tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md` so the remaining voice program has explicit sprint boundaries.
+- Updated `docs/features/livekit-voice-bridge.md`, `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`, and `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` so Sprint 08 is now clearly the first step in a documented Sprint 08-12 voice program.
+- Updated `tracking/PROJECT_STATUS.md`, `ROADMAP.md`, `tracking/tasks/backlog.md`, and `tracking/daily/2026-03-18.md` so the next-session read order, backlog buckets, and roadmap sequence all point to the same follow-on sprint set.
+- Kept current runtime truth intact: the active live path is still the FastAPI duplex websocket, and the LiveKit bridge remains planned work.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`
+- Skim `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`, `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`, `tracking/sprints/sprint-11-voice-load-hardening-and-observability.md`, and `tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md`
+- Read `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md`
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`
+- Cross-read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md`
+- Review `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`
+
+**2026-03-18 - Docs-First Sprint 08 Voice Bridge Handoff**
+
+- Added `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` as the next implementation-facing handoff for bridge-mode voice work.
+- Added `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` so the next session does not need to reopen the cutover-vs-bridge decision.
+- Added `docs/features/livekit-voice-bridge.md` with the current runtime truth, target Sprint 08 bridge flow, browser bootstrap contract, and VAD gRPC contract.
+- Added `tracking/daily/2026-03-18.md` as the docs-only planning handoff with the exact files to open first, the first coding slice, and the pre-edit verification commands.
+- Updated `tracking/PROJECT_STATUS.md`, `ROADMAP.md`, and `tracking/tasks/backlog.md` so Sprint 08 is now the aligned next-session pointer and Supabase/auth follow-up sits behind the bridge work.
+- Kept the current runtime docs truthful: the active live path is still the FastAPI duplex websocket, not a LiveKit production runtime.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`
+- Read `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md`
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`
+- Cross-read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md`
+- Review `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`
+
+**2026-03-18 - Vision Lab API and Static Wiring**
+
+- Added a small shared Vision API surface under `src/api/routers/vision.py` so the static suite can call the real quality agent instead of routing quality checks through unrelated chat-only flows.
+- `GET /api/v1/vision/health` now exposes whether the shared quality agent is available and whether the runtime is in full model mode or rule-based fallback, while `POST /api/v1/vision/assess` returns the grading/HITL contract plus a ready-to-reuse listing-grade payload.
+- Added `static/vision_lab.html` with focused JS/CSS helpers so image or description-based quality checks, model-mode visibility, and `/api/v1/listings/{id}/grade` attachment all live in one connected testing page.
+- Added a small session-storage bridge in `static/assets/js/lab-state.js` and surfaced `workflow_context` on `/api/v1/voice/process` so Voice Hub can carry the last created listing id into Vision Lab for a truthful voice -> vision -> listing demo path.
+- Updated the dashboard quick quality check to use the new vision route, expanded shared suite navigation to include Vision Lab, and added focused API/static contract tests for the new route and page.
+- Verification snapshot: run `uv run pytest tests/api/test_vision_routes.py tests/unit/test_static_testing_lab.py -v` plus targeted `ruff check` on the new/updated Python tests.
+
+**Fastest way to resume from this implementation**
+
+- Review `src/api/routers/vision.py` and `src/api/rest/voice.py`
+- Review `static/vision_lab.html`, `static/assets/js/vision-lab.js`, and `static/assets/js/lab-state.js`
+- Review `static/assets/js/dashboard.js`, `static/assets/js/voice-agent-rest.js`, and `static/assets/js/agent-workflows.js`
+- Run `uv run pytest tests/api/test_vision_routes.py tests/unit/test_static_testing_lab.py -v`
+
+**2026-03-18 - Static Agent Journey Wiring**
+
+- Upgraded the static testing lab from a premium skin into a more accurate operator dashboard by adding explicit workflow boards for route validation, downstream service handoff, and realtime contract visibility.
+- The dashboard now shows connected scenario cards plus a routed-run board that explains which agent answered a quick check, what tools were used, and which surface should be opened next for deeper validation.
+- The voice hub now includes a REST route board that spells out detected language, intent, missing listing fields, and expected service handoff, plus a duplex contract board that stays honest about the current websocket limitation: no intent or entity payloads yet.
+- Fixed the voice inspector health panel so it now reads the real `/api/v1/voice/health` fields (`stt_providers`, `tts_provider`) instead of stale placeholder names.
+- Added a focused static-contract test slice to keep dashboard/voice DOM hooks, script ordering, shared workflow assets, and the small-file rule from drifting.
+- Hardened the static shell against stale browser cache by adding direct critical rail CSS for suite pages and the premium voice demo, plus versioned CSS asset links so the dashboard rail cannot fall back into raw document flow above the main content.
+- Verification snapshot: run `uv run pytest tests/unit/test_static_testing_lab.py -v` and targeted `ruff check` for the new Python test before closing this slice.
+
+**Fastest way to resume from this implementation**
+
+- Review `static/index.html` and `static/voice_agent.html`
+- Review `static/assets/css/suite/critical-shell.css` and `static/assets/css/premium-voice/critical-rail.css`
+- Review `static/assets/js/agent-workflow-data.js`, `static/assets/js/agent-workflows.js`, and `static/assets/js/voice-hub-lab.js`
+- Review `static/assets/js/voice-agent-rest.js`, `static/assets/js/voice-agent-ws.js`, and `static/assets/js/voice-agent-tools.js`
+- Run `uv run pytest tests/unit/test_static_testing_lab.py -v`
+
+**2026-03-18 - Premium Static Suite Refresh**
+
+- Refreshed the entire `static/` experience so the dashboard, RAG lab, voice hub, realtime stream, quick voice UI, and premium voice demo now feel like one product family instead of separate utility pages.
+- Added a shared suite chrome layer for premium header, navigation, shell glow, footer, and card polish under `static/assets/css/suite/`, then upgraded the form controls so inputs, buttons, and result panes feel more intentional.
+- Expanded that into a real freemium testing-lab layout with persistent suite rails, page-specific theming, and connected navigation so the static pages no longer feel like the same layout repeated with different titles.
+- Updated each static page with product-style header tags, richer section framing, shared footer navigation, and page-specific side context while preserving all existing IDs and JS wiring.
+- Tightened the premium voice page so it now sits inside the same connected suite concept instead of feeling visually isolated from the other static surfaces.
+- Verification note: no automated frontend test or screenshot pipeline was run for this static-only pass; changes were validated by code-level sanity checks only on 2026-03-18.
+
+**Fastest way to resume from this implementation**
+
+- Review `static/assets/css/suite/chrome.css`, `static/assets/css/suite/forms.css`, and `static/assets/css/premium-voice/layout.css`
+- Review `static/index.html`, `static/voice_agent.html`, `static/rag_test.html`, `static/voice_realtime.html`, `static/voice_test_ui.html`, and `static/premium_voice.html`
+- Open the pages locally and compare mobile vs desktop layout before making further visual changes
+
+**2026-03-18 - Centralized Language Resolution Wiring**
+
+- Split the new shared language layer into small reusable modules under `src/shared/` so language normalization, script detection, transliterated Kannada detection, and context shaping now live behind one stable import path: `src.shared.language`.
+- Wired that shared resolver into chat session preparation, supervisor session context, prompt building, LLM generation guidance, and supervisor fallback routing so Kannada support is determined centrally instead of by scattered per-agent prompt tweaks.
+- Replaced duplicate chat route implementations with one shared `src/api/chat_pkg/` router and kept both legacy import paths as thin compatibility shims.
+- Updated the voice compatibility layer so `VoiceEntityExtractor.detect_language_from_text(...)` now uses the shared detector and the legacy `VoiceAgent()` import path still works without manual dependency setup.
+- Expanded the shared Kannada prompt library with dedicated domain sections for crop listing, buyer matching, quality assessment, logistics, crop recommendation/ADCL, and price prediction instead of relying on only the older agronomy/commerce/platform buckets.
+- Added central Kannada domain-context injection in the LLM mixin so custom-prompt agents also inherit the right Kannada vocabulary and guidance, then patched the main agent call sites to pass normalized `context` through to the LLM layer.
+- Upgraded the shared Kannada prompt into an advanced multi-dialect system layer with stronger slang handling, code-mixing rules, safety/output guidance, and a district-aware dialect hint builder.
+- Added reusable runtime prompt rendering for `[DIALECT_LEXICON: ...]` and `[CONTEXT_KANNADA_INFO]` blocks so local Kannada vocabulary and crop context can be injected centrally from shared session context.
+- Expanded the overall shared Kannada library with dialect bucket guidance, reusable response patterns, few-shot interaction examples, and deeper domain content for listing, buyer matching, quality, logistics, price prediction, and crop recommendation.
+- Added a scalable structured Kannada retrieval layer with JSONL seed corpora, cached loaders, runtime enrichment, and query-aware retrieval so we can grow Kannada coverage into thousands of entries without bloating the base system prompt.
+- Updated the LLM mixin to inject retrieval-only Kannada blocks even when a static shared Kannada prompt already exists, keeping the static layer compact while still adding query-specific dialect and domain hints.
+- Verification snapshot: targeted Ruff checks passed and the focused multilingual test slice passed (`54 passed`) on 2026-03-18.
+
+**Fastest way to resume from this implementation**
+
+- Review `src/shared/language.py`, `src/shared/language_context.py`, and `src/shared/language_detection.py`
+- Review `src/api/chat_pkg/session.py` and `src/api/chat_pkg/router.py`
+- Review `src/agents/base/llm.py`, `src/agents/kannada/builder.py`, `src/agents/kannada/retriever.py`, and `src/agents/kannada/data/`
+- Run `uv run pytest tests/unit/test_kannada_retriever.py tests/unit/test_kannada_builder.py tests/unit/test_llm_language_guidance.py tests/unit/test_shared_language.py tests/unit/test_chat_session_flow.py tests/unit/test_supervisor_routing.py tests/unit/test_voice_agent_task16.py tests/unit/test_rag_language_support.py -v`
+
+**2026-03-18 - Retro Template Cleanup**
+
+- Normalized `tracking/retros/sprint-04-retro.md` to the repo retro template without changing the underlying sprint learnings.
+- Cleaned up `tracking/retros/sprint-05-retro.md` so it now follows the exact template structure instead of a custom metadata-heavy variant.
+- Left `tracking/retros/_template.md` unchanged and treated it as the source of truth for retrospective formatting.
+
+**2026-03-17 - Docs-First Voice Duplex Sprint Handoff**
+
+- Added `tracking/sprints/sprint-07-voice-duplex-productionization.md` as the next voice sprint source of truth for duplex productionization, realistic latency targets, Bedrock removal, local-language quality, and live testing cleanup.
+- Updated the core voice docs so they now point to `/api/v1/voice/ws` and `/api/v1/voice/ws/duplex` instead of the removed legacy websocket path.
+- Reframed the model-provider docs around `groq`, `vllm`, and `together` while keeping Bedrock references explicit as legacy code paths still present on 2026-03-17.
+- Aligned the README, environment/setup guides, and AWS markdown with the actual current voice stack and planned Sprint 07 direction.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-07-voice-duplex-productionization.md`
+- Read `tracking/PROJECT_STATUS.md`
+- Read `docs/api/websocket-voice.md` and `docs/features/voice-pipeline.md`
+- Review `src/api/websocket/voice_pkg/router.py` and `src/api/websocket/voice_pkg/duplex.py`
+- Open `static/premium_voice.html` before changing the live voice flow
+
+**2026-03-17 - Sprint 05 Retrospective Update**
+
+- Added `tracking/retros/sprint-05-retro.md` using the repo retro template headings so Sprint 05 now has a formal retrospective artifact.
+- Captured what shipped well, what slipped, and the carry-forward actions created by the Sprint 05 to Sprint 06 pivot.
+- Kept the retro honest about the mixed sprint outcome: strong docs/rate-hub/ADCL momentum, but original RAG sprint goals still need explicit carryover handling.
+
+**2026-03-17 - ADCL Productionization Implementation**
+
+- Implemented the canonical `ADCLService` and split it into smaller helper modules to keep the source files reviewable and below the 200-line target.
+- Added Aurora ADCL persistence helpers, the `(week_start, district)` migration, listing persistence updates, and shared app-state wiring for ADCL, listings, and voice.
+- Shipped `GET /api/v1/adcl/weekly`, voice/listing compatibility updates, APScheduler refresh jobs, and focused tests for the ADCL slice.
+- Added ADCL API docs, a 20-query golden set, and a live backtest runbook so the next session can move from fixture validation to Aurora validation.
+
+**Fastest way to resume from this implementation**
+
+- Read `tracking/sprints/sprint-06-adcl-productionization.md`
+- Read `tracking/daily/2026-03-17.md`
+- Review `src/agents/adcl/service.py`, `src/api/routes/adcl.py`, and `src/api/runtime/services.py`
+- Use `src/evaluation/reports/adcl_backtest_2026-03-17.md` for the live validation checklist
+
+**2026-03-17 - Sprint 06 ADCL Planning Handoff**
+
+- Created `tracking/sprints/sprint-06-adcl-productionization.md` as the next sprint source of truth for ADCL productionization.
+- Added `docs/decisions/ADR-012-adcl-district-first-service-contract.md` and `docs/decisions/ADR-013-adcl-source-precedence-and-evidence.md` to lock the service contract and live-data policy before coding starts.
+- Updated `ROADMAP.md`, `tracking/PROJECT_STATUS.md`, `tracking/tasks/backlog.md`, and the Sprint 05 file so Sprint 06 consistently points to ADCL and the Supabase/auth follow-up sits behind it.
+- Kept Sprint 05 as the active sprint; this was a docs-first handoff so the next session can start implementation without re-planning scope.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-06-adcl-productionization.md`
+- Read `docs/decisions/ADR-012-adcl-district-first-service-contract.md`
+- Read `docs/decisions/ADR-013-adcl-source-precedence-and-evidence.md`
+- Read the ADCL handoff addendum in `tracking/daily/2026-03-17.md`
+
+**2026-03-17 â€” Multi-Source Karnataka Rate Hub**
+
+- Added a shared `src/rates/` domain for official-first aggregation of mandi, support/reference, fuel, gold, and validator/retail rate sources.
+- Refactored agentic orchestration and tool registration so `multi_source_rates` can be reused by agents, API routes, planner fallback, graph-runtime retrieval, and scheduler jobs.
+- Added `POST /api/v1/prices/query` and `GET /api/v1/prices/source-health` plus scheduled refresh jobs for the main Karnataka data categories.
+- Added focused tests, sprint notes, daily log entries, and ADR-011 so the slice is reviewable without reopening every code diff.
+- Verification snapshot: targeted rate-hub tests passed, targeted Ruff passed, and full-repo Ruff/mypy still have older unrelated backlog that should be cleaned up separately.
+
+**Fastest way to review this session**
+
+- Read `docs/decisions/ADR-011-multi-source-rate-hub.md` for the architecture decision and precedence model.
+- Read `tracking/daily/2026-03-17.md` for the execution log and `tracking/sprints/sprint-05-advanced-rag.md` for sprint-level impact.
+- Use the `2026-03-17 - Multi-Source Karnataka Rate Hub` section in the file log below when you want the full touched-file inventory.
+- Open `tests/unit/rates/` if you want concrete examples of connector normalization, comparison behavior, and service fan-out expectations.
+
+---
+
+## ðŸ“‚ Documentation Map
 
 ```
 / (repo root)
-  PLAN.md                      ← Master product + architecture plan (start here)
-  ROADMAP.md                   ← Phase milestones (Feb–Aug 2026)
-  AGENTS.md                    ← AI agent rules, prompts, file structure map
-  WORKFLOW_STATUS.md           ← This file: dev workflow + file changes log
-  CHANGELOG.md                 ← Version history
+  PLAN.md                      â† Master product + architecture plan (start here)
+  ROADMAP.md                   â† Phase milestones (Febâ€“Aug 2026)
+  AGENTS.md                    â† AI agent rules, prompts, file structure map
+  WORKFLOW_STATUS.md           â† This file: dev workflow + file changes log
+  CHANGELOG.md                 â† Version history
 
   tracking/
-    PROJECT_STATUS.md          ← Current state (update every sprint)
-    sprints/sprint-0X-*.md     ← Each sprint's goals + outcomes
-    daily/YYYY-MM-DD.md        ← Per-session work logs
-    milestones/                ← Phase completion records
-    retros/                    ← Sprint retrospective notes
+    PROJECT_STATUS.md          â† Current state (update every sprint)
+    sprints/sprint-0X-*.md     â† Each sprint's goals + outcomes
+    daily/YYYY-MM-DD.md        â† Per-session work logs
+    milestones/                â† Phase completion records
+    retros/                    â† Sprint retrospective notes
 
   docs/
-    decisions/ADR-*.md         ← Architecture Decision Records
-    agents/REGISTRY.md         ← Agent specs and prompt versions
-    api/                       ← API reference docs
-    architecture/              ← System architecture docs
+    decisions/ADR-*.md         â† Architecture Decision Records
+    agents/REGISTRY.md         â† Agent specs and prompt versions
+    api/                       â† API reference docs
+    architecture/              â† System architecture docs
 
   TESTING/
-    STRATEGY.md                ← Test philosophy, pyramid, AI prompts
-    CHECKLISTS.md              ← Per-feature done checklists
+    STRATEGY.md                â† Test philosophy, pyramid, AI prompts
+    CHECKLISTS.md              â† Per-feature done checklists
 ```
 
 ---
 
-## 🧭 Core Development Principles
+## ðŸ§­ Core Development Principles
 
 **1. Specs Before Code**  
 Always read `PLAN.md`, `tracking/PROJECT_STATUS.md`, and the active sprint file before writing any code. Context-first development produces better results with AI agents.
@@ -56,64 +335,66 @@ After each sprint, update goals, outcomes, and documents so AI has the latest co
 
 ---
 
-## 🔄 Sprint Workflow Loop
+## ðŸ”„ Sprint Workflow Loop
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    CropFresh Dev Loop                           │
-│                                                                 │
-│  Step 1: Refine PLAN.md + ROADMAP.md (once per phase)          │
-│    └─→ AI prompt: "Act as senior architect, review my plan…"   │
-│                                                                 │
-│  Step 2: Create sprint-XXX.md (start of each sprint)           │
-│    └─→ AI prompt: "Based on PLAN.md + last sprint, plan 2-wk…" │
-│                                                                 │
-│  Step 3: Daily Execution                                        │
-│    ├─→ Update tracking/daily/YYYY-MM-DD.md each session        │
-│    ├─→ Implement with AI: spec → code → tests → docs           │
-│    └─→ Commit with message: "Sprint-04: [task name]"           │
-│                                                                 │
-│  Step 4: Testing in Loop                                        │
-│    ├─→ AI generates tests for every function/endpoint           │
-│    └─→ AI reviews diff for bugs before merging                 │
-│                                                                 │
-│  Step 5: End-of-Sprint Review                                   │
-│    ├─→ Fill sprint-XXX.md "Outcome" section                    │
-│    ├─→ Update PROJECT_STATUS.md                                │
-│    ├─→ Create ADRs for any architecture decisions              │
-│    └─→ Git tag milestone releases                              │
-│                                                                 │
-│  Step 6: Refine Next Sprint                                     │
-│    ├─→ Move unfinished but important tasks forward             │
-│    ├─→ Adjust ROADMAP.md if macro milestones slip              │
-│    └─→ Start back at Step 2                                    │
-└─────────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    CropFresh Dev Loop                           â”‚
+â”‚                                                                 â”‚
+â”‚  Step 1: Refine PLAN.md + ROADMAP.md (once per phase)          â”‚
+â”‚    â””â”€â†’ AI prompt: "Act as senior architect, review my planâ€¦"   â”‚
+â”‚                                                                 â”‚
+â”‚  Step 2: Create sprint-XXX.md (start of each sprint)           â”‚
+â”‚    â””â”€â†’ AI prompt: "Based on PLAN.md + last sprint, plan 2-wkâ€¦" â”‚
+â”‚                                                                 â”‚
+â”‚  Step 3: Daily Execution                                        â”‚
+â”‚    â”œâ”€â†’ Update tracking/daily/YYYY-MM-DD.md each session        â”‚
+â”‚    â”œâ”€â†’ Implement with AI: spec â†’ code â†’ tests â†’ docs           â”‚
+â”‚    â””â”€â†’ Commit with message: "Sprint-04: [task name]"           â”‚
+â”‚                                                                 â”‚
+â”‚  Step 4: Testing in Loop                                        â”‚
+â”‚    â”œâ”€â†’ AI generates tests for every function/endpoint           â”‚
+â”‚    â””â”€â†’ AI reviews diff for bugs before merging                 â”‚
+â”‚                                                                 â”‚
+â”‚  Step 5: End-of-Sprint Review                                   â”‚
+â”‚    â”œâ”€â†’ Fill sprint-XXX.md "Outcome" section                    â”‚
+â”‚    â”œâ”€â†’ Update PROJECT_STATUS.md                                â”‚
+â”‚    â”œâ”€â†’ Create ADRs for any architecture decisions              â”‚
+â”‚    â””â”€â†’ Git tag milestone releases                              â”‚
+â”‚                                                                 â”‚
+â”‚  Step 6: Refine Next Sprint                                     â”‚
+â”‚    â”œâ”€â†’ Move unfinished but important tasks forward             â”‚
+â”‚    â”œâ”€â†’ Adjust ROADMAP.md if macro milestones slip              â”‚
+â”‚    â””â”€â†’ Start back at Step 2                                    â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
 
-## 💬 Standard AI Prompts (Copy-Paste Ready)
+## ðŸ’¬ Standard AI Prompts (Copy-Paste Ready)
 
-### 🏗️ Start of Sprint
+### ðŸ—ï¸ Start of Sprint
 
 ```
 "Here is my PLAN.md and ROADMAP.md. Based on last sprint's outcome in
 tracking/sprints/sprint-03-*.md, propose a 2-week sprint plan with
-5–7 concrete, testable tasks focused on [theme].
+5â€“7 concrete, testable tasks focused on [theme].
 Format it into the sprint template at tracking/sprints/_template.md."
 ```
 
-### ⚙️ Implement a Feature
+### âš™ï¸ Implement a Feature
 
 ```
-"Read PLAN.md, tracking/PROJECT_STATUS.md, and tracking/sprints/sprint-04-voice-pipeline.md.
+"Read PLAN.md, tracking/PROJECT_STATUS.md, and the relevant sprint file.
+For voice bridge work, start with tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md, docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md, and docs/features/livekit-voice-bridge.md.
+Cross-read tracking/sprints/sprint-07-voice-duplex-productionization.md only when you need current duplex runtime details.
 Implement [feature/endpoint name] in [file path].
 Follow coding standards in docs/architecture/coding-standards.md.
 Generate unit tests in tests/unit/ as part of this change.
 Update WORKFLOW_STATUS.md with the new file in the changes log."
 ```
 
-### 🧪 Generate Tests
+### ðŸ§ª Generate Tests
 
 ```
 "Read TESTING/STRATEGY.md for our test philosophy.
@@ -123,7 +404,7 @@ Mock all external dependencies (Qdrant, Groq, Redis).
 Add descriptive docstrings to each test."
 ```
 
-### 🔍 Pre-merge Review
+### ðŸ” Pre-merge Review
 
 ```
 "Analyze this diff and identify:
@@ -133,15 +414,16 @@ Add descriptive docstrings to each test."
 Reference TESTING/STRATEGY.md checklist and our coding standards."
 ```
 
-### 📊 End-of-Sprint Summary
+### ðŸ“Š End-of-Sprint Summary
 
 ```
-"Read tracking/sprints/sprint-04-voice-pipeline.md and the last 5 daily logs.
+"Read the active sprint file and the last 5 daily logs.
+For voice bridge work, start with tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md and ADR-015.
 Summarize: what shipped, what slipped, 3 key learnings.
 Format as the Sprint Outcome section and also update tracking/PROJECT_STATUS.md."
 ```
 
-### 📐 Architecture Decision
+### ðŸ“ Architecture Decision
 
 ```
 "I need to decide [decision topic]. Context: [brief context].
@@ -152,7 +434,7 @@ Format your recommendation as an ADR using docs/decisions/_template.md."
 
 ---
 
-## 🗂️ Keeping History (Git-Centric Approach)
+## ðŸ—‚ï¸ Keeping History (Git-Centric Approach)
 
 The user expressed concern about AI overwriting and losing history. Here is how this is prevented:
 
@@ -187,25 +469,32 @@ git checkout main && git merge feature/sprint-04-apmc-scraper
 
 ---
 
-## 📊 Current Component Status
+## ðŸ“Š Current Component Status
 
 | Component                           | Status         | Progress | Sprint    |
 | ----------------------------------- | -------------- | -------- | --------- |
-| Project Structure                   | ✅ Complete    | 100%     | Sprint 01 |
-| RAG Pipeline (RAPTOR + Hybrid)      | ✅ Complete    | 100%     | Sprint 01 |
-| Multi-Agent System                  | ✅ Complete    | 100%     | Sprint 01 |
-| Memory System (Redis)               | ✅ Complete    | 100%     | Sprint 01 |
-| Voice Agent v1 (Edge-TTS + Whisper) | ✅ Complete    | 90%      | Sprint 01 |
-| Pipecat Voice Pipeline              | 🟡 In Progress | 40%      | Sprint 04 |
-| APMC Mandi Scraper                  | ❌ Not Started | 0%       | Sprint 04 |
-| Supabase Schema                     | ❌ Not Started | 0%       | Sprint 05 |
-| Vision Agent (YOLOv12 + DINOv2)     | ❌ Not Started | 0%       | Phase 3   |
-| Evaluation Framework (LangSmith)    | ❌ Not Started | 0%       | Sprint 05 |
-| Flutter Mobile App                  | ❌ Not Started | 0%       | Phase 4   |
+| Project Structure                   | âœ… Complete    | 100%     | Sprint 01 |
+| RAG Pipeline (RAPTOR + Hybrid)      | âœ… Complete    | 100%     | Sprint 01 |
+| Multi-Agent System                  | âœ… Complete    | 100%     | Sprint 01 |
+| Memory System (Redis)               | âœ… Complete    | 100%     | Sprint 01 |
+| Voice Agent v1 (Edge-TTS + Whisper) | âœ… Complete    | 90%      | Sprint 01 |
+| Duplex WebSocket Voice Path         | In Progress    | 80%      | Sprint 07 carryover |
+| Pipecat Voice Pipeline              | ðŸŸ¡ In Progress | 40%      | Sprint 07 (experimental) |
+| LiveKit Voice Bridge Foundation     | Complete       | 100%     | Sprint 08 |
+| Semantic VAD + Session Recovery     | âŒ Not Started | 0%       | Sprint 09 |
+| Voice Orchestration State + Tools   | âŒ Not Started | 0%       | Sprint 10 |
+| Voice Load Hardening + Observability | âŒ Not Started | 0%       | Sprint 11 |
+| LiveKit Scale + Deployment          | âŒ Not Started | 0%       | Sprint 12 |
+| APMC Mandi Scraper                  | âŒ Not Started | 0%       | Sprint 04 |
+| ADCL Service (district-first)      | In Progress    | 80%      | Sprint 06 |
+| Supabase/Auth Hardening            | âŒ Not Started | 0%       | Backlog after Sprint 12 |
+| Vision Agent (YOLOv12 + DINOv2)     | âŒ Not Started | 0%       | Phase 3   |
+| Evaluation Framework (LangSmith)    | âŒ Not Started | 0%       | Sprint 05 |
+| Flutter Mobile App                  | âŒ Not Started | 0%       | Phase 4   |
 
 ---
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ```bash
 # 1. Start Qdrant
@@ -230,7 +519,7 @@ uv run ruff check src/
 
 ---
 
-## 🌐 API Endpoints Reference
+## ðŸŒ API Endpoints Reference
 
 ### Chat API
 
@@ -245,10 +534,11 @@ uv run ruff check src/
 
 | Endpoint                   | Method    | Description                   |
 | -------------------------- | --------- | ----------------------------- |
-| `/api/v1/voice/process`    | POST      | Full voice-in → voice-out     |
-| `/api/v1/voice/transcribe` | POST      | Audio → Text (STT)            |
-| `/api/v1/voice/synthesize` | POST      | Text → Audio (TTS)            |
-| `/ws/voice/{user_id}`      | WebSocket | Real-time streaming (Pipecat) |
+| `/api/v1/voice/process`    | POST      | Full voice-in â†’ voice-out     |
+| `/api/v1/voice/transcribe` | POST      | Audio â†’ Text (STT)            |
+| `/api/v1/voice/synthesize` | POST      | Text â†’ Audio (TTS)            |
+| `/api/v1/voice/ws`         | WebSocket | Compatibility voice streaming |
+| `/api/v1/voice/ws/duplex`  | WebSocket | Canonical realtime duplex path |
 
 ### RAG API
 
@@ -267,15 +557,363 @@ uv run ruff check src/
 
 ---
 
-## 📝 File Changes Log
+## ðŸ“ File Changes Log
 
-### 2026-03-11 — LLM Provider Modular Refactoring
+### 2026-03-18 - Sprint 08 Relay Integration and Voice Hub Bootstrap
+
+| Action | File | Description |
+|--------|------|-------------|
+| UPDATE | `services/voice-gateway/src/audio/relay-session.ts` | Added buffered-audio read/clear support so the ring buffer participates in the downstream relay path |
+| CREATE | `services/voice-gateway/src/services/vad-client.ts` | Added the gateway-side FastAPI client for Sprint 08 VAD analyze/reset calls |
+| CREATE | `services/voice-gateway/src/services/downstream-relay.ts` | Added the downstream duplex websocket relay client for buffered PCM flushes |
+| CREATE | `services/voice-gateway/src/services/relay-coordinator.ts` | Added the bridge contract that combines buffer state, VAD results, and downstream relay behavior |
+| UPDATE | `services/voice-gateway/src/routes/relay.ts` | Added relay frame, flush, and reset routes with bridge-aware request parsing |
+| UPDATE | `services/voice-gateway/src/app.ts` | Wired the relay coordinator into the gateway app |
+| UPDATE | `services/voice-gateway/package.json` | Forced Vitest into a worker-safe single-thread mode for local verification |
+| CREATE | `services/voice-gateway/tests/relay-coordinator.test.ts` | Added focused relay contract coverage |
+| UPDATE | `services/voice-gateway/tests/relay-session.test.ts` | Updated route assertions for the nested relay response shape |
+| CREATE | `services/vad-service/app/http_models.py` | Added HTTP request and response models for VAD analyze/reset support |
+| UPDATE | `services/vad-service/app/api.py` | Added `/v1/vad/analyze` and session reset endpoints |
+| UPDATE | `services/vad-service/app/runtime.py` | Added session-scoped segmenter caching and reset support |
+| UPDATE | `tests/unit/test_vad_service_api.py` | Added analyze/reset and invalid-base64 coverage |
+| CREATE | `static/assets/js/voice-agent-bootstrap.js` | Added gateway bootstrap support for the Voice Hub surface |
+| UPDATE | `static/assets/js/voice-agent-ws.js` | Added bootstrap, reconnect token reuse, heartbeat, and fallback-aware websocket handling |
+| UPDATE | `static/voice_agent.html` | Added gateway bootstrap config and a visible bridge-mode badge |
+| UPDATE | `tests/unit/test_static_testing_lab.py` | Added Voice Hub bootstrap and heartbeat contract checks |
+| UPDATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Marked Sprint 08 complete and filled the sprint outcome section |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Marked Sprint 08 complete and pointed the next session to Sprint 09 |
+| UPDATE | `tracking/tasks/backlog.md` | Closed the remaining Sprint 08 backlog items and moved browser-side LiveKit join into later work |
+| UPDATE | `tracking/daily/2026-03-18.md` | Appended the Sprint 08 relay integration closeout addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the final Sprint 08 implementation snapshot |
+| UPDATE | `ROADMAP.md` | Marked Sprint 08 complete and pointed the next implementation sprint to Sprint 09 |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this latest-session snapshot and file-log entry |
+
+### 2026-03-18 - Sprint 08 Bridge Services and Premium Bootstrap
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `services/voice-gateway/package.json` | Added the new Node gateway package manifest and scripts |
+| CREATE | `services/voice-gateway/src/` | Added gateway config, metrics, bootstrap routing, and audio utility modules |
+| CREATE | `services/voice-gateway/tests/` | Added Vitest coverage for bootstrap, RMS gate, and ring-buffer behavior |
+| CREATE | `services/vad-service/app/` | Added the FastAPI plus gRPC VAD service scaffold and Sprint 08 segmenter |
+| CREATE | `services/vad-service/proto/vad.proto` | Added the Sprint 08 protobuf contract for streaming VAD |
+| CREATE | `services/vad-service/app/proto/vad_pb2.py` | Added generated protobuf message bindings |
+| CREATE | `services/vad-service/app/proto/vad_pb2_grpc.py` | Added generated gRPC service bindings |
+| CREATE | `infra/docker/voice-gateway.Dockerfile` | Added a local dev image for the gateway |
+| CREATE | `infra/docker/vad-service.Dockerfile` | Added a local dev image for the VAD service |
+| UPDATE | `docker-compose.yml` | Added local dev services for the Sprint 08 gateway and VAD service |
+| UPDATE | `.env.example` | Added Sprint 08 environment variables for the new services |
+| UPDATE | `infra/monitoring/prometheus.yml` | Added a Prometheus scrape job for `voice-gateway` |
+| UPDATE | `static/premium_voice.html` | Added gateway bootstrap configuration and a visible fallback-mode pill |
+| CREATE | `static/assets/js/duplex/bootstrap.js` | Added the premium duplex bootstrap helper |
+| UPDATE | `static/assets/js/duplex/socket.js` | Added bootstrap resolution before websocket connection |
+| UPDATE | `static/assets/js/duplex/app.js` | Added bootstrap-aware logging and transport-mode UI updates |
+| UPDATE | `static/assets/js/duplex/ui.js` | Added a visible transport-mode indicator update helper |
+| UPDATE | `tests/unit/test_static_testing_lab.py` | Added coverage for the premium bootstrap and fallback indicator |
+| CREATE | `tests/unit/test_vad_service_segmenter.py` | Added unit coverage for the Sprint 08 segmenter and runtime energy gate |
+| CREATE | `tests/unit/test_vad_service_api.py` | Added coverage for VAD service health, readiness, and config routes |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Marked Sprint 08 as in progress and pointed the next session to the new service entrypoints |
+| UPDATE | `tracking/tasks/backlog.md` | Checked off the Sprint 08 items that are now implemented |
+| UPDATE | `tracking/daily/2026-03-18.md` | Appended the first Sprint 08 implementation addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the implementation snapshot for the first Sprint 08 code landing |
+| UPDATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Added a progress snapshot for the first implementation slice |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this latest-session snapshot and file-log entry |
+
+### 2026-03-18 - Sprint 09-12 Voice Program Docs Alignment
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Added the semantic endpointing, continuity, and reconnect-recovery sprint boundary |
+| CREATE | `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` | Added the orchestration, state-machine, memory, and tool-routing sprint boundary |
+| CREATE | `tracking/sprints/sprint-11-voice-load-hardening-and-observability.md` | Added the hardening, observability, and load-test sprint boundary |
+| CREATE | `tracking/sprints/sprint-12-livekit-scale-security-and-deployment.md` | Added the deployment, security, and cutover-readiness sprint boundary |
+| UPDATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Added explicit references to the Sprint 09-12 follow-on boundaries so Sprint 08 stays narrow |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the Sprint 08-12 voice-program sequence to the planned bridge architecture doc |
+| UPDATE | `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` | Marked Sprint 08 handoff docs complete and linked the follow-on sprint set |
+| UPDATE | `tracking/daily/2026-03-18.md` | Appended the Sprint 09-12 voice-program docs addendum and updated the next-session read order |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Added Sprint 09-12 component rows and expanded the next-session handoff pointers |
+| UPDATE | `ROADMAP.md` | Added the Sprint 09-12 near-term sequence and links |
+| UPDATE | `tracking/tasks/backlog.md` | Split the voice backlog into Sprint 09-12 follow-on buckets |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this latest-session snapshot, component-status alignment, and file-log entry |
+
+### 2026-03-18 - Docs-First Sprint 08 Voice Bridge Handoff
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Added the next implementation-facing sprint source of truth for bridge-mode voice work |
+| CREATE | `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md` | Locked bridge mode as the next architecture decision instead of immediate websocket replacement |
+| CREATE | `docs/features/livekit-voice-bridge.md` | Documented the planned bridge flow, browser bootstrap contract, and VAD gRPC contract |
+| CREATE | `tracking/daily/2026-03-18.md` | Added the docs-only handoff log with the next-session read order and first coding slice |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Repointed the next-session handoff to Sprint 08 and kept current voice runtime status truthful |
+| UPDATE | `ROADMAP.md` | Added the Sprint 08 sequencing addendum and moved Supabase/auth follow-up behind the bridge work |
+| UPDATE | `tracking/tasks/backlog.md` | Promoted Sprint 08 bridge-foundation tasks into the top voice bucket |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this handoff snapshot, prompt updates, component-status alignment, and file-log entries |
+
+### 2026-03-18 - Retro Template Cleanup
+
+| Action | File | Description |
+|--------|------|-------------|
+| UPDATE | `tracking/retros/sprint-04-retro.md` | Rewrote the Sprint 04 retrospective to match the retro template exactly while preserving the sprint learnings |
+| UPDATE | `tracking/retros/sprint-05-retro.md` | Normalized the Sprint 05 retrospective to the same template structure and retained the carry-forward actions |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this retro cleanup entry so the markdown-only change is recorded for the next session |
+
+### 2026-03-17 - Docs-First Voice Duplex Handoff
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/sprints/sprint-07-voice-duplex-productionization.md` | Added the next voice sprint source of truth for duplex productionization, latency targets, Bedrock removal, and live test cleanup |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Kept Sprint 06 current, added Sprint 07 next, and aligned the next-session entry with the voice handoff |
+| UPDATE | `tracking/tasks/backlog.md` | Promoted voice latency, Bedrock removal, Pipecat cleanup, and live-test work into explicit Sprint 07 backlog items |
+| UPDATE | `AGENTS.md` | Pointed startup guidance and prompts to Sprint 07 instead of the removed legacy voice sprint file |
+| UPDATE | `docs/api/websocket-voice.md` | Rewrote the websocket contract around `/api/v1/voice/ws` and `/api/v1/voice/ws/duplex` |
+| UPDATE | `docs/api/endpoints-reference.md` | Corrected the voice REST and websocket contract to match the current runtime |
+| UPDATE | `docs/features/voice-pipeline.md` | Rewrote the voice stack doc around duplex websocket, hybrid STT/TTS, and current latency reality |
+| UPDATE | `docs/architecture/system-architecture.md` | Aligned the architecture summary with the Bedrock-free provider direction and duplex-first voice path |
+| UPDATE | `docs/architecture/data-flow.md` | Corrected the voice and provider data flows to the current duplex contract |
+| UPDATE | `docs/guides/environment-variables.md` | Reframed provider setup around `groq`, `vllm`, and `together` |
+| UPDATE | `docs/guides/getting-started.md` | Replaced Bedrock-first onboarding with Groq and vLLM quick-start guidance |
+| UPDATE | `README.md` | Removed Bedrock-first positioning and described the current duplex voice stack accurately |
+| UPDATE | `infra/aws/iam-roles.md` | Removed Bedrock IAM guidance from the recommended production path |
+| UPDATE | `infra/aws/vpc-network.md` | Removed Bedrock-specific networking assumptions from the recommended path |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this handoff entry, refreshed prompts, and corrected the voice API summary |
+
+### 2026-03-17 - Sprint 05 Retrospective Update
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `tracking/retros/sprint-05-retro.md` | Added the Sprint 05 retrospective using the repo template and current sprint-pivot context |
+
+### 2026-03-17 - ADCL Productionization Implementation
+
+| Action | File | Description |
+|--------|------|-------------|
+| CREATE | `src/agents/adcl/service.py` | Canonical district-first ADCL service contract for REST, voice, listings, and wrappers |
+| CREATE | `src/agents/adcl/report_utils.py` | Shared ADCL evidence, metadata, and empty-report helpers |
+| CREATE | `src/agents/adcl/price_runtime.py` | Shared rate-hub-backed price signal builder for ADCL |
+| CREATE | `src/agents/adcl/scheduler.py` | APScheduler wrapper for weekly report generation and source refresh |
+| CREATE | `src/api/routes/adcl.py` | `GET /api/v1/adcl/weekly` endpoint |
+| CREATE | `src/api/runtime/` | Shared startup wiring for DB, ADCL, listings, voice, and scheduler state |
+| CREATE | `src/db/postgres/adcl.py` | Aurora ADCL read/write helpers |
+| CREATE | `src/db/migrations/004_adcl_reports_district_persistence.sql` | Composite-key ADCL report migration with freshness and source health |
+| UPDATE | `src/api/services/listing_service/enrichment.py` | Listing ADCL checks now prefer `is_recommended_crop(...)` |
+| UPDATE | `src/agents/voice/handlers_ext.py` | Voice weekly-demand flow now uses the canonical ADCL contract |
+| UPDATE | `src/api/rest/voice.py` | Voice REST routes now resolve shared runtime services |
+| UPDATE | `src/api/main.py` | Thin FastAPI entrypoint with shared runtime lifespan and router setup |
+| CREATE | `tests/api/test_adcl_routes.py` | API coverage for `/api/v1/adcl/weekly` |
+| UPDATE | `tests/unit/test_adcl_agent.py` | Focused tests for the canonical ADCL service behavior |
+| CREATE | `tests/unit/test_api_config.py` | Regression coverage for tolerant debug env parsing |
+| CREATE | `src/evaluation/datasets/adcl_golden_queries.json` | 20-query ADCL golden set |
+| CREATE | `src/evaluation/reports/adcl_backtest_2026-03-17.md` | Execution-ready ADCL backtest runbook and verification snapshot |
+| UPDATE | `docs/api/overview.md` | Added the ADCL weekly-report surface to the API overview |
+| UPDATE | `docs/api/endpoints-reference.md` | Added the ADCL route contract and caller-facing response shape |
+
+### 2026-03-17 - Sprint 06 ADCL Planning Handoff
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `tracking/sprints/sprint-06-adcl-productionization.md` | Added the next sprint plan for ADCL productionization, live data wiring, and hardening |
+| CREATE | `docs/decisions/ADR-012-adcl-district-first-service-contract.md` | Locked the canonical district-first ADCL service contract for Sprint 06 |
+| CREATE | `docs/decisions/ADR-013-adcl-source-precedence-and-evidence.md` | Locked the marketplace-first source precedence and evidence policy for ADCL |
+| UPDATE | `tracking/sprints/sprint-05-advanced-rag.md` | Added a forward-planning note pointing the next session at Sprint 06 ADCL work |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Added the Sprint 06 ADCL handoff, next-session reading order, and ADR references |
+| UPDATE | `ROADMAP.md` | Re-sequenced Sprint 06 around ADCL and moved Supabase/auth follow-up behind it |
+| UPDATE | `tracking/tasks/backlog.md` | Re-prioritized Sprint 06 backlog items around ADCL productionization |
+| UPDATE | `tracking/daily/2026-03-17.md` | Added an ADCL implementation handoff note for the next working session |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this entry and refreshed the last-updated timestamp |
+
+### 2026-03-16 - Vision Training Accuracy Hardening
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `src/shared/logger.py` | Made shared logger setup idempotent so training scripts can use structured logging safely |
+| CREATE | `src/agents/quality_assessment/training/dinov2_artifacts.py` | Split DINO seed/export helpers into a small companion module to keep training orchestration under the 200-line rule |
+| UPDATE | `src/agents/quality_assessment/training/dinov2_model.py` | Added partial backbone unfreezing support for higher-accuracy DINO fine-tuning |
+| UPDATE | `src/agents/quality_assessment/training/dinov2_data.py` | Added deterministic loaders, inverse-frequency class weights, and balanced train sampling metadata |
+| CREATE | `src/agents/quality_assessment/training/dinov2_metrics.py` | Added exact per-grade/per-commodity metrics and JSON training report generation |
+| UPDATE | `src/agents/quality_assessment/training/dinov2_training.py` | Reworked DINO training to use balanced loss, deterministic seeds, early stopping, ONNX validation, and structured metrics reports |
+| CREATE | `src/agents/quality_assessment/training/yolo_reporting.py` | Added YOLO validation metric extraction, release gates, and JSON report writing |
+| UPDATE | `scripts/train_dinov2_classifier.py` | Added CLI controls for seed, patience, label smoothing, backbone fine-tuning, balancing, and report output |
+| UPDATE | `scripts/train_yolo_defects.py` | Added validation gates, report generation, and structured logging before exporting the detector |
+| CREATE | `tests/unit/test_dinov2_metrics.py` | Added unit coverage for exact DINO evaluation/report payloads |
+| CREATE | `tests/unit/test_yolo_reporting.py` | Added unit coverage for YOLO metric extraction, threshold failures, and report writing |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this entry and refreshed the last-updated timestamp |
+
+### 2026-03-16 - Kannada-Aware RAG Prompting
+
+| Action | File                                      | Description                                                                  |
+| ------ | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `src/rag/language_support.py`             | Added Kannada/Kanglish language detection plus localized RAG fallback text  |
+| UPDATE | `src/rag/agentic/speculative.py`          | Injected Kannada-aware response instructions into speculative RAG drafting   |
+| UPDATE | `src/rag/graph_runtime/services.py`       | Localized no-doc and extractive fallback answers for Kannada RAG queries     |
+| UPDATE | `src/rag/graph_runtime/nodes.py`          | Localized generation error fallback and threaded route into answer builder   |
+| UPDATE | `src/rag/confidence_gate.py`              | Returned Kannada decline messages for safety/platform abstentions            |
+| UPDATE | `src/rag/query_rewriter_prompts.py`       | Added Kannada and Kanglish retrieval guidance to rewrite prompts             |
+| CREATE | `tests/unit/test_rag_language_support.py` | Added unit coverage for Kannada prompt injection and fallback behavior       |
+| UPDATE | `tests/unit/test_confidence_gate.py`      | Added Kannada-localized decline response regression test                     |
+| UPDATE | `WORKFLOW_STATUS.md`                      | Added this entry and refreshed the last-updated timestamp                    |
+
+### 2026-03-16 - Live RAG Benchmark Lift
+
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/routing/models.py`                     | Extracted routing enums and decision models from legacy `query_analyzer.py`  |
+| CREATE | `ai/rag/routing/prefilter.py`                  | Rule-based router prefilters and Kannada-aware fallback routing              |
+| CREATE | `ai/rag/routing/classifier.py`                 | LLM routing and query-analysis helpers                                       |
+| CREATE | `ai/rag/routing/router.py`                     | Thin router/analyzer orchestration layer                                     |
+| CREATE | `ai/rag/routing/__init__.py`                   | Routing package exports                                                      |
+| UPDATE | `ai/rag/query_analyzer.py`                     | Converted oversized module into compatibility re-export layer                |
+| CREATE | `src/agents/knowledge_models.py`               | Typed response models for user-facing and benchmark/debug knowledge output    |
+| CREATE | `src/agents/knowledge_mapping.py`              | Source-detail and citation extraction helpers for benchmark runs             |
+| CREATE | `src/agents/knowledge_runtime.py`              | Benchmark embedding toggle helper for `KnowledgeAgent`                       |
+| UPDATE | `src/agents/knowledge_agent.py`                | Added `answer_with_debug()` while keeping `answer()` contract stable         |
+| CREATE | `src/rag/export_map.py`                        | Added lazy export registry so `src.rag` submodules can load without cycles   |
+| UPDATE | `src/rag/__init__.py`                          | Replaced eager package imports with lazy export resolution                   |
+| UPDATE | `src/rag/query_analyzer.py`                    | Made `src.rag` the app-facing routing facade over the split adaptive router  |
+| UPDATE | `src/rag/grader.py`                            | Made `src.rag` the app-facing grading facade over the new `src/rag/grading/` package |
+| UPDATE | `src/rag/export_map.py`                        | Expanded lazy exports to include adaptive router and enhanced grader symbols |
+| UPDATE | `src/rag/graph.py`                             | Replaced monolith with compatibility facade over `ai.rag.graph`              |
+| MOVE   | `ai/rag/routing/` -> `src/rag/routing/`        | Consolidated adaptive router implementation into the canonical `src/rag` tree |
+| MOVE   | `ai/rag/retrieval/` -> `src/rag/retrieval/`    | Consolidated advanced retrieval helpers into `src/rag`                       |
+| MOVE   | `ai/rag/agentic/` -> `src/rag/agentic/`        | Consolidated agentic RAG internals into `src/rag`                            |
+| MOVE   | `ai/rag/browser_rag_pkg/` -> `src/rag/browser_rag_pkg/` | Consolidated browser-augmented RAG internals into `src/rag`          |
+| MOVE   | `ai/rag/graph/` -> `src/rag/graph_runtime/`    | Moved LangGraph runtime internals under `src/rag` without colliding with `src/rag/graph.py` |
+| MOVE   | `ai/rag/evaluation/` -> `src/rag/benchmark/`   | Moved live benchmark pipeline under `src/rag` without colliding with legacy `src/rag/evaluation.py` |
+| MOVE   | `ai/rag/agri_embeddings.py` -> `src/rag/agri_embeddings.py` | Moved AgriEmbeddingWrapper into canonical `src/rag` surface      |
+| MOVE   | `ai/rag/citation_engine.py` -> `src/rag/citation_engine.py` | Moved citation engine into canonical `src/rag` surface           |
+| MOVE   | `ai/rag/confidence_gate.py` -> `src/rag/confidence_gate.py` | Moved confidence gate into canonical `src/rag` surface           |
+| MOVE   | `ai/rag/query_rewriter.py` -> `src/rag/query_rewriter.py` | Moved query rewriting into canonical `src/rag` surface            |
+| MOVE   | `ai/rag/query_rewriter_prompts.py` -> `src/rag/query_rewriter_prompts.py` | Moved query rewriting prompts into `src/rag`        |
+| MOVE   | `ai/rag/browser_rag.py` -> `src/rag/browser_rag.py` | Moved browser RAG redirect into canonical `src/rag` surface     |
+| MOVE   | `ai/rag/agentic_orchestrator.py` -> `src/rag/agentic_orchestrator.py` | Moved agentic orchestrator redirect into `src/rag` |
+| MOVE   | `ai/rag/knowledge_base/` -> `src/rag/knowledge_base_data/` | Moved RAG knowledge assets under the canonical `src/rag` tree   |
+| CREATE | `src/rag/grading/models.py`                    | Extracted grading models and constants from the oversized enhanced grader     |
+| CREATE | `src/rag/grading/relevance.py`                 | Extracted relevance scoring and freshness-aware grading logic                  |
+| CREATE | `src/rag/grading/hallucination.py`             | Extracted hallucination checking logic                                         |
+| CREATE | `src/rag/grading/__init__.py`                  | Public package exports for the new canonical grading package                  |
+| CREATE | `src/rag/agri_terms.py`                        | Extracted the large bilingual agri term map from `agri_embeddings.py`         |
+| CREATE | `ai/rag/export_map.py`                         | Added lazy export registry for combined `ai.rag` package exports             |
+| UPDATE | `ai/rag/__init__.py`                           | Reduced `ai.rag` to a compatibility-only namespace over the canonical `src.rag` modules |
+| UPDATE | `ai/rag/export_map.py`                         | Redirected compatibility exports to `src.rag.*` instead of local `ai.rag` implementations |
+| DELETE | `ai/rag/advanced_reranker.py`                  | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/contextual_chunker.py`                 | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/embeddings.py`                         | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/evaluation.py`                         | Removed shadowing module in favor of the real moved benchmark package       |
+| DELETE | `ai/rag/graph.py`                              | Removed shadowing module in favor of the moved graph runtime package        |
+| DELETE | `ai/rag/graph_constructor.py`                  | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/graph_retriever.py`                    | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/graph_store.py`                        | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/hybrid_search.py`                      | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/knowledge_base.py`                     | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/knowledge_injection.py`                | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/observability.py`                      | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/production.py`                         | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/raptor.py`                             | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/reranker.py`                           | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/retriever.py`                          | Removed duplicate top-level proxy to reduce `ai/rag` confusion              |
+| DELETE | `ai/rag/grader.py`                             | Removed the old enhanced grader module after moving logic into `src/rag/grading/` |
+| DELETE | `ai/rag/query_analyzer.py`                     | Removed the old query analyzer shim after moving routing ownership into `src/rag` |
+| DELETE | `ai/rag/query_processor.py`                    | Removed redundant query processor proxy after consolidating on `src/rag/query_processor/` |
+| DELETE | `ai/rag/enhanced/`                             | Removed unused duplicate enhanced RAG package after consolidating on `src/rag/enhanced/` |
+| DELETE | `ai/rag/enhanced_retriever/`                   | Removed unused duplicate enhanced retriever package after consolidating on `src/rag/enhanced_retriever/` |
+| CREATE | `ai/rag/graph/services.py`                     | Shared retrieval/generation helpers for graph runtime                        |
+| UPDATE | `ai/rag/graph/state.py`                        | Added route, tool-call, and document fields for benchmark observability      |
+| UPDATE | `ai/rag/graph/nodes.py`                        | Routed retrieval through adaptive router and shared services                 |
+| UPDATE | `ai/rag/graph/nodes_safety.py`                 | Enabled injected web search and retained gate/evaluator flow                 |
+| UPDATE | `ai/rag/graph/builder.py`                      | Fixed final answer mapping so declined answers surface correctly             |
+| CREATE | `ai/rag/evaluation/models.py`                  | JSON dataset entry, resolved reference, and live-run extra models            |
+| CREATE | `ai/rag/evaluation/dataset_loader.py`          | Loader for `core_live` and `full` JSON benchmark datasets                    |
+| CREATE | `ai/rag/evaluation/reference_resolver.py`      | Static/live reference resolver with Agmarknet freshness checks               |
+| CREATE | `ai/rag/evaluation/pipeline_adapter.py`        | Benchmark adapter for the canonical `KnowledgeAgent` runtime path            |
+| CREATE | `ai/rag/evaluation/live_runner.py`             | Semantic benchmark runner using `src.evaluation.ragas_evaluator`             |
+| CREATE | `ai/rag/evaluation/runtime.py`                 | Benchmark runtime factory for `KnowledgeAgent` + configured LLM              |
+| UPDATE | `ai/rag/evaluation/golden_dataset.py`          | Converted dataset entrypoint to JSON-backed loader helpers                   |
+| UPDATE | `ai/rag/evaluation/guardrail.py`               | Added explicit `live` and `heuristic` guardrail modes over real pipeline     |
+| UPDATE | `ai/rag/evaluation/reporting.py`               | Writes semantic reports plus guardrail and extras artifacts                  |
+| UPDATE | `ai/rag/evaluation/__init__.py`                | Refreshed package exports for new benchmark modules                          |
+| CREATE | `ai/rag/evaluation/datasets/core_live.json`    | Phase-1 benchmark subset for market, agronomy, pest, scheme, and Kannada     |
+| CREATE | `ai/rag/evaluation/datasets/full.json`         | Full regression dataset including deferred weather and multi-hop items       |
+| UPDATE | `scripts/eval_guardrail.py`                    | Added ASCII-safe CLI with `--live`, `--heuristic`, `--subset`, and `--runs`  |
+| UPDATE | `docs/architecture/rag-benchmark-baseline.md`  | Reframed baseline doc around live vs heuristic benchmark modes               |
+| UPDATE | `tests/unit/test_evaluation.py`                | Replaced canned-answer tests with live guardrail and JSON dataset coverage   |
+| CREATE | `tests/unit/test_routing.py`                   | Routing regression tests for Kannada and compatibility exports               |
+| CREATE | `tests/unit/test_benchmark_dataset.py`         | Dataset loader and reference resolver unit tests                             |
+| CREATE | `tests/unit/test_knowledge_agent_debug.py`     | `KnowledgeAgent.answer_with_debug()` unit coverage                           |
+| CREATE | `tests/unit/test_rag_module_boundaries.py`     | Verifies `src.rag` is the public surface and duplicate `ai/rag` files stay removed |
+| CREATE | `tests/unit/test_rag_graph_edges_extra.py`     | Regression test for single-pass web-search fallback routing                  |
+| CREATE | `tests/unit/test_rag_graph_facade.py`          | Compatibility facade mapping tests for `src/rag/graph.py`                    |
+| CREATE | `tests/unit/test_guardrail_cli.py`             | CLI summary and ASCII-safety tests                                           |
+| UPDATE | `tests/integration/test_rag_integration.py`    | Canonical runtime integration tests with mocked KB and live source adapters  |
+| DELETE | `ai/evals/`                                    | Removed unused legacy evaluation scaffold so `src/evaluation` is the single maintained evaluation surface |
+| UPDATE | `scripts/run-all-evals.sh`                     | Pointed the evaluation entrypoint at `python -m src.evaluation.eval_runner`  |
+| UPDATE | `tests/unit/test_ragas_evaluator.py`           | Cleaned imports while keeping coverage on the canonical `src.evaluation` stack |
+| UPDATE | `TESTING/STRATEGY.md`                          | Replaced stale `ai/evaluations` references with `src/evaluation` datasets and commands |
+
+### 2026-03-14 â€” Phase 1: Anti-Hallucination Pipeline (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/query_rewriter.py`                     | HyDE, step-back, and multi-query expansion strategies (178 LOC)              |
+| CREATE | `ai/rag/query_rewriter_prompts.py`             | Prompt templates for query rewriting (74 LOC)                                |
+| CREATE | `ai/rag/citation_engine.py`                    | Inline [1], [2] citation markers with source attribution (172 LOC)           |
+| CREATE | `ai/rag/confidence_gate.py`                    | "I don't know" safety gate with Kannada keywords (195 LOC)                   |
+| UPDATE | `ai/rag/grader.py`                             | Continuous 0â€“1 scoring, time-decay for stale market docs, Kannada keywords   |
+| CREATE | `tests/unit/test_query_rewriter.py`            | 12 tests: strategies, classification, edge cases, LLM fallback              |
+| CREATE | `tests/unit/test_citation_engine.py`           | 8 tests: heuristic/LLM citations, source extraction, formatting             |
+| CREATE | `tests/unit/test_confidence_gate.py`           | 9 tests: safety classification, grounding, gating, Kannada                   |
+| CREATE | `tests/unit/test_grader_enhanced.py`           | 11 tests: continuous scoring, time-decay, batch grading                      |
+| CREATE | `docs/planning/advanced-agentic-rag-plan.md`   | Comprehensive 4-phase implementation plan                                    |
+| CREATE | `docs/decisions/ADR-010.md`                    | Architecture Decision Record for Advanced Agentic RAG upgrade                |
+
+### 2026-03-14 â€” Phase 3: LangGraph State Machine (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/graph/state.py`                        | RAG state TypedDict + GraphRunResult Pydantic model (77 LOC)                 |
+| CREATE | `ai/rag/graph/nodes.py`                        | 5 pipeline nodes: rewrite, retrieve, grade, generate, cite (199 LOC)         |
+| CREATE | `ai/rag/graph/nodes_safety.py`                 | 3 safety nodes: gate, evaluate, web_search (175 LOC)                         |
+| CREATE | `ai/rag/graph/edges.py`                        | Conditional edge routing: after_grade, after_evaluate, after_gate (83 LOC)   |
+| CREATE | `ai/rag/graph/builder.py`                      | Graph assembly + `run_rag_graph()` public API (143 LOC)                      |
+| CREATE | `ai/rag/graph/__init__.py`                     | Package exports (15 LOC)                                                     |
+| CREATE | `tests/unit/test_rag_graph.py`                 | 17 tests: edge routing, node functions, graph compilation                    |
+
+### 2026-03-14 â€” Phase 4: Advanced Retrieval (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/retrieval/contextual_enricher.py`      | Anthropic-style chunk enrichment with section inference (155 LOC)             |
+| CREATE | `ai/rag/retrieval/query_decomposer.py`         | Multi-part query splitting with Kannada conjunctions (164 LOC)               |
+| CREATE | `ai/rag/retrieval/time_aware.py`               | Freshness-boosted scoring: market/weather/scheme/evergreen (175 LOC)         |
+| CREATE | `ai/rag/retrieval/advanced_retriever.py`       | Retrieval coordinator: decompose â†’ retrieve â†’ rerank (130 LOC)               |
+| CREATE | `ai/rag/retrieval/__init__.py`                 | Package exports (27 LOC)                                                     |
+| CREATE | `tests/unit/test_advanced_retrieval.py`        | 18 tests: enricher, decomposer, time-aware, edge cases                       |
+
+### 2026-03-14 â€” Phase 5: Evaluation & Guardrails (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| CREATE | `ai/rag/evaluation/metrics.py`                 | RAGAS multi-metric evaluator: faithfulness, relevancy, precision (196 LOC)   |
+| CREATE | `ai/rag/evaluation/golden_dataset.py`          | 30 golden queries: market, agronomy, pest, scheme, weather, Kannada          |
+| CREATE | `ai/rag/evaluation/guardrail.py`               | CI quality gate with configurable thresholds (154 LOC)                       |
+| CREATE | `ai/rag/evaluation/__init__.py`                | Package exports (31 LOC)                                                     |
+| CREATE | `scripts/eval_guardrail.py`                    | CLI entry point for CI/CD pipeline (85 LOC)                                  |
+| CREATE | `tests/unit/test_evaluation.py`                | 17 tests: evaluator, dataset integrity, guardrail logic                      |
+
+### 2026-03-14 â€” Phase 6: Documentation, Integration Tests & Benchmark (ADR-010)
+
+| Action | File                                           | Description                                                                  |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| MODIFY | `docs/architecture/data-flow.md`               | Replaced Section 5 with Advanced Agentic RAG architecture (6 subsections)    |
+| CREATE | `docs/architecture/rag-benchmark-baseline.md`  | Evaluation benchmark baseline report with heuristic scores                   |
+| CREATE | `tests/integration/test_rag_integration.py`    | 10 integration tests: pipeline, LangGraph, evaluation, cross-module          |
+
+### 2026-03-11 â€” LLM Provider Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
 | CREATE | `src/orchestrator/llm_provider/models.py`          | Extracted `LLMMessage` and `LLMResponse` models                              |
 | CREATE | `src/orchestrator/llm_provider/base.py`            | Extracted `BaseLLMProvider` interface                                        |
-| CREATE | `src/orchestrator/llm_provider/bedrock.py`         | Extracted Amazon Bedrock provider                                            |
+| CREATE | `src/orchestrator/llm_provider/bedrock.py`         | Extracted legacy Amazon Bedrock provider                                     |
 | CREATE | `src/orchestrator/llm_provider/groq.py`            | Extracted Groq provider                                                      |
 | CREATE | `src/orchestrator/llm_provider/together.py`        | Extracted Together AI provider                                               |
 | CREATE | `src/orchestrator/llm_provider/vllm.py`            | Extracted vLLM provider                                                      |
@@ -283,7 +921,7 @@ uv run ruff check src/
 | CREATE | `src/orchestrator/llm_provider/__init__.py`        | Initialized `llm_provider` package                                           |
 | UPDATE | `src/orchestrator/llm_provider.py`                 | Reduced (477 -> 24 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Real-Time Data Manager Modular Refactoring
+### 2026-03-11 â€” Real-Time Data Manager Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -295,7 +933,7 @@ uv run ruff check src/
 | UPDATE | `src/scrapers/realtime_data.py`                    | Reduced (480 -> 21 lines) by converting into an import proxy                 |
 | UPDATE | `src/tools/realtime_data.py`                       | Reduced (480 -> 21 lines) by converging to the same import proxy             |
 
-### 2026-03-11 — Deep Research Tool Modular Refactoring
+### 2026-03-11 â€” Deep Research Tool Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -308,7 +946,7 @@ uv run ruff check src/
 | CREATE | `src/tools/deep_research/__init__.py`              | Initialized tool package                                                     |
 | UPDATE | `src/tools/deep_research.py`                       | Reduced (484 -> 54 lines) by converting into an import proxy and registry    |
 
-### 2026-03-11 — Duplex Pipeline Modular Refactoring
+### 2026-03-11 â€” Duplex Pipeline Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -319,7 +957,7 @@ uv run ruff check src/
 | CREATE | `src/voice/duplex/__init__.py`                     | Created package public interface                                             |
 | UPDATE | `src/voice/duplex_pipeline.py`                     | Reduced (488 -> 17 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Price Prediction Agent Modular Refactoring
+### 2026-03-11 â€” Price Prediction Agent Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -329,7 +967,7 @@ uv run ruff check src/
 | CREATE | `src/agents/price_prediction/__init__.py`          | Provided a clean public interface for the agent                              |
 | UPDATE | `src/agents/price_prediction/agent.py`             | Reduced (514 -> 241 lines) by importing mixins and models                    |
 
-### 2026-03-11 — Base Agent Modular Refactoring (Protected File Compatible)
+### 2026-03-11 â€” Base Agent Modular Refactoring (Protected File Compatible)
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -341,7 +979,7 @@ uv run ruff check src/
 | CREATE | `src/agents/base/__init__.py`                      | Exposed base agent components                                                |
 | UPDATE | `src/agents/base_agent.py`                         | Reduced (516 -> 15 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — VAD Module Modular Refactoring
+### 2026-03-11 â€” VAD Module Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -352,7 +990,7 @@ uv run ruff check src/
 | CREATE | `src/voice/vad/__init__.py`                        | Exposed `SileroVAD`, `BargeinDetector`, models, and utils                    |
 | UPDATE | `src/voice/vad.py`                                 | Reduced (527 -> 20 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — AI Kosha Client Modular Refactoring
+### 2026-03-11 â€” AI Kosha Client Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -362,7 +1000,7 @@ uv run ruff check src/
 | CREATE | `src/scrapers/aikosha/__init__.py`                 | Exposed `AIKoshaClient`, models, and catalog methods                        |
 | UPDATE | `src/scrapers/aikosha_client.py`                   | Reduced (530 -> 19 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — WebRTC Transport Modular Refactoring
+### 2026-03-11 â€” WebRTC Transport Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -373,13 +1011,13 @@ uv run ruff check src/
 | CREATE | `src/voice/webrtc/__init__.py`                     | Exposed WebRTC transport models and classes                                  |
 | UPDATE | `src/voice/webrtc_transport.py`                    | Reduced (538 -> 24 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Agri Scrapers Tool Proxy
+### 2026-03-11 â€” Agri Scrapers Tool Proxy
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
 | UPDATE | `src/tools/agri_scrapers.py`                       | Reduced (539 -> 26 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — Contextual Chunker Modular Refactoring
+### 2026-03-11 â€” Contextual Chunker Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -393,7 +1031,7 @@ uv run ruff check src/
 | UPDATE | `src/rag/contextual_chunker.py`                    | Reduced (553 -> 20 lines) by converting into an import proxy file            |
 | UPDATE | `ai/rag/contextual_chunker.py`                     | Reduced (553 -> 20 lines) by converting into an import proxy file            |
 
-### 2026-03-11 — TTS (Voice) Module Refactoring
+### 2026-03-11 â€” TTS (Voice) Module Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -404,7 +1042,7 @@ uv run ruff check src/
 | CREATE | `src/voice/tts/__init__.py`                        | Exposed public interfaces for seamless imports                               |
 | DELETE | `src/voice/tts.py`                                 | Cleaned up monolithic (566 lines) file for <200 bounds compliance            |
 
-### 2026-03-11 — Buyer Matching Agent Modular Refactoring
+### 2026-03-11 â€” Buyer Matching Agent Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -416,7 +1054,7 @@ uv run ruff check src/
 | UPDATE | `src/agents/buyer_matching/agent.py`               | Refactored `BuyerMatchingAgent` to consume core mixins (569 -> 167 lines)    |
 | CREATE | `src/agents/buyer_matching/__init__.py`            | Exposed public interfaces for seamless imports                               |
 
-### 2026-03-11 — Listing Service Modular Refactoring
+### 2026-03-11 â€” Listing Service Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -428,7 +1066,7 @@ uv run ruff check src/
 | CREATE | `src/api/services/listing_service/__init__.py`     | Final backward-compatible API export point                                   |
 | DELETE | `src/api/services/listing_service.py`              | Cleaned up monolithic (571 lines) file for <200 bounds compliance            |
 
-### 2026-03-11 — Google AMED Modular Refactoring
+### 2026-03-11 â€” Google AMED Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -438,7 +1076,7 @@ uv run ruff check src/
 | CREATE | `src/tools/google_amed/__init__.py`                | Re-exported `get_amed_client` factory ensuring backwards compatibility       |
 | DELETE | `src/tools/google_amed.py`                         | Dismantled monolithic file (579 lines) to respect 200-line modular rule      |
 
-### 2026-03-11 — Digital Twin Engine Modular Refactoring
+### 2026-03-11 â€” Digital Twin Engine Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -449,7 +1087,7 @@ uv run ruff check src/
 | CREATE | `src/agents/digital_twin/engine/__init__.py`       | Exposed identically to original module structure API exports                 |
 | DELETE | `src/agents/digital_twin/engine.py`                | Swept monolithic file (586 lines) under the 200-line compliance rule         |
 
-### 2026-03-11 — Agri Scrapers Modular Refactoring
+### 2026-03-11 â€” Agri Scrapers Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -462,7 +1100,7 @@ uv run ruff check src/
 | CREATE | `src/scrapers/agri_scrapers/__init__.py`           | Initialized the package identical to old file exports                        |
 | DELETE | `src/scrapers/agri_scrapers.py`                    | Deleted monolithic file (611 lines) replacing it with the new package        |
 
-### 2026-03-11 — Web Scraping Agent Modular Refactoring
+### 2026-03-11 â€” Web Scraping Agent Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -476,7 +1114,7 @@ uv run ruff check src/
 | CREATE | `src/agents/web_scraping_agent/__init__.py`        | Exposed unified clean API representing the old monolithic file               |
 | DELETE | `src/agents/web_scraping_agent.py`                 | Removed monolithic file (624 lines) fulfilling the 200-line rule             |
 
-### 2026-03-11 — State Manager Modular Refactoring
+### 2026-03-11 â€” State Manager Modular Refactoring
 
 | Action | File                                               | Description                                                                  |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -489,7 +1127,7 @@ uv run ruff check src/
 | CREATE | `src/shared/memory/state_manager/__init__.py`      | Exposed identical API replacing the old module                               |
 | DELETE | `src/shared/memory/state_manager.py`               | Removed monolithic file (630 lines) to comply with 200-line limit            |
 
-### 2026-03-11 — Query Processor Modular Refactoring
+### 2026-03-11 â€” Query Processor Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -505,7 +1143,7 @@ uv run ruff check src/
 | DELETE | `src/rag/query_processor.py`                   | Deleted monolithic file to comply with 200-line rule                         |
 | UPDATE | `ai/rag/query_processor.py`                    | Converted duplicate file to an import proxy for the new package              |
 
-### 2026-03-11 — IMD Weather Client Modular Refactoring
+### 2026-03-11 â€” IMD Weather Client Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -519,7 +1157,7 @@ uv run ruff check src/
 | DELETE | `src/scrapers/imd_weather.py`                  | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
 | UPDATE | `src/tools/imd_weather.py`                     | Replaced duplicate monolithic code with an import proxy to the new package   |
 
-### 2026-03-11 — eNAM Client Modular Refactoring
+### 2026-03-11 â€” eNAM Client Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -534,7 +1172,7 @@ uv run ruff check src/
 | DELETE | `src/scrapers/enam_client.py`                  | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
 | UPDATE | `src/tools/enam_client.py`                     | Replaced duplicate monolithic code with an import proxy to the new package   |
 
-### 2026-03-11 — Supervisor Agent Modular Refactoring
+### 2026-03-11 â€” Supervisor Agent Modular Refactoring
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -549,7 +1187,7 @@ uv run ruff check src/
 | DELETE | `src/agents/supervisor_agent.py`               | Removed monolithic file (>600 lines) to adhere to 200-line rule              |
 | UPDATE | `src/agents/__init__.py`                       | Updated imports to use the new `src.agents.supervisor` package               |
 
-### 2026-03-11 — Agronomy Agent Multilingual Accuracy Improvements
+### 2026-03-11 â€” Agronomy Agent Multilingual Accuracy Improvements
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -560,26 +1198,26 @@ uv run ruff check src/
 | UPDATE | `src/agents/agronomy_prompt.py`                | Expanded Kannada-specific vocabulary mapping, tone, and grammar enforcement  |
 | CREATE | `scripts/test_llm_routing.py`                  | Standalone LLM prompt testing script to view agent routing visualizations    |
 | CREATE | `tests/unit/agents/test_supervisor_agent.py`   | Robust LLM parsing and keyword fallback unit tests for Supervisor Agent      |
-| UPDATE | `.env`                                         | Switched the active LLM provider from Bedrock to Groq (`llama-3.3-70b-versatile`) |
+| UPDATE | `.env`                                         | Switched the active LLM provider from legacy Bedrock to Groq (`llama-3.3-70b-versatile`) |
 | UPDATE | `src/orchestrator/llm_provider.py`             | Updated `GroqProvider` default arguments for `llama-3.3-70b-versatile`       |
 | UPDATE | `scripts/test_llm_routing.py`                  | Adjusted expected outputs to match exact routing prompt instructions; fixed Windows console Unicode display issues |
 
-### 2026-02-27 — Workflow Documentation System
+### 2026-02-27 â€” Workflow Documentation System
 
 | Action | File                                           | Description                                                                  |
 | ------ | ---------------------------------------------- | ---------------------------------------------------------------------------- |
-| CREATE | `ROADMAP.md`                                   | 6-phase milestone roadmap (Feb–Aug 2026)                                     |
+| CREATE | `ROADMAP.md`                                   | 6-phase milestone roadmap (Febâ€“Aug 2026)                                     |
 | UPDATE | `PLAN.md`                                      | Full architecture diagram, user flows, NFRs, risk register, tech stack       |
 | UPDATE | `AGENTS.md`                                    | Complete AI agent instructions: dev rules, file map, prompts, do-not-do list |
-| UPDATE | `WORKFLOW_STATUS.md`                           | This file — comprehensive dev workflow + methodology                         |
+| UPDATE | `WORKFLOW_STATUS.md`                           | This file â€” comprehensive dev workflow + methodology                         |
 | CREATE | `tracking/PROJECT_STATUS.md`                   | Always-current project state dashboard                                       |
-| CREATE | `tracking/sprints/sprint-04-voice-pipeline.md` | Current sprint: Pipecat + APMC scraping                                      |
+| CREATE | `tracking/sprints/(historical voice plan)`     | Initial voice sprint plan created during early repo setup                    |
 | CREATE | `tracking/daily/_template.md`                  | Daily log template                                                           |
 | CREATE | `tracking/daily/2026-02-27.md`                 | Today's session log                                                          |
 | CREATE | `TESTING/STRATEGY.md`                          | Test pyramid, philosophy, AI prompts for testing                             |
 | CREATE | `TESTING/CHECKLISTS.md`                        | Per-feature-type done checklists                                             |
 
-### 2026-02-27 — Production Scraping Upgrade (Earlier Session)
+### 2026-02-27 â€” Production Scraping Upgrade (Earlier Session)
 
 | Action | File                           | Description                                           |
 | ------ | ------------------------------ | ----------------------------------------------------- |
@@ -587,7 +1225,7 @@ uv run ruff check src/
 | UPDATE | `src/scrapers/apmc/`           | Production-grade APMC scraper upgrade                 |
 | UPDATE | `src/pipelines/`               | Data pipeline with caching + APScheduler              |
 
-### 2026-02-26 — Voice Domain Separation
+### 2026-02-26 â€” Voice Domain Separation
 
 | Action | File                               | Description                           |
 | ------ | ---------------------------------- | ------------------------------------- |
@@ -598,7 +1236,7 @@ uv run ruff check src/
 | CREATE | `src/voice/pipecat_bot.py`         | Main Pipecat bot entry point          |
 | CREATE | `src/api/websocket/voice_ws.py`    | WebSocket handler for Pipecat stream  |
 
-### 2026-02-26 — Domain Separation (RAG, Vision, Voice)
+### 2026-02-26 â€” Domain Separation (RAG, Vision, Voice)
 
 | Action      | File             | Description                                            |
 | ----------- | ---------------- | ------------------------------------------------------ |
@@ -607,7 +1245,7 @@ uv run ruff check src/
 | RESTRUCTURE | `src/voice/`     | Voice domain with dedicated agent                      |
 | UPDATE      | `ai/__init__.py` | Unified exports for all AI domains                     |
 
-### 2026-02-27 — Advanced Folder Structure (Earliest Session)
+### 2026-02-27 â€” Advanced Folder Structure (Earliest Session)
 
 | Action | File                   | Description                                              |
 | ------ | ---------------------- | -------------------------------------------------------- |
@@ -615,9 +1253,9 @@ uv run ruff check src/
 | CREATE | `tracking/`            | Development tracking (goals, sprints, daily, milestones) |
 | CREATE | `infra/`               | Deployment & monitoring configs                          |
 | CREATE | `config/`              | Database & service configurations                        |
-| MOVE   | `src/rag/` → `ai/rag/` | RAG pipeline moved to ai/                                |
+| MOVE   | `src/rag/` â†’ `ai/rag/` | RAG pipeline moved to ai/                                |
 
-### January 10, 2026 — Advanced RAG Phase 1–4
+### January 10, 2026 â€” Advanced RAG Phase 1â€“4
 
 | Action | File                            | Description                                           |
 | ------ | ------------------------------- | ----------------------------------------------------- |
@@ -632,7 +1270,7 @@ uv run ruff check src/
 | CREATE | `src/rag/graph_retriever.py`    | Neo4j Graph RAG with entity extraction                |
 | CREATE | `src/rag/observability.py`      | LangSmith tracing + RAG eval metrics                  |
 
-### January 9, 2026 — Multi-Agent System + Voice v1
+### January 9, 2026 â€” Multi-Agent System + Voice v1
 
 | Action | File                             | Description                                       |
 | ------ | -------------------------------- | ------------------------------------------------- |
@@ -648,7 +1286,7 @@ uv run ruff check src/
 
 ---
 
-## ⚠️ Known Issues & Workarounds
+## âš ï¸ Known Issues & Workarounds
 
 ### BGE-M3 Embedding Model Memory
 
@@ -674,7 +1312,7 @@ asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 ---
 
-## 🛠️ Common Commands
+## ðŸ› ï¸ Common Commands
 
 ```bash
 # Start all required services
@@ -708,7 +1346,7 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 
 ---
 
-### 2026-02-27 — RAG 2027: Advanced Agentic RAG Research & Documentation (Sprint 05 Prep)
+### 2026-02-27 â€” RAG 2027: Advanced Agentic RAG Research & Documentation (Sprint 05 Prep)
 
 **Research conducted**: Comprehensive RAG paradigm shift analysis for 2027 competitiveness. Identified 10 major innovation areas. Created sprint-integrated implementation roadmap.
 
@@ -717,7 +1355,7 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | Action | File                                                 | Description                                                                                          |
 | ------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | CREATE | `docs/decisions/ADR-007-agentic-rag-orchestrator.md` | Decision: Replace fixed 4-node pipeline with autonomous retrieval planner + speculative draft engine |
-| CREATE | `docs/decisions/ADR-008-adaptive-query-router.md`    | Decision: 8-strategy adaptive router with explicit cost signals (₹0.03–₹0.55/query)                  |
+| CREATE | `docs/decisions/ADR-008-adaptive-query-router.md`    | Decision: 8-strategy adaptive router with explicit cost signals (â‚¹0.03â€“â‚¹0.55/query)                  |
 | CREATE | `docs/decisions/ADR-009-agri-embeddings.md`          | Decision: Two-layer agri embedding strategy (wrapper L1 Sprint 05 + fine-tuned L2 Phase 4)           |
 | CREATE | `docs/decisions/ADR-010-browser-scraping-rag.md`     | Decision: Browser-augmented RAG using Scrapling for live gov/news data                               |
 
@@ -725,7 +1363,7 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 
 | Action | File                                         | Description                                                                           |
 | ------ | -------------------------------------------- | ------------------------------------------------------------------------------------- |
-| CREATE | `docs/architecture/agentic_rag_system.md`    | Full architecture: Retrieval Planner → Speculative Engine → Verifier → Self-Evaluator |
+| CREATE | `docs/architecture/agentic_rag_system.md`    | Full architecture: Retrieval Planner â†’ Speculative Engine â†’ Verifier â†’ Self-Evaluator |
 | CREATE | `docs/architecture/adaptive_query_router.md` | 8-strategy router: decision tree, cost table, A/B rollout plan                        |
 | CREATE | `docs/architecture/agri_embeddings.md`       | Layer 1 (AgriEmbeddingWrapper) + Layer 2 (fine-tuned model) architecture              |
 | CREATE | `docs/architecture/browser_scraping_rag.md`  | Source registry, SourceSelector, ContentExtractor, TTL lifecycle, fallbacks           |
@@ -739,8 +1377,8 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 
 #### Key Design Decisions (Sprint 05-06)
 
-- **Adaptive Router** reduces avg query cost ₹0.44 → ₹0.21 (–52%) by routing simple queries to `DIRECT_LLM`
-- **Speculative RAG** reduces voice latency –51% via 3 parallel Groq 8B drafts + Gemini Flash verifier
+- **Adaptive Router** reduces avg query cost â‚¹0.44 â†’ â‚¹0.21 (â€“52%) by routing simple queries to `DIRECT_LLM`
+- **Speculative RAG** reduces voice latency â€“51% via 3 parallel Groq 8B drafts + Gemini Flash verifier
 - **AgriEmbeddingWrapper** wraps BGE-M3 with domain instruction prefix + 50-term Hindi/Kannada normalization map
 - **Browser RAG** extends Scrapling infrastructure to 14+ ag-specific gov/news sources with TTL-gated Qdrant live collection
 - All new components are **feature-flagged** to allow A/B testing and gradual rollout
@@ -756,3 +1394,405 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 [ ] Register for eNAM API access (enam.gov.in/register)
 [ ] Establish RAGAS evaluation baseline (20 golden queries)
 ```
+
+### 2026-03-16 â€” Vision Training Contracts Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/agents/quality_assessment/training/commodity_registry.py` | Stable commodity slug/id registry with launch cohort defaults |
+| CREATE | `src/agents/quality_assessment/training/manifest_schema.py` | Canonical manifest schema for lot/image/commodity/grade metadata |
+| CREATE | `src/agents/quality_assessment/training/splitter.py` | Deterministic grouped split assignment by farm/lot |
+| CREATE | `src/agents/quality_assessment/training/dataset_exporter.py` | Manifest-to-classification/YOLO export pipeline and dataset YAML writer |
+| CREATE | `src/agents/quality_assessment/training/model_contracts.py` | ONNX contract validation for YOLO, DINO, and ResNet runtime artifacts |
+| CREATE | `src/agents/quality_assessment/training/dinov2_model.py` | Commodity-conditioned DINO classifier model definition |
+| CREATE | `src/agents/quality_assessment/training/dinov2_data.py` | Manifest-backed DINO dataloaders |
+| CREATE | `src/agents/quality_assessment/training/dinov2_training.py` | DINO training/eval/export orchestration |
+| CREATE | `src/agents/quality_assessment/training/similarity_model.py` | ResNet similarity model definition |
+| CREATE | `src/agents/quality_assessment/training/similarity_dataset.py` | Triplet CSV dataset loader for similarity training |
+| CREATE | `src/agents/quality_assessment/training/similarity_training.py` | ResNet similarity training/export orchestration |
+| CREATE | `src/agents/quality_assessment/dinov2_runtime.py` | DINO preprocessing, softmax, and commodity tensor helpers |
+| CREATE | `src/agents/digital_twin/similarity_runtime.py` | ResNet runtime helpers and contract-aware loader |
+| CREATE | `scripts/export_quality_dataset.py` | Thin CLI for exporting canonical manifests into training layouts |
+| CREATE | `scripts/train_yolo_defects.py` | Thin CLI for training/exporting validated CropFresh YOLO defect models |
+| UPDATE | `scripts/train_dinov2_classifier.py` | Refactored to thin CLI over manifest-backed DINO training |
+| UPDATE | `scripts/train_resnet_similarity.py` | Refactored to thin CLI over ResNet similarity training |
+| UPDATE | `src/agents/quality_assessment/dinov2_classifier.py` | Validates ONNX contract, passes commodity_id, and keeps fallback behavior |
+| UPDATE | `src/agents/quality_assessment/yolo_detector.py` | Rejects invalid YOLO contracts and stays within small-file boundaries |
+| UPDATE | `src/agents/quality_assessment/vision_models.py` | Passes commodity through to the DINO runtime |
+| UPDATE | `src/agents/digital_twin/similarity.py` | Slim wrapper over extracted runtime helpers; preserves existing API |
+| CREATE | `tests/unit/test_quality_training_manifest.py` | Manifest schema validation coverage |
+| CREATE | `tests/unit/test_quality_training_splits.py` | Deterministic grouped split coverage |
+| CREATE | `tests/unit/test_quality_training_exporter.py` | Dataset export and YOLO layout coverage |
+| CREATE | `tests/unit/test_vision_model_contracts.py` | Rejects placeholder ONNX artifacts, accepts valid mocked contracts |
+| CREATE | `tests/unit/test_resnet_similarity_contract.py` | Runtime contract enforcement coverage for ResNet similarity |
+| UPDATE | `tests/unit/test_vision_dinov2.py` | Verifies commodity_id is passed into DINO inference |
+
+### 2026-03-17 - Multi-Source Karnataka Rate Hub
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/rates/__init__.py` | Public exports for the shared multi-source rate hub |
+| CREATE | `src/rates/enums.py` | RateKind, authority tier, fetch mode, and comparison depth enums |
+| CREATE | `src/rates/models.py` | Shared query, record, health, and response models |
+| CREATE | `src/rates/precedence.py` | Official-first source precedence, TTLs, and discrepancy thresholds |
+| CREATE | `src/rates/query_builder.py` | Request normalization and deterministic cache keys |
+| CREATE | `src/rates/cache.py` | Redis or in-memory TTL cache for rate responses |
+| CREATE | `src/rates/repository.py` | Raw and normalized rate persistence with mandi dual-write support |
+| CREATE | `src/rates/service.py` | Parallel fan-out, retries, caching, circuit breaker, and aggregation |
+| CREATE | `src/rates/factory.py` | Shared service factory for API, tools, and scheduler consumers |
+| CREATE | `src/rates/settings.py` | Safe Agmarknet API-key helper for partially configured environments |
+| CREATE | `src/db/schema_rates.sql` | `normalized_rates` schema for the generic rate hub |
+| CREATE | `src/rates/connectors/base.py` | Base connector contract and HTTP/browser fallback helpers |
+| CREATE | `src/rates/connectors/html_utils.py` | Shared HTML parsing helpers for table and text sources |
+| CREATE | `src/rates/connectors/pending_sources.py` | Metadata-only pending-access sources |
+| CREATE | `src/rates/connectors/registry.py` | Enabled connector registry for all public sources |
+| CREATE | `src/rates/connectors/agmarknet_ogd.py` | Official AGMARKNET OGD connector |
+| CREATE | `src/rates/connectors/agmarknet_scrape.py` | Official AGMARKNET scrape connector |
+| CREATE | `src/rates/connectors/enam_dashboard.py` | Public eNAM dashboard connector |
+| CREATE | `src/rates/connectors/krama_daily.py` | KRAMA daily mandi connector |
+| CREATE | `src/rates/connectors/krama_floor_price.py` | KRAMA support-price connector |
+| CREATE | `src/rates/connectors/kapricom_reference.py` | KAPRICOM reference-price connector |
+| CREATE | `src/rates/connectors/napanta.py` | Validator connector for NaPanta |
+| CREATE | `src/rates/connectors/agriplus.py` | Validator connector for AgriPlus |
+| CREATE | `src/rates/connectors/commoditymarketlive.py` | Validator connector for CommodityMarketLive |
+| CREATE | `src/rates/connectors/shyali.py` | Validator connector for Shyali |
+| CREATE | `src/rates/connectors/vegetablemarketprice.py` | Retail produce connector |
+| CREATE | `src/rates/connectors/todaypricerates.py` | Retail produce connector for TodayPriceRates |
+| CREATE | `src/rates/connectors/petroldieselprice.py` | Fuel connector |
+| CREATE | `src/rates/connectors/parkplus_fuel.py` | Fuel connector fallback |
+| CREATE | `src/rates/connectors/businessline_gold.py` | Gold connector |
+| CREATE | `src/rates/connectors/iifl_gold.py` | Gold connector fallback |
+| CREATE | `src/agents/agent_groups.py` | Extracted grouped agent builders to keep registry slim |
+| CREATE | `src/agents/tool_registry_setup.py` | Shared agent tool-registry assembly |
+| CREATE | `src/agents/tool_setup/__init__.py` | Lazy exports for agent tool-setup helpers |
+| CREATE | `src/agents/tool_setup/commerce.py` | Commerce tool registration wrappers |
+| CREATE | `src/agents/tool_setup/agronomy.py` | Agronomy tool registration wrappers |
+| CREATE | `src/agents/tool_setup/research.py` | Research tool registration wrappers |
+| CREATE | `src/agents/tool_setup/rates.py` | Rate-hub tool registration wrappers |
+| CREATE | `src/tools/multi_source_rates.py` | Global tool entry points for `multi_source_rates` and `price_api` |
+| CREATE | `src/tools/registry_types.py` | Annotation helpers for tool schema generation |
+| CREATE | `src/scrapers/scheduler_runtime.py` | Refactored scheduler runtime with legacy and rate-hub jobs |
+| UPDATE | `src/agents/agent_registry.py` | Slimmed registry to orchestration-only factory logic |
+| UPDATE | `src/agents/__init__.py` | Lazy package exports to avoid circular imports |
+| UPDATE | `src/tools/__init__.py` | Lazy-safe auto-registration imports |
+| UPDATE | `src/tools/registry.py` | Better annotation handling for Optional and generic types |
+| UPDATE | `src/api/routes/prices.py` | Added `/prices/query` and `/prices/source-health` on the shared service |
+| UPDATE | `src/rag/agentic/orchestrator.py` | Routes `multi_source_rates` and mandi alias through extracted handlers |
+| UPDATE | `src/rag/agentic/planner.py` | Plans price, support-price, fuel, and gold queries to the rate hub |
+| CREATE | `src/rag/agentic/executor.py` | Extracted retrieval-plan execution helper |
+| CREATE | `src/rag/agentic/tool_handlers.py` | Extracted tool call handlers for standalone agentic RAG |
+| UPDATE | `src/rag/graph_runtime/services.py` | Uses the shared rate hub for live price documents |
+| UPDATE | `src/scrapers/scraper_scheduler.py` | Thin compatibility export over refactored scheduler runtime |
+| CREATE | `tests/unit/rates/test_query_builder.py` | Query normalization and cache-key tests |
+| CREATE | `tests/unit/rates/test_comparison.py` | Official-first precedence and warning tests |
+| CREATE | `tests/unit/rates/test_service.py` | Cache and circuit-breaker tests for RateService |
+| CREATE | `tests/unit/rates/connectors/test_connectors.py` | Fixture-based parsing tests for all enabled connectors |
+| CREATE | `tests/api/rates/test_prices_routes.py` | `/prices/query` and `/prices/source-health` endpoint tests |
+| CREATE | `tests/unit/rag_agentic/test_rate_planning.py` | Planner fallback and tool-registry coverage for rate-hub tools |
+| CREATE | `tests/unit/test_scheduler_rate_jobs.py` | Scheduler job registration and `force_live=True` coverage |
+| UPDATE | `docs/api/endpoints-reference.md` | Documented multi-source rate endpoints |
+| UPDATE | `docs/features/scraping-system.md` | Documented source tiers and shared rate-refresh scheduler |
+| UPDATE | `tracking/sprints/sprint-05-advanced-rag.md` | Added multi-source rate-hub sprint progress update |
+| CREATE | `tracking/daily/2026-03-17.md` | Daily implementation log for the rate-hub slice |
+| CREATE | `docs/decisions/ADR-011-multi-source-rate-hub.md` | Architecture decision for the generic rate hub and conflict policy |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this log entry and refreshed the timestamp |
+
+### 2026-03-18 - Centralized Language Resolution Wiring
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/shared/language_values.py` | Shared language constants, aliases, and Kannada transliteration hints |
+| CREATE | `src/shared/script_language.py` | Raw unicode-script detector extracted into a neutral shared module |
+| CREATE | `src/shared/language_detection.py` | Canonical language normalization and transliterated Kannada detection |
+| CREATE | `src/shared/language_context.py` | Canonical context shaping for `user_profile`, `entities`, and response language |
+| CREATE | `src/shared/language.py` | Small public facade for the shared language API |
+| UPDATE | `src/rag/language_support.py` | Reused the shared detector for multilingual RAG language guidance |
+| UPDATE | `src/memory/state_pkg/manager.py` | Added user-profile persistence support for language state |
+| UPDATE | `src/agents/supervisor/session.py` | Persisted current language and built normalized agent context per turn |
+| UPDATE | `src/agents/base/llm.py` | Injected per-turn language guidance into non-supervisor LLM calls |
+| CREATE | `src/agents/kannada/listing_terms.py` | Kannada listing-flow guidance and vocabulary |
+| CREATE | `src/agents/kannada/matching_terms.py` | Kannada buyer-matching guidance and vocabulary |
+| CREATE | `src/agents/kannada/quality_terms.py` | Kannada quality-grading guidance and vocabulary |
+| CREATE | `src/agents/kannada/logistics_terms.py` | Kannada logistics guidance and vocabulary |
+| CREATE | `src/agents/kannada/adcl_terms.py` | Kannada crop-recommendation and weekly-demand guidance |
+| CREATE | `src/agents/kannada/price_prediction_terms.py` | Kannada price-forecast guidance and vocabulary |
+| CREATE | `src/agents/kannada/dialect_context.py` | District-aware Kannada dialect bucket hints for the shared prompt builder |
+| CREATE | `src/agents/kannada/dialect_patterns.py` | Shared Kannada dialect bucket descriptions and style-matching guidance |
+| CREATE | `src/agents/kannada/conversation_patterns.py` | Reusable Kannada clarification, confirmation, and recommendation patterns |
+| CREATE | `src/agents/kannada/few_shot_examples.py` | Shared Kannada few-shot examples for rural, market, and platform interactions |
+| CREATE | `src/agents/kannada/runtime_context.py` | Shared rendering of runtime dialect lexicon and local Kannada context blocks |
+| CREATE | `src/agents/kannada/data_loader.py` | Cached JSONL loaders for structured Kannada lexicon and domain context corpora |
+| CREATE | `src/agents/kannada/domain_resolution.py` | Shared Kannada domain alias resolution for prompt building and retrieval |
+| CREATE | `src/agents/kannada/retriever.py` | Query-aware Kannada runtime enrichment from structured seed corpora |
+| CREATE | `src/agents/kannada/data/dialect_lexicon.jsonl` | Seed Kannada dialect lexicon corpus for scalable runtime injection |
+| CREATE | `src/agents/kannada/data/domain_context.jsonl` | Seed Kannada domain-context corpus for scalable runtime injection |
+| UPDATE | `src/agents/kannada/guidelines.py` | Replaced the basic Kannada note with advanced multi-dialect behavior, safety, and output rules |
+| UPDATE | `src/agents/kannada/dialect_context.py` | Exposed reusable district-signal and dialect-bucket helpers for shared retrieval |
+| UPDATE | `src/agents/kannada/builder.py` | Composed advanced shared Kannada sections plus retrieval-aware runtime enrichment in one builder |
+| UPDATE | `src/agents/kannada/adcl_terms.py` | Deepened Kannada crop-recommendation wording, risks, and output pattern guidance |
+| UPDATE | `src/agents/kannada/listing_terms.py` | Deepened Kannada listing flow, selling guidance, and clearer marketplace vocabulary |
+| UPDATE | `src/agents/kannada/matching_terms.py` | Deepened Kannada buyer-matching explanations, trust cues, and comparison wording |
+| UPDATE | `src/agents/kannada/quality_terms.py` | Deepened Kannada quality-result wording, photo guidance, and defect vocabulary |
+| UPDATE | `src/agents/kannada/logistics_terms.py` | Deepened Kannada logistics tradeoff language, timing, and spoilage guidance |
+| UPDATE | `src/agents/kannada/price_prediction_terms.py` | Deepened Kannada forecast framing, confidence language, and hold/sell wording |
+| UPDATE | `src/agents/prompt_context.py` | Passed normalized context into the shared Kannada builder for dialect-aware prompt injection |
+| UPDATE | `src/agents/base/llm.py` | Passed full runtime context into shared Kannada domain injection for custom-prompt agents |
+| CREATE | `src/agents/supervisor/multilingual_rules.py` | Reused multilingual voice intent keywords for supervisor fallback routing |
+| UPDATE | `src/agents/supervisor/rules.py` | Routed non-English fallback queries through the shared multilingual helper |
+| UPDATE | `src/agents/general_agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/commerce_agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/platform_agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/buyer_matching/agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/quality_assessment/agent.py` | Passed normalized context into shared LLM generation |
+| UPDATE | `src/agents/adcl_wrapper_agent.py` | Passed normalized context and ADCL domain into shared prompting |
+| UPDATE | `src/agents/logistics_wrapper_agent.py` | Passed normalized context and logistics domain into shared prompting |
+| CREATE | `src/api/chat_pkg/models.py` | Shared chat request/response models |
+| CREATE | `src/api/chat_pkg/supervisor.py` | Shared supervisor dependency builder for chat endpoints |
+| CREATE | `src/api/chat_pkg/session.py` | Centralized session preparation and context persistence for chat |
+| CREATE | `src/api/chat_pkg/router.py` | Canonical chat router implementation reused by both route entry points |
+| UPDATE | `src/api/routes/chat.py` | Reduced to a thin compatibility export over the shared chat router |
+| UPDATE | `src/api/routers/chat.py` | Reduced to a thin compatibility export over the shared chat router |
+| UPDATE | `src/voice/entity_extractor/_language.py` | Pointed voice raw detection at the shared script detector |
+| UPDATE | `src/voice/entity_extractor/__init__.py` | Exposed the shared response-language detector through the voice package |
+| UPDATE | `src/agents/voice_agent.py` | Restored backward-compatible no-arg construction for the legacy wrapper |
+| CREATE | `tests/unit/test_shared_language.py` | Coverage for normalization, transliterated Kannada, and context splitting |
+| CREATE | `tests/unit/test_state_manager_profiles.py` | Coverage for persisted user-profile language updates |
+| CREATE | `tests/unit/test_llm_language_guidance.py` | Coverage for centralized language instruction injection |
+| CREATE | `tests/unit/test_kannada_retriever.py` | Coverage for structured Kannada retrieval and runtime-context merging |
+| CREATE | `tests/unit/test_kannada_builder.py` | Coverage for advanced Kannada prompt sections, few-shot content, dialect hints, and runtime context blocks |
+| CREATE | `tests/unit/test_chat_session_flow.py` | Coverage for stateful and stateless chat language handling |
+| UPDATE | `tests/unit/test_llm_language_guidance.py` | Added query-specific retrieval coverage for shared Kannada injection with and without static prompts |
+| UPDATE | `tests/unit/test_supervisor_routing.py` | Added Kannada routing coverage for fallback supervisor rules |
+| UPDATE | `tests/unit/test_voice_agent_task16.py` | Added transliterated Kannada detection coverage |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this handoff entry and refreshed the timestamp |
+
+### 2026-03-18 - Premium Static Suite Refresh
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `static/assets/css/suite.css` | Added the shared premium suite chrome layer to the static design stack |
+| CREATE | `static/assets/css/suite/chrome.css` | Shared premium shell styling for headers, nav, cards, glow, and footers |
+| CREATE | `static/assets/css/suite/lab-shell.css` | Connected freemium-lab rail layout shared across the static suite |
+| CREATE | `static/assets/css/suite/page-themes.css` | Page-specific premium themes for dashboard, voice, RAG, realtime, and quick voice UI |
+| UPDATE | `static/assets/css/suite/forms.css` | Added richer focus, depth, and premium interaction styling for controls |
+| UPDATE | `static/assets/css/premium-voice.css` | Added the premium rail layer to the premium voice style stack |
+| CREATE | `static/assets/css/premium-voice/rail.css` | Connected-suite rail layout for the premium voice demo |
+| UPDATE | `static/assets/css/premium-voice/layout.css` | Upgraded premium voice header treatment and added shared footer layout |
+| UPDATE | `static/assets/css/premium-voice/components.css` | Refined premium voice nav and footer chip styling |
+| UPDATE | `static/index.html` | Moved the dashboard into the connected suite rail layout and upgraded page framing |
+| UPDATE | `static/voice_agent.html` | Moved the voice hub into the connected suite rail layout and upgraded operator framing |
+| UPDATE | `static/rag_test.html` | Moved the RAG lab into the connected suite rail layout and upgraded knowledge-lab framing |
+| UPDATE | `static/voice_realtime.html` | Moved the realtime stream page into the connected suite rail layout and upgraded streaming-lab framing |
+| UPDATE | `static/voice_test_ui.html` | Moved the quick voice UI page into the connected suite rail layout and upgraded utility-lab framing |
+| UPDATE | `static/premium_voice.html` | Connected the premium voice demo to the broader suite via a dedicated premium rail layout |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this static-suite refresh log entry |
+
+### 2026-03-18 - Static Agent Journey Wiring
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `static/assets/css/suite/workflows.css` | Shared workflow-board and scenario-card styling for route-aware testing surfaces |
+| CREATE | `static/assets/css/suite/critical-shell.css` | Direct critical rail layout CSS to prevent unstyled suite-rail content above the dashboard |
+| CREATE | `static/assets/css/premium-voice/critical-rail.css` | Direct critical premium rail layout CSS to prevent premium demo shell regressions under stale cache |
+| CREATE | `static/assets/js/agent-workflow-data.js` | Shared voice scenario catalog and route metadata for the static lab |
+| CREATE | `static/assets/js/agent-workflows.js` | Shared renderers for dashboard route boards and voice intent workflow boards |
+| CREATE | `static/assets/js/voice-hub-lab.js` | Voice Hub-specific duplex contract board and scenario bootstrap |
+| UPDATE | `static/index.html` | Added connected scenario cards, routed-run board, and versioned critical shell asset links |
+| UPDATE | `static/voice_agent.html` | Added REST route and duplex contract boards plus versioned critical shell asset links |
+| UPDATE | `static/rag_test.html` | Added versioned critical shell asset links for the shared suite rail |
+| UPDATE | `static/voice_realtime.html` | Added versioned critical shell asset links for the shared suite rail |
+| UPDATE | `static/voice_test_ui.html` | Added versioned critical shell asset links for the shared suite rail |
+| UPDATE | `static/premium_voice.html` | Added versioned critical premium rail asset links |
+| UPDATE | `static/assets/js/dashboard.js` | Wired quick checks into the new dashboard route board |
+| UPDATE | `static/assets/js/voice-agent-rest.js` | Wired REST voice results into the route board |
+| UPDATE | `static/assets/js/voice-agent-ws.js` | Wired duplex websocket events into the contract board and improved error/full-text handling |
+| UPDATE | `static/assets/js/voice-agent-tools.js` | Fixed voice health rendering to use the current endpoint payload fields |
+| CREATE | `tests/unit/test_static_testing_lab.py` | Contract checks for DOM wiring, script ordering, workflow assets, and file-size guardrails |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this agent-journey wiring log entry |
+
+### 2026-03-24 - Sprint 09 Semantic Relay Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `services/vad-service/app/session_state.py` | Added session-scoped semantic hold state for the bridge VAD service |
+| UPDATE | `services/vad-service/app/config.py` | Added semantic endpointing flags and bounded hold settings |
+| UPDATE | `services/vad-service/app/http_models.py` | Added internal semantic segment evaluation contracts |
+| UPDATE | `services/vad-service/app/runtime.py` | Added session-aware semantic hold timers and timeout-safe flush decisions |
+| UPDATE | `services/vad-service/app/api.py` | Added `POST /v1/vad/segments/evaluate` and exposed semantic config fields |
+| UPDATE | `services/voice-gateway/src/services/vad-client.ts` | Added the gateway-side client for semantic segment evaluation |
+| UPDATE | `services/voice-gateway/src/services/relay-coordinator.ts` | Combined acoustic and semantic segment decisions before downstream relay |
+| UPDATE | `services/voice-gateway/src/routes/relay.ts` | Accepted optional semantic transcript and language hints on relay frames |
+| UPDATE | `services/voice-gateway/src/metrics.ts` | Added continuity and joint-decision Prometheus counters |
+| CREATE | `services/voice-gateway/tests/relay-semantic.test.ts` | Added semantic hold and timeout-safe flush coverage for the bridge path |
+| CREATE | `tests/unit/test_vad_service_semantic.py` | Added focused semantic hold and timeout tests for the VAD runtime |
+| UPDATE | `tests/unit/test_vad_service_api.py` | Added HTTP coverage for the semantic evaluation endpoint |
+| UPDATE | `tests/unit/test_voice_duplex_recovery.py` | Fixed the duplex recovery test import path so reconnect coverage executes again |
+| CREATE | `tracking/daily/2026-03-24.md` | Logged the Sprint 09 first-slice implementation and verification snapshot |
+| UPDATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Appended the first implementation-progress note for Sprint 09 |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Appended the Sprint 09 semantic endpointing addendum and relay flow |
+| UPDATE | `docs/api/endpoints-reference.md` | Appended the internal VAD-service endpoint addendum for Sprint 09 |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 09 implementation log entry |
+
+### 2026-03-24 - Sprint 09 Benchmark and Artifact Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/evaluation/datasets/voice_multilingual_benchmark.json` | Added the fixed multilingual Sprint 09 utterance set for `kn`, `hi`, `te`, and `ta` |
+| CREATE | `src/evaluation/voice_benchmark_models.py` | Added the per-turn artifact, observation, and report schemas for voice benchmarking |
+| CREATE | `src/evaluation/voice_benchmark_runner.py` | Added the runner that evaluates endpointing expectations and writes JSON/markdown artifacts |
+| CREATE | `ai/evals/run_voice_benchmark.py` | Added the Sprint 09 benchmark entrypoint |
+| CREATE | `docs/features/voice-benchmarking.md` | Added the benchmark flow and manual review rubric with a Mermaid diagram |
+| UPDATE | `src/evaluation/__init__.py` | Exported the voice benchmark models and runner |
+| CREATE | `tests/unit/test_voice_benchmark_runner.py` | Added coverage for dataset language lock and artifact generation |
+| UPDATE | `src/shared/voice_semantic.py` | Added the Kannada hesitation variant used by the fixed Sprint 09 benchmark |
+| UPDATE | `tests/unit/test_semantic_endpointing.py` | Added focused coverage for the Kannada hesitation variant |
+| UPDATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Marked the benchmark tasks complete and appended the benchmark slice note |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the benchmark slice addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Linked the new benchmark dataset and rubric into the Sprint 09 bridge addendum |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 09 benchmark implementation log entry |
+
+### 2026-03-24 - Sprint 09 Continuity and Recovery Completion Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `services/voice-gateway/src/audio/comfort-noise.ts` | Added deterministic low-energy comfort-noise fills for short relay gaps |
+| UPDATE | `services/voice-gateway/src/audio/relay-session.ts` | Switched continuity-gap buffering to comfort-noise and exposed fill-mode metadata |
+| CREATE | `services/voice-gateway/src/routes/relay-debug.ts` | Added continuity and interruption debug extraction for relay responses |
+| UPDATE | `services/voice-gateway/src/routes/relay.ts` | Added debug metadata to relay frame and flush responses |
+| UPDATE | `services/voice-gateway/src/config.ts` | Added dead-peer timeout and reconnect-backoff configuration parsing |
+| UPDATE | `services/voice-gateway/src/routes/health.ts` | Exposed recovery policy fields on health and readiness payloads |
+| UPDATE | `services/voice-gateway/src/services/session-bootstrap.ts` | Added explicit recovery policy metadata to gateway bootstrap responses |
+| CREATE | `services/voice-gateway/tests/relay-debug.test.ts` | Added debug metadata extraction coverage |
+| UPDATE | `services/voice-gateway/tests/relay-session.test.ts` | Added comfort-noise and relay-debug coverage |
+| UPDATE | `services/voice-gateway/tests/session-bootstrap.test.ts` | Added recovery-policy assertions for bootstrap and readiness routes |
+| CREATE | `static/assets/js/duplex/recovery.js` | Added shared dead-peer and retry/backoff helpers for the premium duplex client |
+| CREATE | `static/assets/js/duplex/session.js` | Added reconnect-token-aware bootstrap refresh helper |
+| CREATE | `static/assets/js/duplex/playback.js` | Added comfort-noise playback fill and graceful barge-in stop handling |
+| UPDATE | `static/assets/js/duplex/socket.js` | Added dead-peer watchdog, reconnect backoff, and online/offline recovery behavior |
+| UPDATE | `static/assets/js/duplex/audio.js` | Delegated playback continuity and graceful stop behavior to the new helper |
+| UPDATE | `static/assets/js/duplex/bootstrap.js` | Added recovery defaults for local fallback bootstrap responses |
+| UPDATE | `static/assets/js/voice-agent-bootstrap.js` | Added recovery defaults for the non-module Voice Hub bootstrap helper |
+| UPDATE | `tests/unit/test_static_testing_lab.py` | Added static contract checks for recovery metadata and the new duplex helpers |
+| UPDATE | `tests/unit/test_semantic_endpointing.py` | Added thinking-pause, clipped-ending, and code-mixed semantic coverage |
+| UPDATE | `tests/unit/test_voice_duplex_recovery.py` | Added expired-session and heartbeat-timeout reconnect coverage |
+| UPDATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Marked the continuity and reconnect task list complete and appended the completion slice note |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the continuity/recovery completion addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the Sprint 09 continuity and recovery addendum |
+| UPDATE | `docs/api/websocket-voice.md` | Updated the websocket contract with reconnect, heartbeat, and recovery fields |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Updated Sprint 09 component progress and accomplishment notes |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 09 completion log entry |
+
+### 2026-03-24 - Sprint 09 Retro Template Update
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `tracking/retros/sprint-09-retro.md` | Added the Sprint 09 retrospective using the current minimal retro template |
+| UPDATE | `WORKFLOW_STATUS.md` | Added the retro handoff snapshot and file-log entry |
+
+### 2026-03-24 - CI/CD Recovery and Pipeline Hardening
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `.github/workflows/ci.yml` | Split CI into explicit Python lint, Python test, and voice-gateway jobs on current action versions |
+| UPDATE | `.github/workflows/deploy-aws.yml` | Gated AWS deploy on a successful `CI — Lint + Test` run on `main` while preserving manual dispatch |
+| DELETE | `.github/workflows/deploy-prod.yml` | Removed stale Cloud Run production deploy workflow |
+| DELETE | `.github/workflows/deploy-staging.yml` | Removed stale Cloud Run staging deploy workflow |
+| UPDATE | `.github/workflows/eval-agents.yml` | Moved the eval workflow to current action versions and explicit `uv sync` install steps |
+| UPDATE | `.github/workflows/scraper-cron.yml` | Replaced scheduler bootstrapping with explicit UTC one-shot job-id runs and Aurora env wiring |
+| CREATE | `src/scrapers/__main__.py` | Added the one-shot scraper CLI used by the GitHub Actions cron workflow |
+| CREATE | `src/scrapers/agmarknet/legacy_contract.py` | Added deterministic compatibility helpers for the legacy Agmarknet scraper contract |
+| UPDATE | `src/scrapers/agmarknet/client.py` | Restored legacy Agmarknet methods, fallback data, scheduler storage helper, and constructor compatibility |
+| UPDATE | `src/scrapers/agri_scrapers/__init__.py` | Switched `AgriculturalDataAPI` export to a lazy import to avoid circular imports |
+| UPDATE | `src/scrapers/agri_scrapers/models.py` | Restored `modal_price_per_kg` and legacy Agmarknet defaults on `MandiPrice` |
+| UPDATE | `src/db/postgres/prices.py` | Added `insert_mandi_prices(...)` as a compatibility alias for legacy scraper persistence |
+| UPDATE | `src/api/middleware/auth.py` | Added backward-compatible `dispatch(...)` support for middleware contract tests while keeping ASGI runtime behavior |
+| UPDATE | `src/agents/buyer_matching/agent.py` | Restored the `_haversine(...)` compatibility alias used by older tests |
+| UPDATE | `src/agents/voice/agent.py` | Added fallback handling for older entity-extractor signatures without `context_intent` support |
+| UPDATE | `src/memory/state_pkg/manager.py` | Made heartbeat touches monotonic so reconnect keepalive tests stop flaking |
+| UPDATE | `src/tools/deep_research/__init__.py` | Re-exported legacy research helpers and the package-level `httpx` patch point for tests |
+| UPDATE | `src/agents/digital_twin/engine/__init__.py` | Re-exported legacy digital-twin utility helpers for older callers and tests |
+| UPDATE | `src/agents/digital_twin/similarity.py` | Re-exported `SUBSTITUTION_THRESHOLD` for similarity compatibility tests |
+| UPDATE | `src/agents/price_prediction/agent.py` | Re-exported `SEASONAL_CALENDAR` for legacy price-prediction imports |
+| UPDATE | `src/agents/crop_listing/agent.py` | Fixed Ruff ambiguous-variable lint debt uncovered by repo-wide CI |
+| UPDATE | `src/agents/voice/handlers.py` | Fixed Ruff ambiguous-variable lint debt uncovered by repo-wide CI |
+| UPDATE | `src/autonomous/persistence.py` | Replaced bare exception handling to satisfy repo-wide Ruff |
+| UPDATE | `src/shared/autonomous/persistence.py` | Replaced bare exception handling to satisfy repo-wide Ruff |
+| UPDATE | `src/pipelines/normalizers/price_normalizer.py` | Expanded one-line conditionals to satisfy repo-wide Ruff |
+| UPDATE | `src/rag/graph_constructor.py` | Fixed ambiguous loop-variable lint issues |
+| UPDATE | `src/voice/webrtc/tracks.py` | Replaced bare exception handling in queue fallbacks |
+| UPDATE | `tests/unit/test_scraper_cli.py` | Added/updated coverage for the one-shot scraper CLI and DB-aware scheduler creation |
+| UPDATE | `tests/unit/test_scheduler_rate_jobs.py` | Added validation for unknown scraper job IDs |
+| UPDATE | `tests/unit/test_auth_middleware.py` | Recovered middleware contract coverage against the current ASGI auth layer |
+| UPDATE | `tests/unit/test_agmarknet_scraper.py` | Recovered the legacy Agmarknet compatibility surface under the current scraper runtime |
+| UPDATE | `tests/unit/test_buyer_matching.py` | Recovered the legacy buyer-matching haversine helper contract |
+| UPDATE | `tests/unit/test_pipecat_pipeline.py` | Recovered VoiceAgent text-path compatibility under the current extractor signature |
+| UPDATE | `tests/unit/rates/test_comparison.py` | Removed the date-sensitive flake in the official-source precedence assertion |
+| UPDATE | `tests/test_voice_realtime.py` | Marked localhost websocket smoke tests as opt-in E2E checks |
+| UPDATE | `tests/integration/test_voice_realtime.py` | Marked localhost websocket smoke tests as opt-in E2E checks |
+| UPDATE | `docs/guides/development-workflow.md` | Appended the current CI, deploy, and opt-in E2E workflow truth |
+| CREATE | `docs/features/ci-cd-pipeline.md` | Added the current pipeline map, cron schedule, and AWS deployment gating doc |
+| UPDATE | `docs/guides/environment-variables.md` | Documented CI/scraper workflow variables and opt-in realtime smoke-test vars |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Appended the CI/CD recovery status addendum and remaining external dependency note |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the CI/CD recovery addendum and verification snapshot |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this CI/CD recovery and pipeline hardening log entry |
+
+### 2026-03-24 - Sprint 10 Voice Orchestration, State, and Tools First Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `src/memory/state_pkg/models.py` | Added canonical Sprint 10 voice-state and voice-state-event models |
+| UPDATE | `src/memory/state_pkg/__init__.py` | Exported the new voice-state models from the shared state package |
+| UPDATE | `src/memory/state_manager.py` | Re-exported the new voice-state models through the legacy state-manager surface |
+| UPDATE | `src/memory/state_pkg/manager.py` | Added voice-state validation, event recording, workflow persistence, and pub/sub broadcasting |
+| CREATE | `src/voice/orchestration/models.py` | Added shared workflow, route, and orchestration result models |
+| CREATE | `src/voice/orchestration/service.py` | Added the router-first voice orchestration service for the first Sprint 10 roster |
+| CREATE | `src/voice/orchestration/__init__.py` | Exported the Sprint 10 voice orchestration service surface |
+| CREATE | `src/api/runtime/voice_orchestration.py` | Added the shared runtime builder for the new voice orchestrator |
+| UPDATE | `src/api/runtime/services.py` | Wired the shared voice orchestrator into app startup |
+| UPDATE | `src/api/runtime/voice_agent.py` | Passed shared state and orchestrator dependencies into the voice agent builder |
+| UPDATE | `src/agents/voice/agent.py` | Added shared-session hydration, canonical state transitions, and reconnect-safe persistence |
+| UPDATE | `src/api/websocket/voice_pkg/duplex.py` | Added orchestrated duplex text-response synthesis helper |
+| UPDATE | `src/api/websocket/voice_pkg/router.py` | Added duplex orchestration routing and canonical voice-state transitions |
+| UPDATE | `src/api/websocket/voice_pkg/__init__.py` | Re-exported the new duplex orchestrated-response helper |
+| UPDATE | `src/api/rest/voice_runtime.py` | Wired fallback REST voice resolution to the shared state manager and orchestrator |
+| CREATE | `tests/unit/test_voice_state_machine.py` | Added shared voice-state transition and workflow tests |
+| CREATE | `tests/unit/test_voice_orchestrator.py` | Added routing and tool-usage coverage for the new orchestrator |
+| CREATE | `tests/unit/test_voice_agent_stateful_runtime.py` | Added shared-session hydration and persistence coverage for the voice agent |
+| CREATE | `tests/unit/test_voice_duplex_orchestration.py` | Added duplex websocket coverage for the orchestrated response path |
+| UPDATE | `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` | Marked the first Sprint 10 slice in progress and appended verification notes |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Updated Sprint 10 progress, priorities, and next-session pointers |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the Sprint 10 first-slice daily-log addendum and verification snapshot |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 10 orchestration/state handoff entry |
+
+### 2026-03-24 - Sprint 10 Speaker-Aware Grouped-Turn Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `src/memory/state_pkg/models.py` | Added shared speaker-profile models and per-turn speaker metadata fields |
+| UPDATE | `src/memory/state_pkg/__init__.py` | Exported the speaker-profile model through the shared state package |
+| UPDATE | `src/memory/state_manager.py` | Re-exported the speaker-profile model through the legacy state-manager surface |
+| UPDATE | `src/memory/state_pkg/manager.py` | Added active-speaker upsert helpers and speaker-aware turn persistence |
+| UPDATE | `src/agents/voice/agent.py` | Added speaker-hint hydration and grouped-turn persistence for voice sessions |
+| UPDATE | `src/api/rest/voice.py` | Accepted speaker form fields and returned speaker-aware workflow context |
+| UPDATE | `src/api/rest/voice_models.py` | Widened workflow-context typing for speaker-aware response payloads |
+| UPDATE | `src/voice/orchestration/service.py` | Passed active-speaker and known-speaker context into routed agents |
+| UPDATE | `src/api/websocket/voice_pkg/router.py` | Added duplex speaker hints, acknowledgements, and grouped-turn persistence |
+| UPDATE | `src/api/websocket/voice_pkg/session.py` | Added websocket message types for speaker hints and acknowledgements |
+| CREATE | `tests/unit/test_voice_speaker_state.py` | Added grouped-speaker shared-state coverage |
+| UPDATE | `tests/unit/test_voice_orchestrator.py` | Added persisted speaker-context coverage for routed agents |
+| UPDATE | `tests/unit/test_voice_agent_stateful_runtime.py` | Added grouped-speaker persistence coverage for the voice agent |
+| UPDATE | `tests/unit/test_voice_duplex_orchestration.py` | Added duplex grouped-speaker coverage |
+| CREATE | `tests/api/test_voice_rest_speaker_context.py` | Added REST speaker-hint and workflow-context coverage |
+| UPDATE | `tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md` | Marked the speaker-aware Sprint 10 tasks complete and appended verification notes |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Updated Sprint 10 progress, accomplishments, and next-session pointers for the speaker-aware slice |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the Sprint 10 speaker-aware grouped-turn addendum and verification snapshot |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this speaker-aware Sprint 10 handoff entry |
+
+### 2026-03-24 - Sprint 10 Retro Template Update
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `tracking/retros/sprint-10-retro.md` | Added the Sprint 10 retrospective using the exact repo retro template |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the Sprint 10 retro-template addendum and noted that the update was docs-only |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 10 retro handoff entry and updated the latest-session snapshot |
+

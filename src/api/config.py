@@ -10,6 +10,8 @@ from typing import Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.api.config_parsing import normalize_environment, parse_env_bool
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -134,6 +136,11 @@ class Settings(BaseSettings):
     use_adaptive_router: bool = True  # Enable 8-strategy adaptive query router
     use_redis_cache: bool = True      # Enable Redis response cache
     enable_reranker: bool = True      # Enable Cohere/cross-encoder reranker
+    voice_semantic_endpointing_enabled: bool = False
+    voice_semantic_timeout_ms: int = 150
+    voice_semantic_hold_max_ms: int = 800
+    voice_heartbeat_interval_ms: int = 10000
+    voice_dead_peer_timeout_ms: int = 30000
 
     # Scraping
     scraping_rate_limit: int = 30
@@ -142,10 +149,12 @@ class Settings(BaseSettings):
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
-        allowed = {"development", "staging", "production"}
-        if v.lower() not in allowed:
-            raise ValueError(f"environment must be one of {allowed}")
-        return v.lower()
+        return normalize_environment(v)
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def validate_debug(cls, v):
+        return parse_env_bool(v)
 
     @property
     def allowed_origins_list(self) -> list[str]:

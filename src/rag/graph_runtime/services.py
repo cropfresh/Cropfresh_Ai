@@ -1,0 +1,146 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+
+from src.rag.language_support import detect_response_language, get_localized_message
+from src.rag.routing.prefilter import extract_entities
+from src.rates.settings import get_agmarknet_api_key
+
+
+def _first_value(values: list[str], default: str = "") -> str:
+    return values[0] if values else default
+
+
+async def retrieve_vector_documents(
+    knowledge_base: Any,
+    queries: list[str],
+    top_k: int = 5,
+) -> list[Any]:
+    """Retrieve and de-duplicate vector search documents."""
+    if knowledge_base is None:
+        return []
+
+    all_docs: list[Any] = []
+    seen_ids: set[str] = set()
+    for query in queries[:3]:
+        result = await knowledge_base.search(query, top_k=top_k)
+        for doc in result.documents:
+            if doc.id not in seen_ids:
+                all_docs.append(doc)
+                seen_ids.add(doc.id)
+    return all_docs
+
+
+async def retrieve_live_price_documents(query: str) -> list[Any]:
+    """Retrieve live mandi prices for price-centric queries."""
+    from src.rag.knowledge_base import Document
+    from src.rates import RateKind
+    from src.rates.factory import get_rate_service
+    from src.rates.query_builder import normalize_rate_query
+
+    entities = extract_entities(query)
+    commodity = _first_value(entities["crops"], "Tomato").title()
+    district = _first_value(entities["locations"], "Kolar")
+    service = await get_rate_service(agmarknet_api_key=get_agmarknet_api_key())
+    result = await service.query(
+        normalize_rate_query(
+            rate_kinds=[RateKind.MANDI_WHOLESALE.value],
+            commodity=commodity,
+            state="Karnataka",
+            district=district,
+        )
+    )
+    prices = result.canonical_rates or result.comparison_quotes
+    return [
+        Document(
+            id=f"price_{price.location_label}_{idx}",
+            text=(
+                f"{price.commodity} mandi price in {price.location_label}: "
+                f"min Rs.{(price.min_price or 0):.0f}, max Rs.{(price.max_price or 0):.0f}, "
+                f"modal Rs.{(price.modal_price or price.price_value or 0):.0f} per quintal "
+                f"as of {price.price_date}."
+            ),
+            source=getattr(price, "source", "multi_source_rates"),
+            metadata={
+                "source": getattr(price, "source", "multi_source_rates"),
+                "market": getattr(price, "location_label", district),
+                "district": district,
+                "commodity": price.commodity,
+                "timestamp": datetime.combine(price.price_date, datetime.min.time()).timestamp(),
+                "as_of": price.price_date.isoformat(),
+            },
+            score=1.0,
+        )
+        for idx, price in enumerate(prices)
+    ]
+
+
+async def retrieve_weather_documents(query: str) -> list[Any]:
+    """Retrieve weather forecast context for weather queries."""
+    from src.rag.knowledge_base import Document
+    from src.tools.weather import WeatherTool
+
+    location = _first_value(extract_entities(query)["locations"], "Kolar")
+    forecast = await WeatherTool(use_mock=True).get_forecast(location=location, days=3)
+    return [
+        Document(
+            id=f"weather_{location.lower()}",
+            text=(
+                f"Weather forecast for {forecast.location}: "
+                f"current {forecast.current.temperature_c}C and "
+                f"{forecast.current.rainfall_mm}mm rainfall."
+            ),
+            source="weather",
+            metadata={"source": "weather", "timestamp": forecast.current.date.timestamp()},
+            score=1.0,
+        )
+    ]
+
+
+async def retrieve_browser_documents(query: str, web_search_tool: Any) -> list[Any]:
+    """Retrieve live web documents through the configured browser/search tool."""
+    if web_search_tool is None:
+        return []
+
+    from src.rag.knowledge_base import Document
+
+    results = await web_search_tool.search(query)
+    return [
+        Document(
+            id=f"browser_{index}",
+            text=str(result),
+            source="browser_search",
+            metadata={"source": "browser_search"},
+            score=0.6,
+        )
+        for index, result in enumerate(results)
+    ]
+
+
+async def generate_answer(
+    query: str,
+    documents: list[Any],
+    llm: Any,
+    route: str = "",
+) -> tuple[str, str]:
+    """Generate an answer, falling back to grounded extractive text without an LLM."""
+    response_language = detect_response_language(query)
+    if not documents:
+        return get_localized_message("no_information", response_language), "none"
+
+    if llm is None:
+        snippets = " ".join(getattr(doc, "text", str(doc)) for doc in documents[:2])
+        prefix = get_localized_message("extractive_prefix", response_language)
+        return f"{prefix}{snippets[:450]}".strip(), "extractive_fallback"
+
+    from src.rag.agentic.speculative import SpeculativeDraftEngine
+
+    engine = SpeculativeDraftEngine(drafter_llm=llm, verifier_llm=llm)
+    answer, _ = await engine.generate_and_select(
+        documents=documents,
+        query=query,
+        response_language=response_language,
+        route=route,
+    )
+    return answer, "speculative_3x"

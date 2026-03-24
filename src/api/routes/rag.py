@@ -320,7 +320,7 @@ async def test_router(request: RouteTestRequest):
     os.environ["USE_ADAPTIVE_ROUTER"] = "true"
 
     try:
-        from ai.rag.query_analyzer import AdaptiveQueryRouter
+        from src.rag.query_analyzer import AdaptiveQueryRouter
 
         router_instance = AdaptiveQueryRouter(llm=None)
         decision = await router_instance.route(
@@ -350,7 +350,7 @@ async def test_normalize(request: NormalizeTestRequest):
     Returns the expanded English text with all Hindi/Kannada terms replaced.
     No model loading required — pure text transformation.
     """
-    from ai.rag.agri_embeddings import AgriEmbeddingWrapper
+    from src.rag.agri_embeddings import AgriEmbeddingWrapper
 
     wrapper = AgriEmbeddingWrapper.__new__(AgriEmbeddingWrapper)
     wrapper.enable_term_normalization = True

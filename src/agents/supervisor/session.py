@@ -6,6 +6,7 @@ from typing import Any
 
 from src.agents.base_agent import AgentResponse
 from src.memory.state_manager import Message
+from src.shared.language import ensure_language_context, resolve_language
 
 
 async def process_with_session(
@@ -54,13 +55,35 @@ async def process_with_session(
     # Reload to get freshly merged entities
     session = await agent_instance.state_manager.get_context(session.session_id) or session
 
+    current_language = resolve_language(
+        query=query,
+        context={"user_profile": session.user_profile, "entities": session.entities},
+        default=(
+            session.user_profile.get("language")
+            or session.user_profile.get("language_pref")
+            or "en"
+        ),
+    )
+    await agent_instance.state_manager.update_user_profile(
+        session.session_id,
+        {
+            "language": current_language,
+            "language_pref": session.user_profile.get("language_pref") or current_language,
+        },
+    )
+    session = await agent_instance.state_manager.get_context(session.session_id) or session
+
     # 4. Build rich context dict (Phase 4 / G4 fix)
-    context = {
-        "user_profile": session.user_profile,
-        "entities": session.entities,                          # structured facts
-        "current_agent": session.current_agent,                # previous agent name
-        "conversation_summary": agent_instance.state_manager.get_conversation_summary(session),
-    }
+    context = ensure_language_context(
+        {
+            "user_profile": session.user_profile,
+            "entities": session.entities,  # structured facts
+            "current_agent": session.current_agent or session.entities.get("__current_agent"),
+            "conversation_summary": agent_instance.state_manager.get_conversation_summary(session),
+        },
+        query=query,
+        default_language=current_language,
+    )
 
     # 5. Create execution state
     execution = agent_instance.state_manager.create_execution(session.session_id, query)

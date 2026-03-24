@@ -146,7 +146,7 @@ graph TD
 | `src/scrapers/` | 16 | External APIs, Scrapling | `src/tools/` |
 | `src/db/` | 6 | PostgreSQL, Neo4j, Supabase | `src/agents/`, `src/rag/` |
 | `src/memory/` | 2 | Redis | `src/agents/`, `src/api/` |
-| `src/orchestrator/` | 2 | LLM APIs (Bedrock/Groq/Together) | `src/agents/` |
+| `src/orchestrator/` | 2 | LLM APIs (Groq/vLLM/Together; Bedrock legacy removal planned) | `src/agents/` |
 | `src/evaluation/` | 8 | RAGAS, `src/rag/` | Scripts |
 | `src/resilience/` | 7 | — | `src/agents/` |
 | `src/production/` | 5 | Redis | `src/api/` |

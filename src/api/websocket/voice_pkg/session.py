@@ -65,6 +65,8 @@ class MessageType(str, Enum):
     # Language
     LANGUAGE_DETECTED = "language_detected"
     LANGUAGE_HINT = "language_hint"
+    SPEAKER_HINT = "speaker_hint"
+    SPEAKER_ACK = "speaker_ack"
 
 
 class VoiceSession:

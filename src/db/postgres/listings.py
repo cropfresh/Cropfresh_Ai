@@ -7,6 +7,11 @@ from typing import Any, Optional
 
 from loguru import logger
 
+from src.db.postgres.listing_queries import (
+    build_listing_insert_payload,
+    build_listing_search,
+)
+
 
 class ListingOperationsMixin:
     """
@@ -100,28 +105,19 @@ class ListingOperationsMixin:
         Returns:
             New listing UUID as string.
         """
+        columns, values = build_listing_insert_payload(listing_data)
+        placeholders = ", ".join(
+            f"${index}::uuid" if column == "farmer_id" else f"${index}"
+            for index, column in enumerate(columns, start=1)
+        )
         async with self.pool.acquire() as conn:
             listing_id = await conn.fetchval(
-                """
-                INSERT INTO listings
-                    (farmer_id, commodity, variety, quantity_kg,
-                     asking_price_per_kg, grade, harvest_date,
-                     pickup_window_start, pickup_window_end,
-                     batch_qr_code, expires_at)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                f"""
+                INSERT INTO listings ({', '.join(columns)})
+                VALUES ({placeholders})
                 RETURNING id
                 """,
-                listing_data["farmer_id"],
-                listing_data["commodity"],
-                listing_data.get("variety"),
-                float(listing_data["quantity_kg"]),
-                float(listing_data["asking_price_per_kg"]),
-                listing_data.get("grade", "Unverified"),
-                listing_data.get("harvest_date"),
-                listing_data.get("pickup_window_start"),
-                listing_data.get("pickup_window_end"),
-                listing_data.get("batch_qr_code"),
-                listing_data.get("expires_at"),
+                *values,
             )
         logger.info(
             f"Created listing: {listing_data['quantity_kg']}kg "
@@ -140,44 +136,7 @@ class ListingOperationsMixin:
         Returns:
             List of matching listing dicts.
         """
-        conditions = ["l.status = 'active'"]
-        params: list[Any] = []
-        idx = 1
-
-        if commodity := filters.get("commodity"):
-            conditions.append(f"l.commodity ILIKE ${idx}")
-            params.append(f"%{commodity}%")
-            idx += 1
-
-        if grade := filters.get("grade"):
-            conditions.append(f"l.grade = ${idx}")
-            params.append(grade)
-            idx += 1
-
-        if min_qty := filters.get("min_qty_kg"):
-            conditions.append(f"l.quantity_kg >= ${idx}")
-            params.append(float(min_qty))
-            idx += 1
-
-        if max_price := filters.get("max_price_per_kg"):
-            conditions.append(f"l.asking_price_per_kg <= ${idx}")
-            params.append(float(max_price))
-            idx += 1
-
-        limit = filters.get("limit", 50)
-        params.append(limit)
-
-        where = " AND ".join(conditions)
+        sql, params = build_listing_search(filters)
         async with self.pool.acquire() as conn:
-            rows = await conn.fetch(
-                f"""
-                SELECT l.*, f.name AS farmer_name, f.district AS farmer_district
-                FROM listings l
-                JOIN farmers f ON f.id = l.farmer_id
-                WHERE {where}
-                ORDER BY l.created_at DESC
-                LIMIT ${idx}
-                """,
-                *params,
-            )
+            rows = await conn.fetch(sql, *params)
         return [dict(row) for row in rows]

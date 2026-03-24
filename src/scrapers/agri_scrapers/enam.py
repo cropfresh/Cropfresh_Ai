@@ -144,8 +144,10 @@ class ENAMScraper(ScraplingBaseScraper):
                     c = item.get("commodity", "")
                     s = item.get("state", "")
 
-                    if commodity and commodity.lower() not in c.lower(): continue
-                    if state and state.lower() not in s.lower(): continue
+                    if commodity and commodity.lower() not in c.lower():
+                        continue
+                    if state and state.lower() not in s.lower():
+                        continue
 
                     item["source"] = "enam_llm"
                     fallback_prices.append(MandiPrice(**item))

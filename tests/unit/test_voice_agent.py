@@ -9,7 +9,6 @@ from src.voice.entity_extractor import ExtractionResult, VoiceIntent
 from src.voice.stt import TranscriptionResult
 from src.voice.tts import SynthesisResult
 
-
 # * ═══════════════════════════════════════════════════════════════
 # * STUB INFRASTRUCTURE
 # * ═══════════════════════════════════════════════════════════════
@@ -46,7 +45,13 @@ class StubExtractor:
         self._results = results
         self._index = 0
 
-    async def extract(self, text: str, language: str) -> ExtractionResult:
+    async def extract(
+        self,
+        text: str,
+        language: str,
+        context_intent: str = "",
+    ) -> ExtractionResult:
+        del text, language, context_intent
         result = self._results[self._index]
         self._index += 1
         return result

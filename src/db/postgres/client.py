@@ -13,6 +13,7 @@ from typing import Optional
 
 from loguru import logger
 
+from src.db.postgres.adcl import ADCLOperationsMixin
 from src.db.postgres.chat import ChatOperationsMixin
 from src.db.postgres.digital_twins import DigitalTwinOperationsMixin
 from src.db.postgres.listings import ListingOperationsMixin
@@ -30,6 +31,7 @@ class AuroraPostgresClient(
     OrderOperationsMixin,
     DigitalTwinOperationsMixin,
     PriceOperationsMixin,
+    ADCLOperationsMixin,
 ):
     """
     Amazon Aurora PostgreSQL client with pgvector support.

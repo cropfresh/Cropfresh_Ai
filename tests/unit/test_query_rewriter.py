@@ -17,8 +17,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ai.rag.query_rewriter import QueryRewriter, RewriteResult, RewriteStrategy
-
+from src.rag.query_rewriter import QueryRewriter
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -157,8 +156,9 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_no_llm_returns_original(self, rewriter_no_llm):
         """Without LLM, should return original query unchanged."""
-        result = await rewriter_no_llm.rewrite("test query")
-        assert result.rewritten_queries == ["test query"]
+        query = "What is the recommended NPK ratio for paddy?"
+        result = await rewriter_no_llm.rewrite(query)
+        assert result.rewritten_queries == [query]
         assert result.strategy_used == "none"
 
     @pytest.mark.asyncio

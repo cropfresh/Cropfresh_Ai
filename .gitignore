@@ -58,6 +58,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+node_modules/
+dist/
 
 # IDEs
 .idea/
@@ -86,9 +88,11 @@ models/*.safetensors
 !models/.gitkeep
 *.pt
 
-# Data
+# Data (top-level only; allow data dirs inside src/ and ai/)
 data/
 !data/.gitkeep
+!src/**/data/
+!ai/**/data/
 
 # Logs
 logs/
@@ -104,13 +108,21 @@ Thumbs.db
 
 # Temp/debug files (root level)
 *.html
+!static/**/*.html
 *.png
 *.wav
 *.tmp
 *.json
 !package.json
+!package-lock.json
+!tsconfig.json
 !pyproject.toml
 !config/**/*.json
+!src/**/*.json
+!ai/**/*.json
+!src/**/*.jsonl
+!ai/**/*.jsonl
+!services/**/*.json
 
 # Debug/test output files
 test_output.txt

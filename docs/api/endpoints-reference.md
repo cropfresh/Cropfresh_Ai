@@ -1,9 +1,8 @@
-# CropFresh AI — API Endpoints Reference
+# CropFresh AI - API Endpoints Reference
 
-> **Last Updated:** 2026-03-11
+> **Last Updated:** 2026-03-18
 > **Base URL:** `http://localhost:8000` (dev) / `https://api.cropfresh.in` (prod)
-> **Auth:** API Key (`X-API-Key` header) — skipped in dev mode
-> **Content-Type:** `application/json`
+> **Auth:** `X-API-Key` for API routes outside development
 
 ---
 
@@ -20,16 +19,20 @@ graph TD
     MAIN --> R7
     MAIN --> R8
     MAIN --> R9
+    MAIN --> R10
+    MAIN --> R11
 
     R1["routes/chat.py<br/>/api/v1/chat"]
     R2["routes/rag.py<br/>/api/v1/rag"]
     R3["routes/prices.py<br/>/api/v1/prices"]
     R4["routes/data.py<br/>/api/v1/data"]
-    R5["routers/auth.py<br/>/api/v1/auth"]
-    R6["routers/listings.py<br/>/api/v1/listings"]
-    R7["routers/orders.py<br/>/api/v1/orders"]
-    R8["rest/voice.py<br/>/api/v1/voice"]
-    R9["websocket/voice_ws.py<br/>/ws/voice"]
+    R5["routes/adcl.py<br/>/api/v1/adcl"]
+    R6["routers/auth.py<br/>/api/v1/auth"]
+    R7["routers/listings.py<br/>/api/v1/listings"]
+    R8["routers/vision.py<br/>/api/v1/vision"]
+    R9["routers/orders.py<br/>/api/v1/orders"]
+    R10["rest/voice.py<br/>/api/v1/voice"]
+    R11["websocket/voice_pkg/router.py<br/>/api/v1/voice/ws*"]
 ```
 
 ---
@@ -42,47 +45,36 @@ graph TD
 |----------|--------|-------------|
 | `/api/v1/chat` | POST | Multi-turn conversation with agent routing |
 | `/api/v1/chat/stream` | POST | SSE streaming responses |
-| `/api/v1/chat/session` | POST | Create new session |
-| `/api/v1/chat/agents` | GET | List available agents |
+| `/api/v1/chat/session` | POST | Create a new chat session |
+| `/api/v1/chat/session/{session_id}` | GET | Fetch session metadata |
+| `/api/v1/chat/agents` | GET | List registered agents |
+| `/api/v1/chat/tools` | GET | List available tools |
 
 ### POST `/api/v1/chat`
 
-Query the multi-agent system. The SupervisorAgent routes to the best agent.
+**Request**
 
-**Request:**
 ```json
 {
-  "query": "What is the price of tomato in Mysore?",
-  "session_id": "uuid-string (optional)",
-  "user_id": "farmer_123 (optional)",
-  "agent_name": "commerce_agent (optional — force routing)",
-  "language": "kn (optional)"
-}
-```
-
-**Response:**
-```json
-{
-  "response": "Tomato price in Mysore mandi is ₹25/kg.",
-  "agent_name": "commerce_agent",
-  "confidence": 0.92,
+  "message": "What is the tomato price in Mysore?",
   "session_id": "uuid-string",
-  "sources": ["Agmarknet APMC data", "knowledge_base"],
-  "tools_used": ["agmarknet"],
-  "suggested_actions": ["Check weekly trends", "Set price alert"]
+  "context": {"channel": "web"}
 }
 ```
 
-### POST `/api/v1/chat/stream`
+**Response**
 
-Same request as `/chat`, returns Server-Sent Events (SSE):
-
-```
-data: {"token": "Tomato"}
-data: {"token": " price"}
-data: {"token": " in"}
-...
-data: {"done": true, "agent_name": "commerce_agent"}
+```json
+{
+  "message": "Tomato price in Mysore mandi is Rs25/kg.",
+  "session_id": "uuid-string",
+  "agent_used": "commerce_agent",
+  "confidence": 0.92,
+  "sources": ["agmarknet"],
+  "tools_used": ["multi_source_rates"],
+  "steps": [],
+  "suggested_actions": ["Check weekly trends"]
+}
 ```
 
 ---
@@ -93,24 +85,12 @@ data: {"done": true, "agent_name": "commerce_agent"}
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/rag/query` | POST | Query knowledge base with RAG pipeline |
-| `/api/v1/rag/search` | POST | Semantic search (retrieval only) |
-| `/api/v1/rag/ingest` | POST | Ingest documents into knowledge base |
-
-### POST `/api/v1/rag/query`
-
-Full RAG pipeline: query → retrieve → rerank → generate.
-
-**Request:**
-```json
-{
-  "query": "How to grow tomatoes in Karnataka?",
-  "top_k": 5,
-  "categories": ["agronomy"],
-  "use_graph": true,
-  "use_reranker": true
-}
-```
+| `/api/v1/rag/query` | POST | Query the RAG pipeline |
+| `/api/v1/rag/search` | GET | Retrieval-only search |
+| `/api/v1/rag/ingest` | POST | Ingest documents |
+| `/api/v1/rag/stats` | GET | Collection statistics |
+| `/api/v1/rag/route` | POST | Route-debug helper |
+| `/api/v1/rag/normalize` | POST | Query-normalization helper |
 
 ---
 
@@ -120,146 +100,312 @@ Full RAG pipeline: query → retrieve → rerank → generate.
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/prices/current` | GET | Current APMC mandi prices |
-| `/api/v1/prices/predict` | POST | Price predictions |
+| `/api/v1/prices/latest` | GET | Legacy aggregate price snapshot |
+| `/api/v1/prices/history` | GET | Legacy history endpoint |
+| `/api/v1/prices/summary` | GET | Legacy summary endpoint |
+| `/api/v1/prices/query` | POST | Official-first multi-source Karnataka rate query |
+| `/api/v1/prices/source-health` | GET | Connector health and pending-source metadata |
+
+### POST `/api/v1/prices/query`
+
+**Request**
+
+```json
+{
+  "rate_kinds": ["mandi_wholesale"],
+  "commodity": "tomato",
+  "state": "Karnataka",
+  "district": null,
+  "market": "Kolar",
+  "date": "2026-03-17",
+  "include_reference": true,
+  "force_live": false,
+  "comparison_depth": "all_sources"
+}
+```
+
+**Response fields**
+
+- `query_target`
+- `canonical_rates`
+- `comparison_quotes`
+- `source_health`
+- `warnings`
+- `pending_sources`
+- `fetched_at`
 
 ---
 
-## 4. Auth API (`/api/v1/auth`)
+## 4. Data Utilities (`/api/v1/data`)
+
+**Source:** `src/api/routes/data.py`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/data/scrape` | POST | Generic scrape helper |
+| `/api/v1/data/sources` | GET | List configured data sources |
+| `/api/v1/data/prices` | GET | Data-service price lookup |
+| `/api/v1/data/weather` | GET | Weather lookup |
+| `/api/v1/data/aikosha/datasets` | GET | AI Kosha dataset list |
+| `/api/v1/data/aikosha/dataset/{dataset_id}` | GET | AI Kosha dataset detail |
+| `/api/v1/data/aikosha/categories` | GET | AI Kosha category list |
+
+---
+
+## 5. ADCL API (`/api/v1/adcl`)
+
+**Source:** `src/api/routes/adcl.py`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/adcl/weekly` | GET | District-scoped weekly crop-demand report |
+
+### GET `/api/v1/adcl/weekly`
+
+| Query Param | Required | Description |
+|-------------|----------|-------------|
+| `district` | Yes | District to score, for example `Kolar` |
+| `force_live` | No | Rebuild from live inputs instead of cache |
+| `farmer_id` | No | Future farmer-aware overlay hook |
+| `language` | No | Summary language hint |
+
+**Response highlights**
+
+- `week_start`
+- `district`
+- `generated_at`
+- `freshness`
+- `source_health`
+- `metadata`
+- `crops[]` with `commodity`, `green_label`, `recommendation`, `buyer_count`, `total_demand_kg`, and evidence metadata
+
+---
+
+## 6. Auth API (`/api/v1/auth`)
 
 **Source:** `src/api/routers/auth.py`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/auth/register` | POST | Register new farmer/buyer |
-| `/api/v1/auth/login` | POST | Login (Firebase JWT) |
-| `/api/v1/auth/profile` | GET | Get user profile |
-| `/api/v1/auth/profile` | PUT | Update user profile |
+| `/api/v1/auth/register` | POST | Register phone number and send OTP |
+| `/api/v1/auth/verify-otp` | POST | Verify OTP and return JWT |
+| `/api/v1/auth/me` | GET | Decode JWT and return current user info |
+| `/api/v1/auth/profile/{user_id}` | GET | Fetch farmer or buyer profile |
+| `/api/v1/auth/profile/{user_id}` | PATCH | Update farmer or buyer profile |
+| `/api/v1/auth/buyer-profile/{user_id}` | PATCH | Update buyer-specific profile fields |
 
 ---
 
-## 5. Listings API (`/api/v1/listings`)
+## 7. Listings API (`/api/v1/listings`)
 
 **Source:** `src/api/routers/listings.py`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/listings` | POST | Create crop listing |
-| `/api/v1/listings` | GET | List user's listings |
-| `/api/v1/listings/{id}` | GET | Get listing by ID |
-| `/api/v1/listings/{id}` | PUT | Update listing |
-| `/api/v1/listings/{id}` | DELETE | Cancel listing |
-
-### POST `/api/v1/listings`
-
-**Request:**
-```json
-{
-  "commodity": "Tomato",
-  "quantity_kg": 100,
-  "asking_price_per_kg": 25.0,
-  "grade": "A",
-  "harvest_date": "2026-03-10",
-  "location": "Kolar",
-  "description": "Fresh farm tomatoes, hand-picked"
-}
-```
+| `/api/v1/listings` | POST | Create a produce listing |
+| `/api/v1/listings` | GET | Search listings with filters |
+| `/api/v1/listings/farmer/{farmer_id}` | GET | Get a farmer's listings |
+| `/api/v1/listings/{listing_id}` | GET | Fetch a listing by ID |
+| `/api/v1/listings/{listing_id}` | PATCH | Update a listing |
+| `/api/v1/listings/{listing_id}` | DELETE | Soft-cancel a listing |
+| `/api/v1/listings/{listing_id}/grade` | POST | Attach a quality grade |
 
 ---
 
-## 6. Orders API (`/api/v1/orders`)
+## 8. Vision API (`/api/v1/vision`)
+
+**Source:** `src/api/routers/vision.py`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/vision/health` | GET | Shared quality-agent health plus model/fallback status |
+| `/api/v1/vision/assess` | POST | Run a quality assessment for image or description input |
+
+### POST `/api/v1/vision/assess`
+
+**Request**
+
+```json
+{
+  "commodity": "Tomato",
+  "listing_id": "lst-42",
+  "description": "Fresh and firm with light bruising",
+  "image_b64": "optional-base64-image",
+  "require_upgrade_review": false
+}
+```
+
+**Response highlights**
+
+- `grade`
+- `confidence`
+- `defects`
+- `hitl_required`
+- `assessment_mode`
+- `vision_ready`
+- `grade_attach_preview` for reuse with `/api/v1/listings/{listing_id}/grade`
+
+---
+
+## 9. Orders API (`/api/v1/orders`)
 
 **Source:** `src/api/routers/orders.py`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/orders` | POST | Create order from listing |
-| `/api/v1/orders` | GET | List user's orders |
-| `/api/v1/orders/{id}` | GET | Get order details |
-| `/api/v1/orders/{id}/status` | PUT | Update order status |
-| `/api/v1/orders/{id}/dispute` | POST | Report dispute |
+| `/api/v1/orders` | POST | Create an order |
+| `/api/v1/orders` | GET | List orders by farmer or buyer |
+| `/api/v1/orders/{order_id}` | GET | Fetch an order by ID |
+| `/api/v1/orders/{order_id}/status` | PATCH | Advance order status |
+| `/api/v1/orders/{order_id}/dispute` | POST | Raise a dispute |
+| `/api/v1/orders/{order_id}/settle` | POST | Settle the order and release escrow |
+| `/api/v1/orders/{order_id}/aisp` | GET | Get AISP price breakdown |
 
 ---
 
-## 7. Voice REST API (`/api/v1/voice`)
+## 10. Voice REST API (`/api/v1/voice`)
 
 **Source:** `src/api/rest/voice.py`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/voice/process` | POST | Full voice pipeline (audio → text → agent → audio) |
-| `/api/v1/voice/transcribe` | POST | Audio → text only (STT) |
-| `/api/v1/voice/synthesize` | POST | Text → audio only (TTS) |
+| `/api/v1/voice/process` | POST | Full voice pipeline: audio -> text -> agent -> audio |
+| `/api/v1/voice/transcribe` | POST | Audio -> text only |
+| `/api/v1/voice/synthesize` | POST | Text -> audio only |
+| `/api/v1/voice/languages` | GET | Supported STT and TTS languages |
+| `/api/v1/voice/session/{session_id}` | DELETE | Clear a voice session |
+| `/api/v1/voice/health` | GET | Voice runtime health |
 
 ### POST `/api/v1/voice/process`
 
 **Request:** `multipart/form-data`
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `audio` | file (WAV/WebM) | ✅ | Audio file |
-| `user_id` | string | ❌ | User identifier |
-| `session_id` | string | ❌ | Session for multi-turn |
-| `language` | string | ❌ | Language code (default: `kn`) |
+| `audio` | file | Yes | Audio file (`WAV`, `MP3`, `OGG`) |
+| `user_id` | string | Yes | User identifier |
+| `session_id` | string | No | Session ID for multi-turn context |
+| `language` | string | No | Language code or `auto` |
 
-**Response:**
+**Response**
+
 ```json
 {
-  "transcription": "ಟೊಮ್ಯಾಟೊ ಬೆಲೆ ಎಷ್ಟು",
-  "detected_language": "kn",
-  "response_text": "ಟೊಮ್ಯಾಟೊ ಬೆಲೆ ₹25/kg",
-  "audio_url": "/tmp/response_audio.wav",
+  "transcription": "tomato price",
+  "language": "en",
   "intent": "CHECK_PRICE",
   "entities": {"commodity": "Tomato"},
-  "session_id": "uuid-string"
+  "response_text": "Tomato price in Mysore mandi is Rs25/kg.",
+  "response_audio_base64": "...",
+  "session_id": "uuid-string",
+  "confidence": 0.94,
+  "workflow_context": {
+    "last_listing_id": "lst-42",
+    "pending_intent": null
+  }
 }
 ```
 
----
+### GET `/api/v1/voice/health`
 
-## 8. Voice WebSocket (`/ws/voice/{user_id}`)
+Current response fields:
 
-**Source:** `src/api/websocket/voice_ws.py`
+- `status`
+- `stt_providers`
+- `tts_provider`
+- `languages`
+- `version`
 
-Real-time bidirectional audio streaming with VAD.
-
-```
-ws://localhost:8000/ws/voice/{user_id}?language=kn&session_id=uuid
-```
-
-See [`docs/api/websocket-voice.md`](websocket-voice.md) for full protocol.
+Sprint 07 expands this endpoint with provider readiness and warm-status details.
 
 ---
 
-## 9. Health API
+## 11. Voice WebSocket (`/api/v1/voice/ws*`)
 
-**Source:** `src/api/main.py` (inline) + `src/api/routers/health.py`
+**Source:** `src/api/websocket/voice_pkg/router.py`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/health` | GET | Basic health check |
-| `/health/ready` | GET | Full readiness check (DB connections) |
-| `/metrics` | GET | Prometheus metrics (when enabled) |
+| `/api/v1/voice/ws` | WebSocket | Compatibility voice streaming path |
+| `/api/v1/voice/ws/duplex` | WebSocket | Canonical realtime duplex path |
+| `/api/v1/voice/ws/sessions` | GET | Active websocket session count |
+
+The documented production contract is `/api/v1/voice/ws/duplex`.
+
+Current transport notes:
+
+- JSON text frames only
+- audio carried in `audio_base64`
+- incremental server audio returned as base64 chunks
+
+See `docs/api/websocket-voice.md` for the full protocol.
+
+---
+
+## 12. Health and Observability
+
+**Source:** `src/api/main.py`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Liveness probe |
+| `/health/ready` | GET | Readiness probe with service checks |
+| `/metrics` | GET | Prometheus scrape endpoint |
 
 ---
 
 ## Error Responses
 
-All errors follow this format:
+Most routes return FastAPI-style error payloads:
 
 ```json
 {
-  "detail": "Human-readable error message",
-  "error_code": "AGENT_ERROR (or VALIDATION_ERROR, AUTH_ERROR, etc)",
-  "status_code": 400
+  "detail": "Human-readable error message"
 }
 ```
 
+Common status codes:
+
 | Status Code | Meaning |
 |-------------|---------|
-| 400 | Bad request (missing fields, invalid input) |
-| 401 | Unauthorized (invalid API key) |
-| 403 | Forbidden (insufficient permissions) |
+| 400 | Bad request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
 | 404 | Not found |
-| 429 | Rate limited |
+| 422 | Validation failure |
 | 500 | Internal server error |
-| 503 | Service unavailable (DB connection lost) |
+| 503 | Service unavailable |
+
+---
+
+## Internal Voice Service Addendum (2026-03-24)
+
+The Sprint 09 bridge slice added an internal VAD-service endpoint that is not served by the main FastAPI app on port `8000`, but it is part of the current voice-program contract.
+
+**Internal Service Base:** `services/vad-service/`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/vad/analyze` | POST | Acoustic frame analysis for the bridge relay path |
+| `/v1/vad/segments/evaluate` | POST | Semantic hold-or-flush decision for an acoustically-finished segment |
+| `/v1/vad/sessions/{session_id}` | DELETE | Reset acoustic and semantic state for one bridge session |
+
+### POST `/v1/vad/segments/evaluate`
+
+**Request**
+
+```json
+{
+  "session_id": "bridge-session",
+  "transcript": "one second",
+  "language": "en"
+}
+```
+
+**Response highlights**
+
+- `should_flush`
+- `reason`
+- `semantic_hold_ms`
+- `used_llm`
+- `timed_out`

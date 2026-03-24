@@ -1,26 +1,12 @@
-"""
-Knowledge Agent
-================
-High-level interface for the agentic RAG system.
+"""High-level interface for the agentic RAG system."""
 
-Provides simple API for querying agricultural knowledge.
-"""
-
-from typing import Any, Optional
+from typing import Optional
 
 from loguru import logger
-from pydantic import BaseModel, Field
 
-
-class KnowledgeResponse(BaseModel):
-    """Response from knowledge agent."""
-
-    answer: str
-    sources: list[str] = Field(default_factory=list)
-    confidence: float = 0.8
-    query_type: str = ""
-    steps: list[str] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)
+from src.agents.knowledge_mapping import build_source_details, extract_citations
+from src.agents.knowledge_models import BenchmarkDebugResult, KnowledgeResponse
+from src.agents.knowledge_runtime import configure_benchmark_embeddings
 
 
 class KnowledgeAgent:
@@ -60,12 +46,14 @@ class KnowledgeAgent:
         self.qdrant_api_key = qdrant_api_key
         self._knowledge_base = None
         self._initialized = False
+        self._initialize_attempted = False
 
     @property
     def knowledge_base(self):
         """Get knowledge base instance."""
         if self._knowledge_base is None:
             from src.rag.knowledge_base import KnowledgeBase
+
             self._knowledge_base = KnowledgeBase(
                 host=self.qdrant_host,
                 port=self.qdrant_port,
@@ -82,6 +70,7 @@ class KnowledgeAgent:
         Returns:
             True if initialized successfully
         """
+        self._initialize_attempted = True
         try:
             success = await self.knowledge_base.initialize()
             self._initialized = success
@@ -107,47 +96,64 @@ class KnowledgeAgent:
         Returns:
             KnowledgeResponse with answer and metadata
         """
+        debug_result = await self.answer_with_debug(question=question, context=context)
+        return KnowledgeResponse(
+            answer=debug_result.answer,
+            sources=debug_result.sources,
+            confidence=debug_result.confidence,
+            query_type=debug_result.route,
+            steps=debug_result.metadata.get("steps", []),
+            metadata=debug_result.metadata,
+        )
+
+    async def answer_with_debug(
+        self,
+        question: str,
+        context: str = "",
+    ) -> BenchmarkDebugResult:
+        """Answer a query while returning benchmark/debug details."""
         from src.rag.graph import run_agentic_rag
 
-        if not self._initialized:
+        if not self._initialized and not self._initialize_attempted:
             await self.initialize()
+        configure_benchmark_embeddings(self)
 
-        # Include context in question if provided
         full_question = f"{question}\n\nContext: {context}" if context else question
-
         try:
-            # Run agentic RAG pipeline
             result = await run_agentic_rag(
                 question=full_question,
                 knowledge_base=self.knowledge_base,
                 llm=self.llm,
             )
-
-            # Extract sources from documents
-            sources = []
-            for doc in result.get("documents", []):
-                if hasattr(doc, "source") and doc.source:
-                    sources.append(doc.source)
-
-            return KnowledgeResponse(
-                answer=result.get("final_answer") or result.get("generation", "I couldn't find an answer."),
-                sources=list(set(sources)),  # Deduplicate
-                confidence=0.8 if result.get("final_answer") else 0.5,
-                query_type=result.get("query_type", ""),
-                steps=result.get("steps", []),
+            documents = result.get("documents", [])
+            source_details = build_source_details(documents)
+            sources = [detail.source for detail in source_details if detail.source]
+            answer = result.get("final_answer") or result.get("generation", "I couldn't find an answer.")
+            return BenchmarkDebugResult(
+                answer=answer,
+                raw_answer=result.get("generation", ""),
+                sources=list(dict.fromkeys(sources)),
+                source_details=source_details,
+                contexts=[getattr(doc, "text", str(doc)) for doc in documents],
+                route=result.get("query_type", ""),
+                tool_calls=result.get("tool_calls", []),
+                confidence=float(result.get("confidence", 0.0)),
+                retry_count=int(result.get("retry_count", 0)),
+                citations=extract_citations(answer),
                 metadata={
-                    "documents_retrieved": len(result.get("documents", [])),
+                    "documents_retrieved": len(documents),
                     "web_search_used": result.get("web_search") == "Yes",
                     "retry_count": result.get("retry_count", 0),
+                    "steps": result.get("steps", []),
+                    "route_reason": result.get("route_reason", ""),
                 },
             )
-
         except Exception as e:
             logger.error(f"Error answering question: {e}")
-            return KnowledgeResponse(
+            return BenchmarkDebugResult(
                 answer=f"Sorry, I encountered an error: {str(e)}",
-                confidence=0.0,
-                steps=["error"],
+                route="error",
+                metadata={"steps": ["error"]},
             )
 
     async def search(
@@ -167,7 +173,7 @@ class KnowledgeAgent:
         Returns:
             List of matching documents
         """
-        if not self._initialized:
+        if not self._initialized and not self._initialize_attempted:
             await self.initialize()
 
         result = await self.knowledge_base.search(
@@ -201,7 +207,7 @@ class KnowledgeAgent:
         """
         from src.rag.knowledge_base import Document
 
-        if not self._initialized:
+        if not self._initialized and not self._initialize_attempted:
             await self.initialize()
 
         docs = [

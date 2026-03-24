@@ -38,6 +38,7 @@
 - ✅ IMD weather scraper
 - ✅ eNAM client stub
 - ✅ APScheduler for automated scraping
+- ✅ Multi-source Karnataka rate hub with official-first aggregation, caching, scheduler refresh, and shared API/tool reuse
 
 ### Infrastructure
 - ✅ Docker Compose (7 services)
@@ -57,5 +58,5 @@
 | Supported languages | 10 |
 | API routers | 9 |
 | Docker services | 7 |
-| Tools registered | 16 |
-| Test scripts | 58 |
+| Tools registered | 16+ |
+| Test scripts | 58+ |

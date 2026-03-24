@@ -1,12 +1,56 @@
-﻿name: Scheduled Data Scraping
+name: Scheduled Data Scraping
+
 on:
   schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC
+    - cron: '15 0 * * *'
+    - cron: '30 1 * * *'
+    - cron: '30 3 * * *'
+    - cron: '30 4 * * *'
+    - cron: '30 5 * * *'
+    - cron: '45 6 * * *'
+    - cron: '30 7 * * *'
+    - cron: '30 11 * * *'
+  workflow_dispatch:
+    inputs:
+      job_ids:
+        description: "Space-separated --job-id arguments for manual runs"
+        required: false
+        default: "--job-id agmarknet_daily"
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-south-1
+      PG_HOST: ${{ secrets.PG_HOST }}
+      PG_PORT: "5432"
+      PG_DATABASE: postgres
+      PG_USER: postgres
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      PG_USE_IAM_AUTH: "false"
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv sync
-      - run: uv run python -m src.scrapers
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v7.6.0
+        with:
+          python-version: "3.12"
+      - name: Resolve scheduled job IDs
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "SCRAPER_JOB_IDS=${{ inputs.job_ids }}" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          case "${{ github.event.schedule }}" in
+            "15 0 * * *") echo "SCRAPER_JOB_IDS=--job-id rates_official_mandi_morning" >> "$GITHUB_ENV" ;;
+            "30 1 * * *") echo "SCRAPER_JOB_IDS=--job-id rates_support_reference_daily" >> "$GITHUB_ENV" ;;
+            "30 3 * * *") echo "SCRAPER_JOB_IDS=--job-id rates_fuel_gold_morning" >> "$GITHUB_ENV" ;;
+            "30 4 * * *") echo "SCRAPER_JOB_IDS=--job-id agmarknet_daily" >> "$GITHUB_ENV" ;;
+            "30 5 * * *") echo "SCRAPER_JOB_IDS=--job-id imd_daily" >> "$GITHUB_ENV" ;;
+            "45 6 * * *") echo "SCRAPER_JOB_IDS=--job-id rates_official_mandi_midday" >> "$GITHUB_ENV" ;;
+            "30 7 * * *") echo "SCRAPER_JOB_IDS=--job-id rates_validator_retail_daily --job-id rates_fuel_gold_midday" >> "$GITHUB_ENV" ;;
+            "30 11 * * *") echo "SCRAPER_JOB_IDS=--job-id rates_fuel_gold_evening" >> "$GITHUB_ENV" ;;
+            *) echo "Unknown schedule '${{ github.event.schedule }}'" ; exit 1 ;;
+          esac
+      - run: uv sync --group dev
+      - run: uv run python -m src.scrapers $SCRAPER_JOB_IDS

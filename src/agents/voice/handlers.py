@@ -168,8 +168,8 @@ async def handle_my_listings(agent, template, session):
             if listings:
                 count = len(listings)
                 details = ", ".join(
-                    f"{l.get('quantity_kg', '?')} kg {l.get('commodity', '?')}"
-                    for l in listings[:3]
+                    f"{listing.get('quantity_kg', '?')} kg {listing.get('commodity', '?')}"
+                    for listing in listings[:3]
                 )
                 return template.format(count=count, details=details)
         except Exception as exc:

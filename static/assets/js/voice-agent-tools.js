@@ -64,12 +64,14 @@ async function loadVoiceHealth() {
   try {
     const res = await requestJson('GET', '/api/v1/voice/health');
     const data = res.data || {};
+    const sttProviders = data.stt_providers || [];
+    const ttsProvider = data.tts_provider || '?';
     healthRow.innerHTML = `
       <div class="health-chip ${res.ok ? 'ok' : 'err'}">
         ${res.ok ? '✔' : '✘'} Voice API
       </div>
-      <div class="health-chip ok">⚙ STT: ${data.stt || '?'}</div>
-      <div class="health-chip ok">🔊 TTS: ${data.tts || '?'}</div>
+      <div class="health-chip ok">⚙ STT: ${sttProviders.join(', ') || '?'}</div>
+      <div class="health-chip ok">🔊 TTS: ${ttsProvider}</div>
       <div class="health-chip">
         🌐 ${(data.languages || []).join(' · ') || '—'}
       </div>

@@ -141,7 +141,7 @@ class GeneralAgent(BaseAgent):
             ]
 
             if self.llm:
-                answer = await self.generate_with_llm(messages)
+                answer = await self.generate_with_llm(messages, context=context)
             else:
                 answer = self._generate_fallback(query)
 
@@ -186,7 +186,11 @@ class GeneralAgent(BaseAgent):
 
         # Check for exact or partial matches
         for key, response in greetings.items():
-            if query_lower == key or query_lower.startswith(key + " ") or query_lower.startswith(key + ","):
+            if (
+                query_lower == key
+                or query_lower.startswith(key + " ")
+                or query_lower.startswith(key + ",")
+            ):
                 return response
 
         return None

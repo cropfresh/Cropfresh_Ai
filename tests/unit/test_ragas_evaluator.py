@@ -12,15 +12,14 @@ Tests cover:
 
 from __future__ import annotations
 
-import asyncio
 import json
-import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from src.evaluation.dataset_loader import DatasetLoader
+from src.evaluation.eval_runner import EvalRunner
 from src.evaluation.models import EvalResults, GoldenItem, PerQuestionScore
 from src.evaluation.ragas_evaluator import (
     RAGASEvaluator,
@@ -32,8 +31,6 @@ from src.evaluation.ragas_evaluator import (
     create_ragas_evaluator,
 )
 from src.evaluation.report_generator import ReportGenerator
-from src.evaluation.eval_runner import EvalRunner
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

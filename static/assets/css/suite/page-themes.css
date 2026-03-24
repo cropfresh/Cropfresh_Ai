@@ -1,0 +1,94 @@
+body[data-suite-page="dashboard"] {
+  --accent: #f3be56;
+  --accent-soft: rgba(243, 190, 86, 0.18);
+  --rail-accent-2: #8be0b6;
+  --rail-shadow: rgba(243, 190, 86, 0.22);
+  --rail-shadow-soft: rgba(243, 190, 86, 0.14);
+  --rail-glow: rgba(243, 190, 86, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(243, 190, 86, 0.15), transparent 22%),
+    radial-gradient(circle at 78% 12%, rgba(139, 224, 182, 0.12), transparent 18%),
+    linear-gradient(155deg, #09120f 0%, #102019 40%, #07100d 100%);
+}
+
+body[data-suite-page="voice-hub"] {
+  --accent: #ffb06a;
+  --accent-soft: rgba(255, 176, 106, 0.18);
+  --rail-accent-2: #83ead8;
+  --rail-shadow: rgba(255, 176, 106, 0.22);
+  --rail-shadow-soft: rgba(255, 176, 106, 0.14);
+  --rail-glow: rgba(131, 234, 216, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(255, 176, 106, 0.16), transparent 24%),
+    radial-gradient(circle at 85% 18%, rgba(131, 234, 216, 0.12), transparent 20%),
+    linear-gradient(160deg, #08110f 0%, #101d1b 44%, #07100d 100%);
+}
+
+body[data-suite-page="rag-lab"] {
+  --accent: #8cc7ff;
+  --accent-soft: rgba(140, 199, 255, 0.18);
+  --rail-accent-2: #7de3b8;
+  --rail-shadow: rgba(140, 199, 255, 0.22);
+  --rail-shadow-soft: rgba(140, 199, 255, 0.14);
+  --rail-glow: rgba(140, 199, 255, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(140, 199, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 82% 10%, rgba(125, 227, 184, 0.1), transparent 18%),
+    linear-gradient(160deg, #07111a 0%, #0f1b23 42%, #07100e 100%);
+}
+
+body[data-suite-page="realtime"] {
+  --accent: #78dbff;
+  --accent-soft: rgba(120, 219, 255, 0.18);
+  --rail-accent-2: #9cf0c3;
+  --rail-shadow: rgba(120, 219, 255, 0.22);
+  --rail-shadow-soft: rgba(120, 219, 255, 0.14);
+  --rail-glow: rgba(120, 219, 255, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(120, 219, 255, 0.17), transparent 22%),
+    radial-gradient(circle at 78% 14%, rgba(156, 240, 195, 0.1), transparent 18%),
+    linear-gradient(160deg, #061018 0%, #0d1921 45%, #06100d 100%);
+}
+
+body[data-suite-page="voice-ui"] {
+  --accent: #7de3b8;
+  --accent-soft: rgba(125, 227, 184, 0.18);
+  --rail-accent-2: #ffe08f;
+  --rail-shadow: rgba(125, 227, 184, 0.22);
+  --rail-shadow-soft: rgba(125, 227, 184, 0.14);
+  --rail-glow: rgba(255, 224, 143, 0.14);
+  background:
+    radial-gradient(circle at top left, rgba(125, 227, 184, 0.17), transparent 22%),
+    radial-gradient(circle at 80% 12%, rgba(255, 224, 143, 0.12), transparent 18%),
+    linear-gradient(160deg, #06110d 0%, #0e1d18 45%, #07110d 100%);
+}
+
+body[data-suite-page="vision-lab"] {
+  --accent: #9be46d;
+  --accent-soft: rgba(155, 228, 109, 0.18);
+  --rail-accent-2: #80cfff;
+  --rail-shadow: rgba(155, 228, 109, 0.22);
+  --rail-shadow-soft: rgba(155, 228, 109, 0.14);
+  --rail-glow: rgba(128, 207, 255, 0.14);
+  background:
+    radial-gradient(circle at top left, rgba(155, 228, 109, 0.16), transparent 22%),
+    radial-gradient(circle at 82% 14%, rgba(128, 207, 255, 0.12), transparent 18%),
+    linear-gradient(160deg, #07120e 0%, #10201a 44%, #07110f 100%);
+}
+
+body[data-suite-page] .brand-logo,
+body[data-suite-page] .suite-rail-mark-badge {
+  background: linear-gradient(135deg, var(--accent), var(--rail-accent-2));
+}
+
+body[data-suite-page] .topbar-tag,
+body[data-suite-page] .card-kicker,
+body[data-suite-page] .page-footer-links a:hover,
+body[data-suite-page] .suite-rail-panel-label {
+  color: var(--accent);
+}
+
+body[data-suite-page] .hero-panel,
+body[data-suite-page] .suite-rail-panel {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}

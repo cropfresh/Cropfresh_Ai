@@ -58,6 +58,10 @@ class PriceOperationsMixin:
         logger.info(f"Upserted {len(rows)} price history records")
         return len(rows)
 
+    async def insert_mandi_prices(self, records: list[dict[str, Any]]) -> int:
+        """Backward-compatible alias for legacy scraper callers."""
+        return await self.insert_price_history(records)
+
     async def get_price_history(
         self,
         commodity: str,
