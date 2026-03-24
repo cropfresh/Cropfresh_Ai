@@ -10,7 +10,6 @@ from uuid import uuid4
 
 from loguru import logger
 
-from src.memory.state_manager import VoiceSessionState, VoiceTurn
 from src.agents.voice.handlers import (
     handle_check_price,
     handle_create_listing,
@@ -28,6 +27,7 @@ from src.agents.voice.handlers_ext import (
 )
 from src.agents.voice.models import VoiceResponse, VoiceSession
 from src.agents.voice.templates import REQUIRED_FIELDS, RESPONSE_TEMPLATES
+from src.memory.state_manager import VoiceSessionState, VoiceTurn
 from src.voice.entity_extractor import ExtractionResult, VoiceIntent
 
 

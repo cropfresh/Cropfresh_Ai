@@ -9,8 +9,8 @@ from src.memory.state_pkg.models import (
     ConversationContext,
     Message,
     SessionExpiredError,
-    VoiceSpeakerProfile,
     VoiceSessionState,
+    VoiceSpeakerProfile,
     VoiceStateEvent,
     VoiceTurn,
 )
