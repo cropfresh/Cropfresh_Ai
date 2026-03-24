@@ -36,7 +36,12 @@ def _record(
 
 
 def test_compare_records_prefers_official_source_precedence() -> None:
-    query = normalize_rate_query(rate_kinds=["mandi_wholesale"], commodity="tomato", market="Kolar")
+    query = normalize_rate_query(
+        rate_kinds=["mandi_wholesale"],
+        commodity="tomato",
+        market="Kolar",
+        date=NOW.date(),
+    )
     records = [
         _record("agmarknet_ogd", AuthorityTier.OFFICIAL, 2200.0),
         _record("krama_daily", AuthorityTier.OFFICIAL, 2100.0, fetched_at=NOW - timedelta(minutes=5)),

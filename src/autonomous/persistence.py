@@ -222,7 +222,7 @@ class TaskPersistence:
                 saved_at = datetime.fromisoformat(saved_at_str)
                 if saved_at < cutoff:
                     to_delete.append(task_id)
-            except:
+            except ValueError:
                 pass
 
         for task_id in to_delete:

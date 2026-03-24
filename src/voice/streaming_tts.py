@@ -187,7 +187,7 @@ class StreamingTTS:
     def _check_edge(self) -> bool:
         """Check if Edge TTS is available"""
         try:
-            import edge_tts
+            __import__("edge_tts")
             return True
         except ImportError:
             return False

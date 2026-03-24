@@ -300,9 +300,19 @@ class AgentStateManager:
         context = await self.get_context(session_id)
         if not context:
             return
-        context.last_active_at = datetime.now()
+        next_active_at = datetime.now()
+        if next_active_at <= context.last_active_at:
+            next_active_at = context.last_active_at + timedelta(microseconds=1)
+
+        context.last_active_at = next_active_at
+        context.updated_at = next_active_at
         if heartbeat:
-            context.last_heartbeat_at = context.last_active_at
+            next_heartbeat_at = datetime.now()
+            if next_heartbeat_at <= context.last_heartbeat_at:
+                next_heartbeat_at = context.last_heartbeat_at + timedelta(microseconds=1)
+            if next_heartbeat_at < context.last_active_at:
+                next_heartbeat_at = context.last_active_at
+            context.last_heartbeat_at = next_heartbeat_at
         await self._persist_context(session_id, context)
 
     async def update_voice_runtime(self, session_id: str, **updates: Any) -> bool:

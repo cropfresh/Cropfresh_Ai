@@ -1,4 +1,11 @@
 const DEFAULT_WS_PATH = "/api/v1/voice/ws/duplex";
+const DEFAULT_RECOVERY = {
+  dead_peer_timeout_ms: 30000,
+  ice_restart_enabled: false,
+  network_change_recovery: true,
+  reconnect_token_required: true,
+  retry_backoff_ms: [1000, 2000, 4000, 8000, 16000],
+};
 
 function buildFallbackWsUrl({ language, reconnectToken, sessionId, userId }) {
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -47,6 +54,7 @@ export async function bootstrapVoiceSession({
         ring_buffer: false,
         vad_service: false,
       },
+      recovery: DEFAULT_RECOVERY,
       bootstrap_source: "local_fallback",
     };
   }
@@ -80,6 +88,7 @@ export async function bootstrapVoiceSession({
       ...payload,
       session_id: payload.session_id || sessionId,
       reconnect_token: payload.reconnect_token || resolvedReconnectToken,
+      recovery: payload.recovery || DEFAULT_RECOVERY,
       fallback_ws_url: resolvedFallbackUrl.toString(),
       bootstrap_source: "gateway",
     };
@@ -98,6 +107,7 @@ export async function bootstrapVoiceSession({
         ring_buffer: false,
         vad_service: false,
       },
+      recovery: DEFAULT_RECOVERY,
       bootstrap_error: error.message,
       bootstrap_source: "gateway_fallback",
     };

@@ -1,11 +1,40 @@
-﻿name: CI — Lint + Test
+name: CI — Lint + Test
+
 on: [push, pull_request]
+
 jobs:
-  test:
+  python-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv sync --all-extras
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v7.6.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --group dev
       - run: uv run ruff check src/ ai/
+
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v7.6.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --group dev
       - run: uv run pytest tests/ -v --tb=short
+
+  voice-gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: services/voice-gateway/package-lock.json
+      - run: npm ci
+        working-directory: services/voice-gateway
+      - run: npm run build
+        working-directory: services/voice-gateway
+      - run: npm test
+        working-directory: services/voice-gateway

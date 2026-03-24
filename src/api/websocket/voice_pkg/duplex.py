@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from src.voice.duplex_pipeline import DuplexPipeline
 
 try:
-    from src.voice.vad import BargeinDetector, SileroVAD, VADState, bytes_to_wav
+    from src.voice.vad import bytes_to_wav
     VAD_AVAILABLE = True
 except ImportError:
     VAD_AVAILABLE = False

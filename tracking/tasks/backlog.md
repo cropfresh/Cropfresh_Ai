@@ -15,14 +15,15 @@
 
 - [x] Create `services/voice-gateway/` with `POST /sessions/bootstrap`, `GET /health`, and `GET /ready`
 - [x] Add feature-flagged LiveKit session bootstrap while preserving fallback to `/api/v1/voice/ws/duplex`
-- [ ] Implement a 5-second PCM ring buffer and RMS pre-gate in the gateway before downstream relay
+- [x] Implement a 5-second PCM ring buffer and RMS pre-gate in the gateway before downstream relay
 - [x] Create `services/vad-service/` with FastAPI plus gRPC, Silero ONNX acoustic segmentation, and the agreed dual-threshold settings
-- [ ] Keep the current Groq plus Edge/local Indic provider path in the downstream FastAPI duplex runtime for Phase 1
+- [x] Keep the current Groq plus Edge/local Indic provider path in the downstream FastAPI duplex runtime for Phase 1
 - [x] Extend the existing static voice pages with a minimal bridge bootstrap flow and visible fallback mode
 - [x] Add focused unit/integration tests for bootstrap, fallback, and VAD segmentation behavior
 
 ## P2 - Medium Priority (Sprint 09 - Semantic VAD and Recovery)
 
+- [ ] Add browser-side LiveKit media room join only after the Sprint 08 bridge foundation remains stable under the current websocket fallback path
 - [ ] Add stage-level timing across the bridge and downstream duplex path
 - [ ] Create the fixed multilingual voice benchmark set for `kn`, `hi`, `te`, and `ta`
 - [ ] Add semantic endpointing, stronger barge-in continuity, and smarter interruption handling

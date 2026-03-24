@@ -22,7 +22,12 @@ class MandiPrice(BaseModel):
     modal_price: float
     unit: str = "Rs/Quintal"
     date: date
-    source: str = "unknown"
+    source: str = "agmarknet"
+
+    @property
+    def modal_price_per_kg(self) -> float:
+        """Return the modal price normalized to INR/kg for legacy callers."""
+        return self.modal_price / 100
 
 
 class MandiPriceList(BaseModel):

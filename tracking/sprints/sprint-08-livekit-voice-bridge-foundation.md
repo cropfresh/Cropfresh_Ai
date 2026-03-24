@@ -1,8 +1,8 @@
 # Sprint 08 - LiveKit Voice Bridge Foundation
 
-> **Period:** 2026-04-22 -> 2026-05-05
+> **Period:** 2026-03-18 -> 2026-03-18
 > **Theme:** Stand up a feature-flagged LiveKit bridge path that coexists with the current duplex websocket stack and removes re-planning for the next implementation session
-> **Sprint Status:** Not Started
+> **Sprint Status:** Complete
 
 ---
 
@@ -37,7 +37,7 @@
   - `GET /ready`
   - `GET /metrics`
 - [x] Bootstrap LiveKit rooms/tokens while keeping gateway behavior behind a feature flag.
-- [ ] Add a 5-second PCM ring buffer and RMS pre-gate before downstream relay.
+- [x] Add a 5-second PCM ring buffer and RMS pre-gate before downstream relay.
 - [x] Fallback to the existing `/api/v1/voice/ws/duplex` path when LiveKit bootstrap, relay, or media setup fails.
 - [x] Tests: unit coverage for bootstrap behavior, readiness, fallback selection, and ring-buffer wraparound.
 
@@ -52,30 +52,30 @@
   - trailing silence padding `300ms`
   - streaming chunk size `512` samples at `16kHz`
 - [x] Emit segment-ready events only; semantic endpointing is explicitly deferred to a later sprint.
-- [ ] Tests: unit coverage `>= 80%` for segmentation rules, model bootstrap failure, and silence/click-noise filtering.
+- [x] Tests: unit coverage `>= 80%` for segmentation rules, model bootstrap failure, and silence/click-noise filtering.
 
 ### Bridge Integration with Existing Voice Runtime
 
-- [ ] Keep `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py` as the downstream speech engine for Phase 1.
-- [ ] Define the internal relay contract from the gateway into the existing duplex websocket runtime instead of splitting STT/TTS/agent orchestration in Sprint 08.
-- [ ] Preserve the current Groq plus Edge/local provider path inside that downstream runtime; do not switch Phase 1 to Deepgram/Cartesia.
-- [ ] Emit bridge-visible timing for bootstrap, VAD segment flush, and downstream first-audio timing where feasible without breaking the current websocket contract.
-- [ ] Tests: focused integration coverage for bridge-mode relay and forced websocket fallback.
+- [x] Keep `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py` as the downstream speech engine for Phase 1.
+- [x] Define the internal relay contract from the gateway into the existing duplex websocket runtime instead of splitting STT/TTS/agent orchestration in Sprint 08.
+- [x] Preserve the current Groq plus Edge/local provider path inside that downstream runtime; do not switch Phase 1 to Deepgram/Cartesia.
+- [x] Emit bridge-visible timing for bootstrap, VAD segment flush, and downstream first-audio timing where feasible without breaking the current websocket contract.
+- [x] Tests: focused integration coverage for bridge-mode relay and forced websocket fallback.
 
 ### Minimal Static Client Surface
 
-- [ ] Extend the current static voice surfaces only:
+- [x] Extend the current static voice surfaces only:
   - `static/premium_voice.html`
   - `static/voice_agent.html`
   - their JS helpers as needed
 - [x] Add a small bridge bootstrap step plus a visible fallback indicator.
-- [ ] Keep the existing websocket demos working if bridge mode is disabled or unavailable.
-- [ ] Do not create a new Next.js or Flutter client in this sprint.
+- [x] Keep the existing websocket demos working if bridge mode is disabled or unavailable.
+- [x] Do not create a new Next.js or Flutter client in this sprint.
 
 ### Documentation and Tracking
 
-- [ ] Keep `WORKFLOW_STATUS.md`, `tracking/PROJECT_STATUS.md`, and daily logs aligned as implementation lands.
-- [ ] Record follow-up ADRs only if the bridge contract or service boundary changes materially during implementation.
+- [x] Keep `WORKFLOW_STATUS.md`, `tracking/PROJECT_STATUS.md`, and daily logs aligned as implementation lands.
+- [x] Record follow-up ADRs only if the bridge contract or service boundary changes materially during implementation.
 
 ---
 
@@ -91,15 +91,14 @@
 ## Implementation Snapshot (2026-03-18)
 
 - Added `services/voice-gateway/` with a strict TypeScript scaffold, `POST /sessions/bootstrap`, `/health`, `/ready`, `/metrics`, and initial ring-buffer plus RMS-gate utilities.
-- Added `services/vad-service/` with FastAPI probes, `/v1/vad/config`, the Sprint 08 dual-threshold segmenter, and the initial protobuf plus gRPC server surface.
+- Added `services/vad-service/` with FastAPI probes, `/v1/vad/config`, `/v1/vad/analyze`, session reset support, the Sprint 08 dual-threshold segmenter, and the initial protobuf plus gRPC server surface.
 - Added local Dockerfiles plus `docker-compose.yml` entries for `voice-gateway` and `vad-service`.
-- Updated `static/premium_voice.html` and the duplex JS modules so the premium static client now requests bootstrap metadata first and visibly falls back to `/api/v1/voice/ws/duplex`.
-- Added focused Python, static, and Node tests for the new Sprint 08 slice.
+- Wired gateway relay frame, flush, and reset routes so the ring buffer and RMS gate now feed the downstream FastAPI duplex websocket path through a narrow bridge contract.
+- Updated `static/premium_voice.html`, `static/voice_agent.html`, and their JS helpers so both static voice surfaces now request bootstrap metadata first and visibly preserve websocket fallback behavior.
+- Added focused Python, static, and Node tests for the Sprint 08 closeout slice.
 
-Still pending in Sprint 08:
+Deferred beyond Sprint 08 close:
 
-- live PCM relay through the gateway instead of direct websocket media from the browser
-- ring-buffer and RMS-gate wiring into the actual downstream relay path
 - browser-side LiveKit media transport and room join flow
 
 ---
@@ -136,11 +135,11 @@ Backward-compatibility rule: the current websocket JSON contract remains valid t
 
 ## Acceptance / Done Criteria
 
-- [ ] The repo contains a scaffolded `services/voice-gateway/` and `services/vad-service/` with health/readiness endpoints and the planned contracts.
-- [ ] One static voice client can bootstrap bridge mode and visibly fall back to `/api/v1/voice/ws/duplex` when bridge mode is unavailable.
-- [ ] The existing duplex websocket path remains usable and is not rewritten as if LiveKit were already the canonical runtime.
-- [ ] Focused unit and integration tests cover bootstrap, fallback, and VAD segmentation behavior.
-- [ ] Sprint notes link to the ADR, planned bridge doc, and any implementation follow-up gaps.
+- [x] The repo contains a scaffolded `services/voice-gateway/` and `services/vad-service/` with health/readiness endpoints and the planned contracts.
+- [x] One static voice client can bootstrap bridge mode and visibly fall back to `/api/v1/voice/ws/duplex` when bridge mode is unavailable.
+- [x] The existing duplex websocket path remains usable and is not rewritten as if LiveKit were already the canonical runtime.
+- [x] Focused unit and integration tests cover bootstrap, fallback, and VAD segmentation behavior.
+- [x] Sprint notes link to the ADR, planned bridge doc, and any implementation follow-up gaps.
 
 ---
 
@@ -204,19 +203,26 @@ If a task does not help land the Sprint 08 bridge scaffold, move it into the mat
 ## Sprint Outcome (fill at end of sprint)
 
 **What Shipped:**
-- 
+- `services/voice-gateway/` now exposes relay frame, flush, and reset routes so gateway-buffered PCM can flow into the existing duplex websocket runtime without replacing it.
+- `services/vad-service/` now exposes both gRPC and FastAPI analyze/reset surfaces for Sprint 08 acoustic segmentation.
+- `static/premium_voice.html` and `static/voice_agent.html` now bootstrap through the gateway first and preserve websocket fallback with reconnect tokens and heartbeat handling.
+- Focused verification passed for the Sprint 08 slice across Python, static, TypeScript build, and gateway Vitest coverage.
 
 **What Slipped to Next Sprint:**
-- 
+- Browser-side LiveKit media room join and direct media transport remain deferred until the follow-on voice-program work.
 
 **Key Learnings:**
-- 
+- A thin HTTP compatibility surface on the VAD service kept the gateway moving without blocking on a same-sprint Node gRPC client.
+- Keeping the duplex websocket as the downstream engine let bridge infrastructure land without rewriting truthful runtime docs.
+- Windows sandboxing can block Vitest process helpers, so gateway verification may need an unrestricted test run even when the code is correct.
 
 **Bridge Verification Snapshot:**
 
 | Scenario | Bootstrap | First Audio | Notes |
 |----------|-----------|-------------|-------|
-| | | | |
+| Premium static fallback bootstrap | Pass | Websocket fallback | Premium page requests bootstrap metadata and stays on `/api/v1/voice/ws/duplex` when bridge media is unavailable |
+| Voice Hub fallback bootstrap | Pass | Websocket fallback | Voice Hub now reuses bootstrap and heartbeat behavior without replacing the live duplex demo |
+| Gateway relay flush | Pass | Downstream timing preserved | Buffered PCM can be flushed through the gateway into the existing duplex websocket runtime |
 
 ---
 
@@ -238,3 +244,12 @@ If a task does not help land the Sprint 08 bridge scaffold, move it into the mat
 - `src/voice/duplex_pipeline.py`
 - `static/premium_voice.html`
 - `static/voice_agent.html`
+- `static/assets/js/voice-agent-bootstrap.js`
+- `static/assets/js/voice-agent-ws.js`
+- `services/voice-gateway/src/routes/relay.ts`
+- `services/voice-gateway/src/services/relay-coordinator.ts`
+- `services/voice-gateway/src/services/downstream-relay.ts`
+- `services/voice-gateway/src/services/vad-client.ts`
+- `services/vad-service/app/api.py`
+- `services/vad-service/app/http_models.py`
+- `services/vad-service/app/runtime.py`

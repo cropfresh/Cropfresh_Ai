@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 
 from src.agents.digital_twin.similarity_runtime import (
-    EMBED_DIM,
     SUBSTITUTION_THRESHOLD,
     build_batch_result,
     fetch_url_list,
@@ -16,6 +15,13 @@ from src.agents.digital_twin.similarity_runtime import (
 
 _build_batch_result = build_batch_result
 _fetch_url_list = fetch_url_list
+
+__all__ = [
+    "ResNetSimilarityEngine",
+    "SUBSTITUTION_THRESHOLD",
+    "_build_batch_result",
+    "_fetch_url_list",
+]
 
 
 class ResNetSimilarityEngine:

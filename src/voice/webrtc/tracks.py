@@ -71,7 +71,7 @@ class AudioReceiveTrack(MediaStreamTrack if AIORTC_AVAILABLE else object):
                 try:
                     self._queue.get_nowait()
                     self._queue.put_nowait(chunk)
-                except:
+                except (asyncio.QueueEmpty, asyncio.QueueFull):
                     pass
 
         except Exception as e:
@@ -161,7 +161,7 @@ class AudioSendTrack(MediaStreamTrack if AIORTC_AVAILABLE else object):
             try:
                 self._queue.get_nowait()
                 self._queue.put_nowait(audio_bytes)
-            except:
+            except (asyncio.QueueEmpty, asyncio.QueueFull):
                 pass
 
     def stop(self) -> None:

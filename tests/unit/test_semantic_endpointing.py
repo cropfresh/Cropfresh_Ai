@@ -33,8 +33,35 @@ async def test_semantic_endpointing_holds_known_filler_phrase() -> None:
     assert decision.reason == "heuristic_hold"
 
 
+@pytest.mark.asyncio
+async def test_semantic_endpointing_holds_hindi_thinking_pause() -> None:
+    decision = await evaluate_semantic_flush(
+        transcript="एक मिनट",
+        language="hi",
+        llm_provider=None,
+        enabled=True,
+        timeout_ms=150,
+        max_hold_ms=800,
+    )
+
+    assert decision.should_flush is False
+    assert decision.reason == "heuristic_hold"
+
+
 def test_semantic_incomplete_heuristic_handles_kannada_pause_phrase() -> None:
     assert is_likely_incomplete("ಒಂದು ನಿಮಿಷ", "kn") is True
+
+
+def test_semantic_incomplete_heuristic_handles_kannada_pause_variant() -> None:
+    assert is_likely_incomplete("ಸ್ವಲ್ಪ ತಾಳಿ", "kn") is True
+
+
+def test_semantic_incomplete_heuristic_marks_clipped_english_ending() -> None:
+    assert is_likely_incomplete("tell me tomato price because", "en") is True
+
+
+def test_semantic_incomplete_heuristic_holds_code_mixed_pause_suffix() -> None:
+    assert is_likely_incomplete("tomato rate today ಒಂದು ನಿಮಿಷ", "kn") is True
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,7 @@
 # CropFresh AI - LiveKit Voice Bridge Plan
 
 > **Last Updated:** 2026-03-18
-> **Status:** Planned next-sprint architecture, not current runtime
+> **Status:** Sprint 08 foundation landed, but not the current production runtime
 > **Related ADR:** `docs/decisions/ADR-015-livekit-bridge-hybrid-cutover.md`
 
 ---
@@ -22,11 +22,12 @@ Sprint 08 adds a bridge around that runtime instead of replacing it immediately.
 
 ## Implementation Snapshot (2026-03-18)
 
-The first Sprint 08 implementation slice now exists in the repo:
+The Sprint 08 foundation now exists in the repo:
 
-- `services/voice-gateway/` provides `POST /sessions/bootstrap`, `GET /health`, `GET /ready`, and `GET /metrics` plus the initial ring-buffer and RMS-gate utilities.
-- `services/vad-service/` provides `/health`, `/ready`, `/v1/vad/config`, the Sprint 08 acoustic segmenter, and the initial protobuf plus gRPC service surface.
-- `static/premium_voice.html` now asks the gateway for bootstrap metadata first and then visibly falls back to `/api/v1/voice/ws/duplex` when bridge mode is unavailable.
+- `services/voice-gateway/` provides `POST /sessions/bootstrap`, `GET /health`, `GET /ready`, `GET /metrics`, and relay frame/flush/reset routes that wire the ring buffer and RMS gate into the existing duplex websocket runtime.
+- `services/vad-service/` provides `/health`, `/ready`, `/v1/vad/config`, `/v1/vad/analyze`, session reset support, the Sprint 08 acoustic segmenter, and the initial protobuf plus gRPC service surface.
+- `static/premium_voice.html` and `static/voice_agent.html` now ask the gateway for bootstrap metadata first and then visibly fall back to `/api/v1/voice/ws/duplex` when bridge mode is unavailable.
+- Focused Python, static, and gateway tests now cover the Sprint 08 bootstrap, relay, fallback, and VAD closeout slice.
 
 Current runtime truth still holds:
 
@@ -196,3 +197,44 @@ These boundaries are now documented in:
 - `tracking/daily/2026-03-18.md`
 - `docs/api/websocket-voice.md`
 - `docs/features/voice-pipeline.md`
+
+---
+
+## Sprint 09 Addendum - 2026-03-24
+
+The first semantic endpointing slice now exists around the Sprint 08 bridge scaffold.
+
+```mermaid
+flowchart LR
+    FRAME["Buffered PCM frame"] --> ANALYZE["VAD analyze<br/>/v1/vad/analyze"]
+    ANALYZE -->|speech_end| SEM["Semantic segment decision<br/>/v1/vad/segments/evaluate"]
+    SEM -->|HOLD| BUFFER["Keep PCM buffered"]
+    SEM -->|FLUSH| RELAY["Gateway downstream relay"]
+    RELAY --> DUPLEX["/api/v1/voice/ws/duplex"]
+```
+
+### Additive Contract Notes
+
+- `services/vad-service/` now exposes `POST /v1/vad/segments/evaluate` for transcript-based hold/flush decisions.
+- `services/voice-gateway/src/routes/relay.ts` accepts optional `semantic_transcript` and `semantic_language` fields when a caller can provide a low-latency transcript hint.
+- Joint decisions are timeout-safe: if a hesitation phrase keeps repeating past the hold budget, the VAD service returns `semantic_hold_timeout` and the gateway flushes anyway.
+- The gateway metrics endpoint now includes counters for relay continuity fills and joint acoustic-plus-semantic decisions.
+
+### Benchmark Support Added in Sprint 09
+
+- `src/evaluation/datasets/voice_multilingual_benchmark.json` now acts as the fixed multilingual utterance set for `kn`, `hi`, `te`, and `ta`.
+- `src/evaluation/voice_benchmark_runner.py` writes JSON and markdown per-turn artifacts so semantic endpointing, first-audio timing, and interruption metrics can be compared across runs.
+- `docs/features/voice-benchmarking.md` now documents the operator rubric for naturalness, continuity, and barge-in handling.
+- The current heuristic-only semantic baseline now matches the fixed benchmark set at `8/8`, giving Sprint 09 a stable offline checkpoint before live timing observations are merged in.
+
+### Continuity and Recovery Added in Sprint 09
+
+- `services/voice-gateway/src/audio/comfort-noise.ts` plus `relay-session.ts` now synthesize low-energy comfort-noise fills for short relay gaps instead of preserving dead silence only.
+- `services/voice-gateway/src/routes/relay-debug.ts` now exposes continuity and interruption metadata, including fill mode, gap size, ring-buffer watermark, and barge-in timing.
+- `services/voice-gateway/src/services/session-bootstrap.ts` now returns a `recovery` policy block with retry/backoff timing, dead-peer timeout, reconnect-token expectations, and bridge-mode ICE/network recovery hints.
+- `static/assets/js/duplex/` now refreshes bootstrap state on reconnect, watches for missing heartbeat acknowledgements, reacts to browser online/offline changes, and fades current playback down over a bounded window before stopping on barge-in.
+
+### Runtime Truth After This Slice
+
+- The current truthful browser media path is still the duplex websocket fallback.
+- Bridge-mode recovery is therefore implemented as bootstrap refresh plus recovery-policy handling in the hybrid client until the later media cutover work lands.

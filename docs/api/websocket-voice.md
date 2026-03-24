@@ -37,6 +37,7 @@ ws://localhost:8000/api/v1/voice/ws/duplex?user_id=farmer_123&language=hi&sessio
 | `user_id` | string | No | `anonymous` | Passed as a websocket query parameter |
 | `language` | string | No | `hi` | Initial language hint; duplex can switch later |
 | `session_id` | string | No | auto-generated | The duplex route currently generates a fresh session ID server-side |
+| `reconnect_token` | string | No | none | Reused across reconnects so the duplex route can recover the last 10 voice turns safely |
 
 ---
 
@@ -90,6 +91,7 @@ This route wraps the streaming duplex pipeline in `src/api/websocket/voice_pkg/r
 | `audio_chunk` | `audio_base64` | Base64-encoded audio chunk |
 | `audio_end` | none | Flush the buffered utterance |
 | `bargein` | none | Force an interruption of current playback |
+| `heartbeat` | none | Keepalive ping used by the dead-peer watchdog |
 | `language_hint` | `language` | Update the preferred response language |
 | `close` | none | Close the websocket |
 
@@ -97,13 +99,14 @@ This route wraps the streaming duplex pipeline in `src/api/websocket/voice_pkg/r
 
 | Type | Fields | Description |
 |------|--------|-------------|
-| `ready` | `session_id`, `mode`, `features` | Duplex pipeline ready |
-| `pipeline_state` | `state`, plus event metadata | Pipeline transitions such as listening, thinking, speaking |
+| `ready` | `session_id`, `mode`, `features`, `recovered`, `recovered_turn_count`, `recovery_outcome`, `heartbeat_interval_ms`, `session_recovery_ttl_ms` | Duplex pipeline ready and recovery metadata attached |
+| `pipeline_state` | `state`, plus event metadata | Pipeline transitions such as listening, thinking, speaking; semantic holds may attach `semantic_hold_ms` |
 | `language_detected` | `language`, optional `locked` | STT or language-switch signal |
 | `response_sentence` | `text` | Text emitted while response audio is still streaming |
-| `response_audio` | `audio_base64`, `format`, `sample_rate`, `chunk_index`, `is_last` | Chunked audio from the streaming TTS path |
-| `response_end` | `chunks_sent`, `full_text` | End of a duplex response |
+| `response_audio` | `audio_base64`, `format`, `sample_rate`, `chunk_index`, `is_last`, optional `timing` | Chunked audio from the streaming TTS path |
+| `response_end` | `chunks_sent`, `full_text`, optional `timing` | End of a duplex response with per-turn timing when available |
 | `bargein` | none | Current playback interrupted |
+| `heartbeat_ack` | `session_id`, `heartbeat_interval_ms`, `session_recovery_ttl_ms` | Keepalive acknowledgement used by client dead-peer recovery |
 | `error` | `error` | Duplex pipeline error |
 
 ### Example Duplex Messages
@@ -162,7 +165,8 @@ sequenceDiagram
 
 - The duplex route currently forces `groq` for LLM and STT plus `edge` for TTS at initialization time.
 - The compatibility route still uses `MultiProviderSTT`, `EdgeTTSProvider`, and `VoiceAgent`.
-- The duplex route sends `pipeline_state` events, but full latency timing fields are still a Sprint 07 follow-up.
+- The duplex route now sends per-turn timing on `response_audio` and `response_end`, including interruption timing when barge-in occurs.
+- The duplex route closes stalled peers when heartbeats stop arriving inside the configured watchdog window.
 - `GET /api/v1/voice/ws/sessions` returns the current active websocket session count.
 
 ---

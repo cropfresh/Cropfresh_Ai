@@ -35,25 +35,37 @@ def test_voice_hub_includes_rest_and_duplex_workflow_boards() -> None:
     assert 'id="voiceScenarioCatalog"' in html
     assert 'id="restWorkflowBoard"' in html
     assert 'id="wsWorkflowBoard"' in html
+    assert 'data-voice-gateway-url="http://localhost:3101"' in html
+    assert 'id="wsBridgeModeBadge"' in html
     assert "./assets/css/suite/critical-shell.css?v=20260318-shellfix" in html
     assert "./assets/css/suite.css?v=20260318-shellfix" in html
     assert "./assets/js/lab-state.js" in html
     assert "./assets/js/agent-workflow-data.js" in html
     assert "./assets/js/agent-workflows.js" in html
+    assert "./assets/js/voice-agent-bootstrap.js" in html
     assert "./assets/js/voice-hub-lab.js" in html
     assert html.index("./assets/js/lab-state.js") < html.index("./assets/js/agent-workflow-data.js")
     assert html.index("./assets/js/agent-workflows.js") < html.index("./assets/js/voice-hub-lab.js")
+    assert html.index("./assets/js/voice-agent-bootstrap.js") < html.index("./assets/js/voice-agent-ws.js")
     assert html.index("./assets/js/voice-hub-lab.js") < html.index("./assets/js/voice-agent-rest.js")
 
 
 def test_voice_hub_scripts_reference_accurate_route_and_health_fields() -> None:
     """The JS should wire the new workflow boards and read current health payload fields."""
     rest_js = _read("static/assets/js/voice-agent-rest.js")
+    bootstrap_js = _read("static/assets/js/voice-agent-bootstrap.js")
     ws_js = _read("static/assets/js/voice-agent-ws.js")
     tools_js = _read("static/assets/js/voice-agent-tools.js")
     assert 'renderVoiceWorkflow("restWorkflowBoard", data)' in rest_js
     assert "saveVoiceHandoff(data)" in rest_js
+    assert "/sessions/bootstrap" in bootstrap_js
+    assert "fallback_ws_url" in bootstrap_js
+    assert "reconnect_token" in bootstrap_js
+    assert "dead_peer_timeout_ms" in bootstrap_js
+    assert "retry_backoff_ms" in bootstrap_js
+    assert "CropfreshVoiceBootstrap" in ws_js
     assert "VoiceHubLab?.handleWsMessage(msg)" in ws_js
+    assert 'type: "heartbeat"' in ws_js
     assert "stt_providers" in tools_js
     assert "tts_provider" in tools_js
 
@@ -64,14 +76,22 @@ def test_premium_voice_wires_gateway_bootstrap_with_visible_fallback_indicator()
     socket_js = _read("static/assets/js/duplex/socket.js")
     bootstrap_js = _read("static/assets/js/duplex/bootstrap.js")
     app_js = _read("static/assets/js/duplex/app.js")
+    session_js = _read("static/assets/js/duplex/session.js")
     assert 'data-voice-gateway-url="http://localhost:3101"' in html
     assert 'id="bridgeModePill"' in html
     assert "/sessions/bootstrap" in bootstrap_js
     assert "fallback_ws_url" in bootstrap_js
     assert "reconnect_token" in bootstrap_js
+    assert "dead_peer_timeout_ms" in bootstrap_js
+    assert "retry_backoff_ms" in bootstrap_js
+    assert 'from "./recovery.js"' in socket_js
+    assert 'from "./playback.js"' in _read("static/assets/js/duplex/audio.js")
+    assert 'from "./session.js"' in socket_js
+    assert "bootstrapVoiceSession" in session_js
+    assert "Dead peer detected" in socket_js
+    assert "Network restored, reconnecting the live session." in socket_js
     assert 'type: "heartbeat"' in socket_js
     assert 'mode === "bridge"' in app_js
-    assert "bootstrapVoiceSession" in socket_js
 
 
 def test_vision_lab_page_wires_real_assess_and_attach_flow() -> None:
@@ -123,6 +143,12 @@ def test_new_static_workflow_files_stay_within_small_file_limit() -> None:
         "static/assets/js/vision-lab.js",
         "static/assets/js/voice-hub-lab.js",
         "static/assets/js/voice-agent-rest.js",
+        "static/assets/js/duplex/audio.js",
+        "static/assets/js/duplex/bootstrap.js",
+        "static/assets/js/duplex/playback.js",
+        "static/assets/js/duplex/recovery.js",
+        "static/assets/js/duplex/session.js",
+        "static/assets/js/duplex/socket.js",
         "tests/unit/test_static_testing_lab.py",
     ]
     for relative_path in targets:

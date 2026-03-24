@@ -14,8 +14,8 @@ from typing import Any
 
 from loguru import logger
 
-from src.rag.language_support import detect_response_language, get_localized_message
 from src.rag.graph_runtime.state import RAGGraphState
+from src.rag.language_support import detect_response_language, get_localized_message
 from src.rag.routing import AdaptiveQueryRouter, RetrievalRoute
 
 # ---------------------------------------------------------------------------

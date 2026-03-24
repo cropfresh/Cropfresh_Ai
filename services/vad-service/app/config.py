@@ -22,6 +22,9 @@ class VadServiceSettings(BaseSettings):
     speech_offset_threshold: float = 0.35
     min_speech_ms: int = 250
     silence_padding_ms: int = 300
+    semantic_endpointing_enabled: bool = False
+    semantic_timeout_ms: int = 150
+    semantic_hold_max_ms: int = 800
 
     model_path: str | None = None
     enable_grpc: bool = True

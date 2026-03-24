@@ -21,6 +21,14 @@ export interface BootstrapFeatures {
   vad_service: boolean;
 }
 
+export interface BootstrapRecoveryPolicy {
+  dead_peer_timeout_ms: number;
+  ice_restart_enabled: boolean;
+  network_change_recovery: boolean;
+  reconnect_token_required: boolean;
+  retry_backoff_ms: number[];
+}
+
 export interface BootstrapResponse {
   session_id: string;
   mode: "bridge" | "fallback_ws";
@@ -31,6 +39,7 @@ export interface BootstrapResponse {
   session_recovery_ttl_ms: number;
   fallback_ws_url: string;
   features: BootstrapFeatures;
+  recovery: BootstrapRecoveryPolicy;
 }
 
 export class SessionBootstrapService {
@@ -41,6 +50,7 @@ export class SessionBootstrapService {
     const userId = request.userId?.trim() || "web_user";
     const reconnectToken = request.reconnectToken?.trim() || randomBytes(24).toString("base64url");
     const features = this.buildFeatures();
+    const recovery = this.buildRecoveryPolicy(features.livekit);
     const liveKitReady = this.config.enableLiveKitBridge && isLiveKitConfigured(this.config);
 
     if (request.requestedMode === "fallback_ws" || !liveKitReady) {
@@ -53,6 +63,7 @@ export class SessionBootstrapService {
         session_recovery_ttl_ms: this.config.sessionRecoveryTtlMs,
         fallback_ws_url: this.config.fallbackWsUrl,
         features,
+        recovery,
       };
     }
 
@@ -69,6 +80,7 @@ export class SessionBootstrapService {
         session_recovery_ttl_ms: this.config.sessionRecoveryTtlMs,
         fallback_ws_url: this.config.fallbackWsUrl,
         features,
+        recovery,
       };
     } catch (error) {
       bootstrapRequestsTotal.inc({ mode: "bridge", outcome: "fallback" });
@@ -80,6 +92,7 @@ export class SessionBootstrapService {
         session_recovery_ttl_ms: this.config.sessionRecoveryTtlMs,
         fallback_ws_url: this.config.fallbackWsUrl,
         features,
+        recovery: this.buildRecoveryPolicy(false),
       };
     }
   }
@@ -99,6 +112,16 @@ export class SessionBootstrapService {
       rms_gate: true,
       ring_buffer: true,
       vad_service: Boolean(this.config.vadServiceBaseUrl),
+    };
+  }
+
+  private buildRecoveryPolicy(livekitEnabled: boolean): BootstrapRecoveryPolicy {
+    return {
+      dead_peer_timeout_ms: this.config.deadPeerTimeoutMs,
+      ice_restart_enabled: livekitEnabled,
+      network_change_recovery: true,
+      reconnect_token_required: true,
+      retry_backoff_ms: [...this.config.reconnectBackoffMs],
     };
   }
 

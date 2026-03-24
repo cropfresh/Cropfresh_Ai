@@ -4,24 +4,34 @@ Deep Research Tool Package
 Agentic Map-Reduce pipeline for comprehensive research.
 """
 
+import httpx as _httpx
+from loguru import logger
+
+from src.tools.registry import get_tool_registry
+
+from .constants import MAX_CONTENT_CHARS, MAX_PAGES
 from .fetching import fetch_all_pages
-from .map_reduce import extract_all_facts, synthesise_answer
+from .llm import _groq_complete
+from .map_reduce import _extract_facts, extract_all_facts, synthesise_answer
 from .models import DeepResearchResult, ExtractedFact, PageContent
 from .tool import DeepResearchTool
+
+httpx = _httpx
 
 __all__ = [
     "PageContent",
     "ExtractedFact",
     "DeepResearchResult",
     "DeepResearchTool",
+    "MAX_CONTENT_CHARS",
+    "MAX_PAGES",
+    "_extract_facts",
+    "_groq_complete",
+    "httpx",
     "fetch_all_pages",
     "extract_all_facts",
     "synthesise_answer",
 ]
-
-from loguru import logger
-
-from src.tools.registry import get_tool_registry
 
 # ---------------------------------------------------------------------------
 # Tool registry entry point

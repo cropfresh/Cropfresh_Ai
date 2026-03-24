@@ -250,8 +250,8 @@ class CropListingAgent(BaseAgent):
                 confidence=0.9,
             )
         lines = [
-            f"• {l['commodity']} — {l['quantity_kg']}kg @ ₹{l['asking_price_per_kg']}/kg ({l['grade']})"
-            for l in listings[:5]
+            f"• {listing['commodity']} — {listing['quantity_kg']}kg @ ₹{listing['asking_price_per_kg']}/kg ({listing['grade']})"
+            for listing in listings[:5]
         ]
         return AgentResponse(
             content="Your active listings:\n" + "\n".join(lines),

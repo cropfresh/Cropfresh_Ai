@@ -111,6 +111,8 @@ Thumbs.db
 *.tmp
 *.json
 !package.json
+!package-lock.json
+!tsconfig.json
 !pyproject.toml
 !config/**/*.json
 

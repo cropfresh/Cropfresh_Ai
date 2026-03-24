@@ -38,3 +38,11 @@ async def test_rate_refresh_job_forces_live_queries(monkeypatch) -> None:
 
     assert len(captured_queries) == 2
     assert all(query.force_live is True for query in captured_queries)
+
+
+@pytest.mark.asyncio
+async def test_run_job_once_rejects_unknown_job_id() -> None:
+    scheduler = ScraperScheduler(agmarknet=None, imd=None, db=None)
+
+    with pytest.raises(ValueError):
+        await scheduler.run_job_once("not-a-real-job")

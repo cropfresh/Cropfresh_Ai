@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="./assets/css/suite.css?v=20260318-shellfix" />
     <link rel="stylesheet" href="./assets/css/voice-hub.css?v=20260318-shellfix" />
   </head>
-  <body data-suite-page="voice-hub">
+  <body data-suite-page="voice-hub" data-voice-gateway-url="http://localhost:3101">
     <div class="suite-frame">
       <aside class="suite-rail">
         <div class="suite-rail-brand">
@@ -141,7 +141,7 @@
             <div class="input-row"><input id="wsUserId" class="input" value="ws-test-user" /><select id="wsLang" class="select"><option value="auto">Auto</option><option value="hi">Hindi</option><option value="en">English</option><option value="kn">Kannada</option><option value="te">Telugu</option><option value="ta">Tamil</option></select></div>
             <div class="input-row"><button class="btn btn-primary" id="btnWsConnect">Connect</button><button class="btn btn-secondary" id="btnWsDisconnect" disabled>Disconnect</button><button class="btn btn-secondary" id="btnWsClearTimeline">Clear</button></div>
             <div class="ws-status-bar" id="wsLiveStatus">Click connect to begin</div>
-            <div class="badge-strip"><span id="wsDetectedLangBadge" class="badge d-none">EN</span></div>
+            <div class="badge-strip"><span id="wsDetectedLangBadge" class="badge d-none">EN</span><span id="wsBridgeModeBadge" class="badge">Bridge bootstrap pending</span></div>
             <button class="btn btn-secondary btn-ptt" id="btnWsPtt" disabled>Hold to speak</button>
           </article>
           <article class="card stack"><div class="chat-thread" id="wsChat"></div><div class="event-timeline" id="wsTimeline"><div class="event-row"><span class="event-dot system"></span><span class="event-time">-</span><span class="event-text">Connect to start a live session.</span></div></div></article>
@@ -201,6 +201,7 @@
     <script src="./assets/js/lab-state.js"></script>
     <script src="./assets/js/agent-workflow-data.js"></script>
     <script src="./assets/js/agent-workflows.js"></script>
+    <script src="./assets/js/voice-agent-bootstrap.js"></script>
     <script src="./assets/js/voice-hub-lab.js"></script>
     <script src="./assets/js/voice-agent-core.js"></script>
     <script src="./assets/js/voice-agent-rest.js"></script>

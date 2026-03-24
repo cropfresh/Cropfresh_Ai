@@ -76,6 +76,10 @@ RATE_JOB_SPECS = [
     },
 ]
 
+LEGACY_SCRAPER_JOB_IDS = ("agmarknet_daily", "imd_daily")
+RATE_JOB_SPECS_BY_ID = {spec["id"]: spec for spec in RATE_JOB_SPECS}
+ALL_SCRAPER_JOB_IDS = LEGACY_SCRAPER_JOB_IDS + tuple(RATE_JOB_SPECS_BY_ID)
+
 
 class ScraperScheduler:
     """Schedules legacy scraper jobs and shared rate-hub refresh jobs."""
@@ -133,6 +137,36 @@ class ScraperScheduler:
             return None
         return self._scheduler.get_job(job_id)
 
+    async def run_job_once(self, job_id: str, *, raise_on_error: bool = True) -> bool:
+        """Execute a named job once without starting APScheduler."""
+        if job_id == "agmarknet_daily":
+            return await self._run_agmarknet(raise_on_error=raise_on_error)
+        if job_id == "imd_daily":
+            return await self._run_imd(raise_on_error=raise_on_error)
+
+        spec = RATE_JOB_SPECS_BY_ID.get(job_id)
+        if spec is None:
+            raise ValueError(f"Unknown scraper job_id '{job_id}'")
+
+        return await self._run_rate_refresh(
+            job_id=job_id,
+            targets=spec["targets"],
+            raise_on_error=raise_on_error,
+        )
+
+    async def run_jobs_once(
+        self,
+        job_ids: list[str],
+        *,
+        raise_on_error: bool = True,
+    ) -> bool:
+        """Execute multiple jobs in order, returning True only when all succeed."""
+        succeeded = True
+        for job_id in job_ids:
+            job_succeeded = await self.run_job_once(job_id, raise_on_error=raise_on_error)
+            succeeded = succeeded and job_succeeded
+        return succeeded
+
     def _register_jobs(self) -> None:
         self._scheduler.remove_all_jobs()
         self._register_legacy_jobs()
@@ -177,33 +211,66 @@ class ScraperScheduler:
                 kwargs={"job_id": spec["id"], "targets": spec["targets"]},
             )
 
-    async def _run_agmarknet(self) -> None:
+    async def _run_agmarknet(self, *, raise_on_error: bool = False) -> bool:
         logger.info("[ScraperScheduler] Running agmarknet_daily job")
+        if self.agmarknet is None:
+            message = "[ScraperScheduler] agmarknet_daily requested without agmarknet scraper"
+            logger.warning(message)
+            if raise_on_error:
+                raise RuntimeError(message)
+            return False
+
         try:
             count = await self.agmarknet.scrape_and_store(db=self.db)
             logger.info("[ScraperScheduler] agmarknet_daily stored {} records", count)
+            return True
         except Exception as exc:
             logger.error("[ScraperScheduler] agmarknet_daily failed: {}", exc)
+            if raise_on_error:
+                raise
+            return False
 
-    async def _run_imd(self) -> None:
+    async def _run_imd(self, *, raise_on_error: bool = False) -> bool:
         logger.info("[ScraperScheduler] Running imd_daily job")
+        if self.imd is None:
+            message = "[ScraperScheduler] imd_daily requested without IMD scraper"
+            logger.warning(message)
+            if raise_on_error:
+                raise RuntimeError(message)
+            return False
+
         try:
             result = await self.imd.scrape(state="Karnataka", include_advisory=True)
             logger.info("[ScraperScheduler] imd_daily stored {} weather records", result.record_count)
+            return True
         except Exception as exc:
             logger.error("[ScraperScheduler] imd_daily failed: {}", exc)
+            if raise_on_error:
+                raise
+            return False
 
-    async def _run_rate_refresh(self, job_id: str, targets: list[dict[str, Any]]) -> None:
+    async def _run_rate_refresh(
+        self,
+        job_id: str,
+        targets: list[dict[str, Any]],
+        *,
+        raise_on_error: bool = False,
+    ) -> bool:
         from src.rates.factory import get_rate_service
 
         service = await get_rate_service(db_client=self.db, agmarknet_api_key=get_agmarknet_api_key())
         logger.info("[ScraperScheduler] Running {} with {} targets", job_id, len(targets))
+        succeeded = True
         for target in targets:
             try:
                 query = normalize_rate_query(force_live=True, state="Karnataka", **target)
                 await service.query(query)
             except Exception as exc:
                 logger.error("[ScraperScheduler] {} target failed: {}", job_id, exc)
+                if raise_on_error:
+                    raise
+                succeeded = False
+        return succeeded
 
 
 def get_scraper_scheduler(agmarknet: Any = None, imd: Any = None, db: Any = None) -> ScraperScheduler:
@@ -213,3 +280,8 @@ def get_scraper_scheduler(agmarknet: Any = None, imd: Any = None, db: Any = None
 
         agmarknet = get_agmarknet_scraper()
     return ScraperScheduler(agmarknet=agmarknet, imd=imd, db=db)
+
+
+def get_available_scraper_job_ids() -> tuple[str, ...]:
+    """Return the supported one-shot job IDs for CLI and workflow wiring."""
+    return ALL_SCRAPER_JOB_IDS

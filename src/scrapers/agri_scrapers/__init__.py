@@ -4,7 +4,6 @@ Agri Scrapers Package
 Unified interface for Indian agricultural data scraping.
 """
 
-from .api import AgriculturalDataAPI
 from .constants import SOURCE_URLS, DataSource
 from .enam import ENAMScraper
 from .imd import IMDWeatherScraper
@@ -24,3 +23,12 @@ __all__ = [
     "RSSNewsScraper",
     "AgriculturalDataAPI",
 ]
+
+
+def __getattr__(name: str):
+    """Lazily import heavier compatibility surfaces to avoid circular imports."""
+    if name == "AgriculturalDataAPI":
+        from .api import AgriculturalDataAPI
+
+        return AgriculturalDataAPI
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

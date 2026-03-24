@@ -46,6 +46,9 @@ describe("voice gateway bootstrap routes", () => {
     expect(response.body.features.livekit).toBe(false);
     expect(response.body.reconnect_token).toBeTruthy();
     expect(response.body.heartbeat_interval_ms).toBe(10000);
+    expect(response.body.recovery.dead_peer_timeout_ms).toBe(30000);
+    expect(response.body.recovery.retry_backoff_ms).toEqual([1000, 2000, 4000, 8000, 16000]);
+    expect(response.body.recovery.ice_restart_enabled).toBe(false);
     expect(response.body.session_recovery_ttl_ms).toBe(300000);
   });
 
@@ -70,6 +73,7 @@ describe("voice gateway bootstrap routes", () => {
     expect(response.body.livekit_url).toBe("ws://localhost:7880");
     expect(response.body.token).toBe("signed-livekit-token");
     expect(response.body.reconnect_token).toBeTruthy();
+    expect(response.body.recovery.ice_restart_enabled).toBe(true);
     expect(addGrant).toHaveBeenCalledTimes(1);
   });
 
@@ -118,6 +122,8 @@ describe("voice gateway bootstrap routes", () => {
 
     expect(readyResponse.status).toBe(200);
     expect(readyResponse.body.ready).toBe(true);
+    expect(readyResponse.body.dead_peer_timeout_ms).toBe(30000);
+    expect(readyResponse.body.reconnect_backoff_ms).toEqual([1000, 2000, 4000, 8000, 16000]);
     expect(readyResponse.body.continuity_window_ms).toBe(400);
     expect(metricsResponse.status).toBe(200);
     expect(metricsResponse.text).toContain("voice_gateway_bootstrap_requests_total");

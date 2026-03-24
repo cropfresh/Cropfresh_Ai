@@ -78,9 +78,7 @@ class VoiceAgent:
 
         # Step 2: Entity extraction
         pending_intent = session.context.get("pending_intent", "")
-        extraction = await self.entity_extractor.extract(
-            text, session.language, context_intent=pending_intent,
-        )
+        extraction = await self._extract_entities(text, session.language, pending_intent)
 
         # Step 3: Generate response
         response_text = await self._generate_response(extraction, session)
@@ -245,13 +243,11 @@ class VoiceAgent:
         session = self._get_or_create_session(user_id, session_id, language)
 
         if session.language == "auto":
-            detected_lang = self.entity_extractor.detect_language_from_text(text)
+            detected_lang = self._detect_language_from_text(text)
             session.language = detected_lang if detected_lang != "unknown" else "hi"
 
         pending_intent = session.context.get("pending_intent", "")
-        extraction = await self.entity_extractor.extract(
-            text, session.language, context_intent=pending_intent,
-        )
+        extraction = await self._extract_entities(text, session.language, pending_intent)
 
         response_text = await self._generate_response(extraction, session)
         response_audio = await self._synthesize(response_text, session.language)
@@ -280,6 +276,31 @@ class VoiceAgent:
     def get_supported_languages(self) -> list[str]:
         """Get supported languages."""
         return self.stt.get_supported_languages()
+
+    async def _extract_entities(
+        self,
+        text: str,
+        language: str,
+        pending_intent: str = "",
+    ) -> ExtractionResult:
+        """Call the extractor with compatibility for older stub signatures."""
+        try:
+            return await self.entity_extractor.extract(
+                text,
+                language,
+                context_intent=pending_intent,
+            )
+        except TypeError as exc:
+            if "context_intent" not in str(exc):
+                raise
+            return await self.entity_extractor.extract(text, language)
+
+    def _detect_language_from_text(self, text: str) -> str:
+        """Use extractor language detection when available, otherwise fall back."""
+        detector = getattr(self.entity_extractor, "detect_language_from_text", None)
+        if callable(detector):
+            return detector(text)
+        return "unknown"
 
     # ═══════════════════════════════════════════════════════════════
     # Backward-compatible _handle_* wrappers (used by unit tests)

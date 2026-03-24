@@ -375,3 +375,37 @@ Common status codes:
 | 422 | Validation failure |
 | 500 | Internal server error |
 | 503 | Service unavailable |
+
+---
+
+## Internal Voice Service Addendum (2026-03-24)
+
+The Sprint 09 bridge slice added an internal VAD-service endpoint that is not served by the main FastAPI app on port `8000`, but it is part of the current voice-program contract.
+
+**Internal Service Base:** `services/vad-service/`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/vad/analyze` | POST | Acoustic frame analysis for the bridge relay path |
+| `/v1/vad/segments/evaluate` | POST | Semantic hold-or-flush decision for an acoustically-finished segment |
+| `/v1/vad/sessions/{session_id}` | DELETE | Reset acoustic and semantic state for one bridge session |
+
+### POST `/v1/vad/segments/evaluate`
+
+**Request**
+
+```json
+{
+  "session_id": "bridge-session",
+  "transcript": "one second",
+  "language": "en"
+}
+```
+
+**Response highlights**
+
+- `should_flush`
+- `reason`
+- `semantic_hold_ms`
+- `used_llm`
+- `timed_out`

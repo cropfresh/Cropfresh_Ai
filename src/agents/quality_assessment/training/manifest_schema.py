@@ -13,7 +13,7 @@ from src.agents.quality_assessment.training.commodity_registry import (
     get_commodity_id,
     normalize_commodity,
 )
-from src.agents.quality_assessment.training.models import BoundingBox, VALID_GRADES
+from src.agents.quality_assessment.training.models import VALID_GRADES, BoundingBox
 from src.agents.quality_assessment.yolo_detector import DEFECT_CLASS_NAMES
 
 DatasetSplit = Literal["train", "val", "test"]

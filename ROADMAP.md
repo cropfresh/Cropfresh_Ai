@@ -16,7 +16,7 @@ Sprint 06 is now reserved for **ADCL Productionization & Full Hardening** as the
 
 ### Sprint Sequencing Addendum (2026-03-18)
 
-Sprint 07 remains the preserved duplex-hardening handoff created on 2026-03-17, but the next implementation-facing handoff is now **Sprint 08 - LiveKit Voice Bridge Foundation**. The follow-on voice program is now documented through **Sprint 12** so the next sessions do not need to re-plan semantic endpointing, orchestration, hardening, or deployment boundaries. Supabase/auth follow-up now sits behind the voice-program sequence as post-Sprint-12 work.
+Sprint 07 remains the preserved duplex-hardening handoff created on 2026-03-17, Sprint 08 is now complete as the bridge-foundation delivery, and the next implementation-facing handoff is **Sprint 09 - Semantic VAD, Continuity, and Session Recovery**. The follow-on voice program remains documented through **Sprint 12** so the next sessions do not need to re-plan orchestration, hardening, or deployment boundaries. Supabase/auth follow-up still sits behind the voice-program sequence as post-Sprint-12 work.
 
 ---
 
@@ -27,8 +27,8 @@ Sprint 07 remains the preserved duplex-hardening handoff created on 2026-03-17, 
 | Sprint 05 | 2026-03-10 -> 2026-03-24 | Advanced RAG, docs, and multi-source rate-hub hardening | In Progress |
 | Sprint 06 | 2026-03-25 -> 2026-04-07 | ADCL productionization, live data, persistence, API wiring, evaluation | Planned |
 | Sprint 07 | 2026-04-08 -> 2026-04-21 | Duplex websocket productionization, latency instrumentation, provider cleanup, and live-test alignment | Planned reference |
-| Sprint 08 | 2026-04-22 -> 2026-05-05 | LiveKit voice bridge foundation, Node gateway scaffolding, Python VAD service, and websocket fallback | Planned next |
-| Sprint 09 | 2026-05-06 -> 2026-05-19 | Semantic VAD, stream continuity, barge-in quality, and session recovery | Planned |
+| Sprint 08 | 2026-03-18 -> 2026-03-18 | LiveKit voice bridge foundation, relay contract, Python VAD service, and websocket fallback | Complete |
+| Sprint 09 | 2026-05-06 -> 2026-05-19 | Semantic VAD, stream continuity, barge-in quality, and session recovery | Planned next |
 | Sprint 10 | 2026-05-20 -> 2026-06-02 | Voice orchestration, Redis state machine, memory, and tool routing | Planned |
 | Sprint 11 | 2026-06-03 -> 2026-06-16 | Voice load hardening, observability, and benchmark-driven tuning | Planned |
 | Sprint 12 | 2026-06-17 -> 2026-06-30 | LiveKit scale, security, deployment assets, and cutover readiness | Planned |
@@ -218,8 +218,8 @@ Sprint 07 remains the preserved duplex-hardening handoff created on 2026-03-17, 
 ## Links
 
 - Product vision and tech plan: [`PLAN.md`](./PLAN.md)
-- Current sprint: [`tracking/sprints/sprint-06-adcl-productionization.md`](./tracking/sprints/sprint-06-adcl-productionization.md)
-- Next implementation sprint: [`tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`](./tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md)
+- Current sprint: [`tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md`](./tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md)
+- Next implementation sprint: [`tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`](./tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md)
 - Voice program follow-on sprints:
   - [`tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md`](./tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md)
   - [`tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md`](./tracking/sprints/sprint-10-voice-orchestration-state-and-tools.md)

@@ -1,6 +1,6 @@
 ﻿# CropFresh AI â€” Development Workflow & Status Guide
 
-> **Last Updated:** 2026-03-18 (Sprint 08 implementation slice landed)
+> **Last Updated:** 2026-03-24 (Sprint 09 continuity and recovery completion slice landed)
 > **Package Manager:** uv | **Python:** 3.11+ | **Stack:** FastAPI + LangGraph + Qdrant Cloud + Neo4j AuraDB + Redis Labs
 
 This document is the **single entry point** for understanding how CropFresh AI is developed. It covers the development philosophy, workflow loop, documentation structure, and a running file changes log. AI agents should read this alongside `AGENTS.md` before starting any work.
@@ -8,6 +8,46 @@ This document is the **single entry point** for understanding how CropFresh AI i
 ---
 
 ## Latest Session Snapshot
+
+**2026-03-24 - Sprint 09 Retro Template Update**
+
+- Added `tracking/retros/sprint-09-retro.md` using the current minimal retro template so Sprint 09 now has a properly formatted retrospective artifact.
+- Kept the retro honest about what shipped well, what still needs improvement, and the one remaining manual checkpoint: a live browser-timed validation of the `150ms` barge-in target.
+- Left older retros untouched; this update only created the Sprint 09 retro in the current template format.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/retros/sprint-09-retro.md`
+- Cross-check `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` and `tracking/daily/2026-03-24.md`
+
+**2026-03-24 - Sprint 09 Continuity and Recovery Completion Slice**
+
+- Closed the remaining Sprint 09 implementation gaps around continuity and reconnect handling by adding comfort-noise relay fills, explicit recovery policy metadata on gateway bootstrap responses, and focused stale-session plus heartbeat-timeout tests.
+- Upgraded the premium duplex browser helpers so reconnects refresh bootstrap state, dead peers are detected from missing heartbeat acknowledgements, browser online/offline transitions trigger recovery, and playback now fades down cleanly before stopping on barge-in.
+- Added relay debug metadata so continuity gap size, fill mode, ring-buffer watermark, and interruption timing are directly inspectable from the bridge response contract instead of living only inside raw downstream payloads.
+- Verified the slice with focused Python tests, static contract checks, targeted gateway Vitest coverage, and a fresh `npm run build` in `services/voice-gateway/`.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` and `tracking/daily/2026-03-24.md`
+- Review `services/voice-gateway/src/audio/relay-session.ts`, `services/voice-gateway/src/routes/relay-debug.ts`, and `services/voice-gateway/src/services/session-bootstrap.ts`
+- Review `static/assets/js/duplex/socket.js`, `static/assets/js/duplex/playback.js`, and `tests/unit/test_voice_duplex_recovery.py`
+- Cross-read `docs/features/livekit-voice-bridge.md` and `docs/api/websocket-voice.md`
+
+**2026-03-18 - Sprint 08 Relay Integration and Closeout**
+
+- Wired the gateway ring buffer and RMS gate into real relay frame/flush/reset routes so buffered PCM can flow into the existing duplex websocket runtime instead of stopping at utility-only buffering.
+- Added FastAPI analyze/reset endpoints to `services/vad-service/` so the Sprint 08 acoustic segmenter is available over both gRPC and a small HTTP compatibility surface.
+- Updated `static/voice_agent.html` plus new bootstrap JS so the Voice Hub now follows the same gateway-bootstrap-first, websocket-fallback truth as the premium static demo, including reconnect-token reuse and heartbeat.
+- Verified the Sprint 08 closeout slice with targeted Python tests, gateway TypeScript build, and the gateway Vitest suite; Windows sandbox restrictions still required an unrestricted test run for Vitest.
+
+**Fastest way to resume from this handoff**
+
+- Read `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` for the completed foundation contract and `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` for the next sprint.
+- Read `docs/features/livekit-voice-bridge.md` and `tracking/daily/2026-03-18.md`.
+- Review `services/voice-gateway/src/routes/relay.ts`, `services/voice-gateway/src/services/relay-coordinator.ts`, and `services/voice-gateway/src/services/downstream-relay.ts`.
+- Review `services/vad-service/app/api.py`, `services/vad-service/app/runtime.py`, and `static/assets/js/voice-agent-bootstrap.js`.
+- Cross-read `src/api/websocket/voice_pkg/router.py`, `src/api/websocket/voice_pkg/duplex.py`, and `src/voice/duplex_pipeline.py`.
 
 **2026-03-18 - Sprint 08 Bridge Services and Premium Bootstrap**
 
@@ -395,7 +435,7 @@ git checkout main && git merge feature/sprint-04-apmc-scraper
 | Voice Agent v1 (Edge-TTS + Whisper) | âœ… Complete    | 90%      | Sprint 01 |
 | Duplex WebSocket Voice Path         | In Progress    | 80%      | Sprint 07 carryover |
 | Pipecat Voice Pipeline              | ðŸŸ¡ In Progress | 40%      | Sprint 07 (experimental) |
-| LiveKit Voice Bridge Foundation     | âŒ Not Started | 0%       | Sprint 08 |
+| LiveKit Voice Bridge Foundation     | Complete       | 100%     | Sprint 08 |
 | Semantic VAD + Session Recovery     | âŒ Not Started | 0%       | Sprint 09 |
 | Voice Orchestration State + Tools   | âŒ Not Started | 0%       | Sprint 10 |
 | Voice Load Hardening + Observability | âŒ Not Started | 0%       | Sprint 11 |
@@ -473,6 +513,35 @@ uv run ruff check src/
 ---
 
 ## ðŸ“ File Changes Log
+
+### 2026-03-18 - Sprint 08 Relay Integration and Voice Hub Bootstrap
+
+| Action | File | Description |
+|--------|------|-------------|
+| UPDATE | `services/voice-gateway/src/audio/relay-session.ts` | Added buffered-audio read/clear support so the ring buffer participates in the downstream relay path |
+| CREATE | `services/voice-gateway/src/services/vad-client.ts` | Added the gateway-side FastAPI client for Sprint 08 VAD analyze/reset calls |
+| CREATE | `services/voice-gateway/src/services/downstream-relay.ts` | Added the downstream duplex websocket relay client for buffered PCM flushes |
+| CREATE | `services/voice-gateway/src/services/relay-coordinator.ts` | Added the bridge contract that combines buffer state, VAD results, and downstream relay behavior |
+| UPDATE | `services/voice-gateway/src/routes/relay.ts` | Added relay frame, flush, and reset routes with bridge-aware request parsing |
+| UPDATE | `services/voice-gateway/src/app.ts` | Wired the relay coordinator into the gateway app |
+| UPDATE | `services/voice-gateway/package.json` | Forced Vitest into a worker-safe single-thread mode for local verification |
+| CREATE | `services/voice-gateway/tests/relay-coordinator.test.ts` | Added focused relay contract coverage |
+| UPDATE | `services/voice-gateway/tests/relay-session.test.ts` | Updated route assertions for the nested relay response shape |
+| CREATE | `services/vad-service/app/http_models.py` | Added HTTP request and response models for VAD analyze/reset support |
+| UPDATE | `services/vad-service/app/api.py` | Added `/v1/vad/analyze` and session reset endpoints |
+| UPDATE | `services/vad-service/app/runtime.py` | Added session-scoped segmenter caching and reset support |
+| UPDATE | `tests/unit/test_vad_service_api.py` | Added analyze/reset and invalid-base64 coverage |
+| CREATE | `static/assets/js/voice-agent-bootstrap.js` | Added gateway bootstrap support for the Voice Hub surface |
+| UPDATE | `static/assets/js/voice-agent-ws.js` | Added bootstrap, reconnect token reuse, heartbeat, and fallback-aware websocket handling |
+| UPDATE | `static/voice_agent.html` | Added gateway bootstrap config and a visible bridge-mode badge |
+| UPDATE | `tests/unit/test_static_testing_lab.py` | Added Voice Hub bootstrap and heartbeat contract checks |
+| UPDATE | `tracking/sprints/sprint-08-livekit-voice-bridge-foundation.md` | Marked Sprint 08 complete and filled the sprint outcome section |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Marked Sprint 08 complete and pointed the next session to Sprint 09 |
+| UPDATE | `tracking/tasks/backlog.md` | Closed the remaining Sprint 08 backlog items and moved browser-side LiveKit join into later work |
+| UPDATE | `tracking/daily/2026-03-18.md` | Appended the Sprint 08 relay integration closeout addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the final Sprint 08 implementation snapshot |
+| UPDATE | `ROADMAP.md` | Marked Sprint 08 complete and pointed the next implementation sprint to Sprint 09 |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this latest-session snapshot and file-log entry |
 
 ### 2026-03-18 - Sprint 08 Bridge Services and Premium Bootstrap
 
@@ -1495,4 +1564,130 @@ _This file is the companion to `AGENTS.md`. Together they are the complete onboa
 | UPDATE | `static/assets/js/voice-agent-tools.js` | Fixed voice health rendering to use the current endpoint payload fields |
 | CREATE | `tests/unit/test_static_testing_lab.py` | Contract checks for DOM wiring, script ordering, workflow assets, and file-size guardrails |
 | UPDATE | `WORKFLOW_STATUS.md` | Added this agent-journey wiring log entry |
+
+### 2026-03-24 - Sprint 09 Semantic Relay Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `services/vad-service/app/session_state.py` | Added session-scoped semantic hold state for the bridge VAD service |
+| UPDATE | `services/vad-service/app/config.py` | Added semantic endpointing flags and bounded hold settings |
+| UPDATE | `services/vad-service/app/http_models.py` | Added internal semantic segment evaluation contracts |
+| UPDATE | `services/vad-service/app/runtime.py` | Added session-aware semantic hold timers and timeout-safe flush decisions |
+| UPDATE | `services/vad-service/app/api.py` | Added `POST /v1/vad/segments/evaluate` and exposed semantic config fields |
+| UPDATE | `services/voice-gateway/src/services/vad-client.ts` | Added the gateway-side client for semantic segment evaluation |
+| UPDATE | `services/voice-gateway/src/services/relay-coordinator.ts` | Combined acoustic and semantic segment decisions before downstream relay |
+| UPDATE | `services/voice-gateway/src/routes/relay.ts` | Accepted optional semantic transcript and language hints on relay frames |
+| UPDATE | `services/voice-gateway/src/metrics.ts` | Added continuity and joint-decision Prometheus counters |
+| CREATE | `services/voice-gateway/tests/relay-semantic.test.ts` | Added semantic hold and timeout-safe flush coverage for the bridge path |
+| CREATE | `tests/unit/test_vad_service_semantic.py` | Added focused semantic hold and timeout tests for the VAD runtime |
+| UPDATE | `tests/unit/test_vad_service_api.py` | Added HTTP coverage for the semantic evaluation endpoint |
+| UPDATE | `tests/unit/test_voice_duplex_recovery.py` | Fixed the duplex recovery test import path so reconnect coverage executes again |
+| CREATE | `tracking/daily/2026-03-24.md` | Logged the Sprint 09 first-slice implementation and verification snapshot |
+| UPDATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Appended the first implementation-progress note for Sprint 09 |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Appended the Sprint 09 semantic endpointing addendum and relay flow |
+| UPDATE | `docs/api/endpoints-reference.md` | Appended the internal VAD-service endpoint addendum for Sprint 09 |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 09 implementation log entry |
+
+### 2026-03-24 - Sprint 09 Benchmark and Artifact Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `src/evaluation/datasets/voice_multilingual_benchmark.json` | Added the fixed multilingual Sprint 09 utterance set for `kn`, `hi`, `te`, and `ta` |
+| CREATE | `src/evaluation/voice_benchmark_models.py` | Added the per-turn artifact, observation, and report schemas for voice benchmarking |
+| CREATE | `src/evaluation/voice_benchmark_runner.py` | Added the runner that evaluates endpointing expectations and writes JSON/markdown artifacts |
+| CREATE | `ai/evals/run_voice_benchmark.py` | Added the Sprint 09 benchmark entrypoint |
+| CREATE | `docs/features/voice-benchmarking.md` | Added the benchmark flow and manual review rubric with a Mermaid diagram |
+| UPDATE | `src/evaluation/__init__.py` | Exported the voice benchmark models and runner |
+| CREATE | `tests/unit/test_voice_benchmark_runner.py` | Added coverage for dataset language lock and artifact generation |
+| UPDATE | `src/shared/voice_semantic.py` | Added the Kannada hesitation variant used by the fixed Sprint 09 benchmark |
+| UPDATE | `tests/unit/test_semantic_endpointing.py` | Added focused coverage for the Kannada hesitation variant |
+| UPDATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Marked the benchmark tasks complete and appended the benchmark slice note |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the benchmark slice addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Linked the new benchmark dataset and rubric into the Sprint 09 bridge addendum |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 09 benchmark implementation log entry |
+
+### 2026-03-24 - Sprint 09 Continuity and Recovery Completion Slice
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `services/voice-gateway/src/audio/comfort-noise.ts` | Added deterministic low-energy comfort-noise fills for short relay gaps |
+| UPDATE | `services/voice-gateway/src/audio/relay-session.ts` | Switched continuity-gap buffering to comfort-noise and exposed fill-mode metadata |
+| CREATE | `services/voice-gateway/src/routes/relay-debug.ts` | Added continuity and interruption debug extraction for relay responses |
+| UPDATE | `services/voice-gateway/src/routes/relay.ts` | Added debug metadata to relay frame and flush responses |
+| UPDATE | `services/voice-gateway/src/config.ts` | Added dead-peer timeout and reconnect-backoff configuration parsing |
+| UPDATE | `services/voice-gateway/src/routes/health.ts` | Exposed recovery policy fields on health and readiness payloads |
+| UPDATE | `services/voice-gateway/src/services/session-bootstrap.ts` | Added explicit recovery policy metadata to gateway bootstrap responses |
+| CREATE | `services/voice-gateway/tests/relay-debug.test.ts` | Added debug metadata extraction coverage |
+| UPDATE | `services/voice-gateway/tests/relay-session.test.ts` | Added comfort-noise and relay-debug coverage |
+| UPDATE | `services/voice-gateway/tests/session-bootstrap.test.ts` | Added recovery-policy assertions for bootstrap and readiness routes |
+| CREATE | `static/assets/js/duplex/recovery.js` | Added shared dead-peer and retry/backoff helpers for the premium duplex client |
+| CREATE | `static/assets/js/duplex/session.js` | Added reconnect-token-aware bootstrap refresh helper |
+| CREATE | `static/assets/js/duplex/playback.js` | Added comfort-noise playback fill and graceful barge-in stop handling |
+| UPDATE | `static/assets/js/duplex/socket.js` | Added dead-peer watchdog, reconnect backoff, and online/offline recovery behavior |
+| UPDATE | `static/assets/js/duplex/audio.js` | Delegated playback continuity and graceful stop behavior to the new helper |
+| UPDATE | `static/assets/js/duplex/bootstrap.js` | Added recovery defaults for local fallback bootstrap responses |
+| UPDATE | `static/assets/js/voice-agent-bootstrap.js` | Added recovery defaults for the non-module Voice Hub bootstrap helper |
+| UPDATE | `tests/unit/test_static_testing_lab.py` | Added static contract checks for recovery metadata and the new duplex helpers |
+| UPDATE | `tests/unit/test_semantic_endpointing.py` | Added thinking-pause, clipped-ending, and code-mixed semantic coverage |
+| UPDATE | `tests/unit/test_voice_duplex_recovery.py` | Added expired-session and heartbeat-timeout reconnect coverage |
+| UPDATE | `tracking/sprints/sprint-09-semantic-vad-continuity-and-session-recovery.md` | Marked the continuity and reconnect task list complete and appended the completion slice note |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the continuity/recovery completion addendum and verification snapshot |
+| UPDATE | `docs/features/livekit-voice-bridge.md` | Added the Sprint 09 continuity and recovery addendum |
+| UPDATE | `docs/api/websocket-voice.md` | Updated the websocket contract with reconnect, heartbeat, and recovery fields |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Updated Sprint 09 component progress and accomplishment notes |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this Sprint 09 completion log entry |
+
+### 2026-03-24 - Sprint 09 Retro Template Update
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| CREATE | `tracking/retros/sprint-09-retro.md` | Added the Sprint 09 retrospective using the current minimal retro template |
+| UPDATE | `WORKFLOW_STATUS.md` | Added the retro handoff snapshot and file-log entry |
+
+### 2026-03-24 - CI/CD Recovery and Pipeline Hardening
+
+| Action | File | Description |
+| ------ | ---- | ----------- |
+| UPDATE | `.github/workflows/ci.yml` | Split CI into explicit Python lint, Python test, and voice-gateway jobs on current action versions |
+| UPDATE | `.github/workflows/deploy-aws.yml` | Gated AWS deploy on a successful `CI — Lint + Test` run on `main` while preserving manual dispatch |
+| DELETE | `.github/workflows/deploy-prod.yml` | Removed stale Cloud Run production deploy workflow |
+| DELETE | `.github/workflows/deploy-staging.yml` | Removed stale Cloud Run staging deploy workflow |
+| UPDATE | `.github/workflows/eval-agents.yml` | Moved the eval workflow to current action versions and explicit `uv sync` install steps |
+| UPDATE | `.github/workflows/scraper-cron.yml` | Replaced scheduler bootstrapping with explicit UTC one-shot job-id runs and Aurora env wiring |
+| CREATE | `src/scrapers/__main__.py` | Added the one-shot scraper CLI used by the GitHub Actions cron workflow |
+| CREATE | `src/scrapers/agmarknet/legacy_contract.py` | Added deterministic compatibility helpers for the legacy Agmarknet scraper contract |
+| UPDATE | `src/scrapers/agmarknet/client.py` | Restored legacy Agmarknet methods, fallback data, scheduler storage helper, and constructor compatibility |
+| UPDATE | `src/scrapers/agri_scrapers/__init__.py` | Switched `AgriculturalDataAPI` export to a lazy import to avoid circular imports |
+| UPDATE | `src/scrapers/agri_scrapers/models.py` | Restored `modal_price_per_kg` and legacy Agmarknet defaults on `MandiPrice` |
+| UPDATE | `src/db/postgres/prices.py` | Added `insert_mandi_prices(...)` as a compatibility alias for legacy scraper persistence |
+| UPDATE | `src/api/middleware/auth.py` | Added backward-compatible `dispatch(...)` support for middleware contract tests while keeping ASGI runtime behavior |
+| UPDATE | `src/agents/buyer_matching/agent.py` | Restored the `_haversine(...)` compatibility alias used by older tests |
+| UPDATE | `src/agents/voice/agent.py` | Added fallback handling for older entity-extractor signatures without `context_intent` support |
+| UPDATE | `src/memory/state_pkg/manager.py` | Made heartbeat touches monotonic so reconnect keepalive tests stop flaking |
+| UPDATE | `src/tools/deep_research/__init__.py` | Re-exported legacy research helpers and the package-level `httpx` patch point for tests |
+| UPDATE | `src/agents/digital_twin/engine/__init__.py` | Re-exported legacy digital-twin utility helpers for older callers and tests |
+| UPDATE | `src/agents/digital_twin/similarity.py` | Re-exported `SUBSTITUTION_THRESHOLD` for similarity compatibility tests |
+| UPDATE | `src/agents/price_prediction/agent.py` | Re-exported `SEASONAL_CALENDAR` for legacy price-prediction imports |
+| UPDATE | `src/agents/crop_listing/agent.py` | Fixed Ruff ambiguous-variable lint debt uncovered by repo-wide CI |
+| UPDATE | `src/agents/voice/handlers.py` | Fixed Ruff ambiguous-variable lint debt uncovered by repo-wide CI |
+| UPDATE | `src/autonomous/persistence.py` | Replaced bare exception handling to satisfy repo-wide Ruff |
+| UPDATE | `src/shared/autonomous/persistence.py` | Replaced bare exception handling to satisfy repo-wide Ruff |
+| UPDATE | `src/pipelines/normalizers/price_normalizer.py` | Expanded one-line conditionals to satisfy repo-wide Ruff |
+| UPDATE | `src/rag/graph_constructor.py` | Fixed ambiguous loop-variable lint issues |
+| UPDATE | `src/voice/webrtc/tracks.py` | Replaced bare exception handling in queue fallbacks |
+| UPDATE | `tests/unit/test_scraper_cli.py` | Added/updated coverage for the one-shot scraper CLI and DB-aware scheduler creation |
+| UPDATE | `tests/unit/test_scheduler_rate_jobs.py` | Added validation for unknown scraper job IDs |
+| UPDATE | `tests/unit/test_auth_middleware.py` | Recovered middleware contract coverage against the current ASGI auth layer |
+| UPDATE | `tests/unit/test_agmarknet_scraper.py` | Recovered the legacy Agmarknet compatibility surface under the current scraper runtime |
+| UPDATE | `tests/unit/test_buyer_matching.py` | Recovered the legacy buyer-matching haversine helper contract |
+| UPDATE | `tests/unit/test_pipecat_pipeline.py` | Recovered VoiceAgent text-path compatibility under the current extractor signature |
+| UPDATE | `tests/unit/rates/test_comparison.py` | Removed the date-sensitive flake in the official-source precedence assertion |
+| UPDATE | `tests/test_voice_realtime.py` | Marked localhost websocket smoke tests as opt-in E2E checks |
+| UPDATE | `tests/integration/test_voice_realtime.py` | Marked localhost websocket smoke tests as opt-in E2E checks |
+| UPDATE | `docs/guides/development-workflow.md` | Appended the current CI, deploy, and opt-in E2E workflow truth |
+| CREATE | `docs/features/ci-cd-pipeline.md` | Added the current pipeline map, cron schedule, and AWS deployment gating doc |
+| UPDATE | `docs/guides/environment-variables.md` | Documented CI/scraper workflow variables and opt-in realtime smoke-test vars |
+| UPDATE | `tracking/PROJECT_STATUS.md` | Appended the CI/CD recovery status addendum and remaining external dependency note |
+| UPDATE | `tracking/daily/2026-03-24.md` | Added the CI/CD recovery addendum and verification snapshot |
+| UPDATE | `WORKFLOW_STATUS.md` | Added this CI/CD recovery and pipeline hardening log entry |
 

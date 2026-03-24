@@ -24,7 +24,6 @@ from loguru import logger
 
 try:
     from mcp.server import Server
-    from mcp.types import TextContent, Tool
     HAS_MCP = True
 except ImportError:
     HAS_MCP = False

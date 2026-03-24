@@ -8,12 +8,17 @@ import { loadConfig } from "../src/config.js";
 describe("RelaySession", () => {
   it("marks continuity fill during short quiet gaps", () => {
     const relay = new RelaySession(0.01, 400);
+    const quietPayload = new Uint8Array(new Int16Array([0, 10, -10, 5]).buffer);
 
     relay.pushFrame(new Uint8Array(new Int16Array([0, 12000, -12000, 8000]).buffer), 1000);
-    const result = relay.pushFrame(new Uint8Array(new Int16Array([0, 10, -10, 5]).buffer), 1200);
+    const result = relay.pushFrame(quietPayload, 1200);
+    const buffered = relay.readBufferedAudio();
 
     expect(result.continuity_fill).toBe(true);
     expect(result.continuity_gap_ms).toBe(200);
+    expect(result.continuity_fill_mode).toBe("comfort_noise");
+    expect(result.buffered_bytes).toBeGreaterThan(0);
+    expect(Array.from(buffered.slice(-quietPayload.length))).not.toEqual(Array.from(quietPayload));
   });
 
   it("exposes a relay frame route that wires RMS gate and ring buffer metadata", async () => {
@@ -30,9 +35,11 @@ describe("RelaySession", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.session_id).toBe("test-session");
-    expect(response.body.accepted_bytes).toBeGreaterThan(0);
-    expect(typeof response.body.rms).toBe("number");
-    expect(typeof response.body.ring_buffer_fill_ratio).toBe("number");
-    expect(["normal", "high"]).toContain(response.body.ring_buffer_watermark);
+    expect(response.body.flushed).toBe(false);
+    expect(response.body.relay.accepted_bytes).toBeGreaterThan(0);
+    expect(typeof response.body.relay.rms).toBe("number");
+    expect(typeof response.body.relay.ring_buffer_fill_ratio).toBe("number");
+    expect(["normal", "high"]).toContain(response.body.relay.ring_buffer_watermark);
+    expect(response.body.debug.continuity.continuity_fill_mode).toBe("none");
   });
 });

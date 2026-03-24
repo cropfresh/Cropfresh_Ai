@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
 
 from src.shared.logger import setup_logger
+from src.shared.voice_semantic import (
+    SemanticEndpointDecision,
+    SupportsGenerate,
+    evaluate_semantic_flush,
+)
 
 from .config import VadServiceSettings
 from .models import SegmenterSettings, VadFrameResult
 from .segmenter import StreamingVadSegmenter, compute_normalized_rms
+from .session_state import VadSessionState
 from .silero_engine import SileroOnnxScorer
 
 
@@ -35,11 +42,16 @@ class VadServiceRuntime:
         self,
         settings: VadServiceSettings,
         scorer: VadProbabilityScorer | None = None,
+        semantic_provider: SupportsGenerate | None = None,
+        clock: Callable[[], float] | None = None,
     ) -> None:
         self.settings = settings
         self.logger = setup_logger(settings.log_level)
         self.scorer = scorer
+        self.semantic_provider = semantic_provider
+        self.clock = clock or time.monotonic
         self.bootstrap_error: str | None = None
+        self._sessions: dict[str, VadSessionState] = {}
 
     async def bootstrap(self) -> None:
         """Attempt to load the Silero scorer unless a test scorer was injected."""
@@ -69,6 +81,18 @@ class VadServiceRuntime:
             )
         )
 
+    def get_session_state(self, session_id: str) -> VadSessionState:
+        """Return the cached runtime state for one session, creating it on first use."""
+        normalized_session_id = session_id.strip()
+        if not normalized_session_id:
+            raise ValueError("session_id is required")
+
+        session_state = self._sessions.get(normalized_session_id)
+        if session_state is None:
+            session_state = VadSessionState(segmenter=self.create_segmenter())
+            self._sessions[normalized_session_id] = session_state
+        return session_state
+
     def analyze_frame(
         self,
         *,
@@ -91,6 +115,73 @@ class VadServiceRuntime:
 
         return segmenter.process_frame(sequence=sequence, probability=probability, rms=rms)
 
+    def analyze_session_frame(
+        self,
+        *,
+        session_id: str,
+        sequence: int,
+        sample_rate: int,
+        pcm16: bytes,
+    ) -> VadFrameResult:
+        """Analyze one frame using the session-scoped segmenter cache."""
+        session_state = self.get_session_state(session_id)
+        return self.analyze_frame(
+            segmenter=session_state.segmenter,
+            sequence=sequence,
+            sample_rate=sample_rate,
+            pcm16=pcm16,
+        )
+
+    async def evaluate_segment(
+        self,
+        *,
+        session_id: str,
+        transcript: str,
+        language: str,
+    ) -> SemanticEndpointDecision:
+        """Evaluate whether an acoustically-ended segment should flush downstream."""
+        session_state = self.get_session_state(session_id)
+        decision = await evaluate_semantic_flush(
+            transcript=transcript,
+            language=language,
+            llm_provider=self.semantic_provider,
+            enabled=self.settings.semantic_endpointing_enabled,
+            timeout_ms=self.settings.semantic_timeout_ms,
+            max_hold_ms=self.settings.semantic_hold_max_ms,
+        )
+
+        if decision.should_flush:
+            session_state.semantic_hold_started_at = None
+            return decision
+
+        hold_started_at = session_state.semantic_hold_started_at
+        if hold_started_at is None:
+            hold_started_at = self.clock()
+        session_state.semantic_hold_started_at = hold_started_at
+        elapsed_ms = int((self.clock() - hold_started_at) * 1000)
+        if elapsed_ms >= self.settings.semantic_hold_max_ms:
+            session_state.semantic_hold_started_at = None
+            return SemanticEndpointDecision(
+                transcript=decision.transcript,
+                detected_language=decision.detected_language,
+                should_flush=True,
+                reason="semantic_hold_timeout",
+                semantic_hold_ms=elapsed_ms,
+                used_llm=decision.used_llm,
+                timed_out=decision.timed_out,
+            )
+
+        decision.semantic_hold_ms = elapsed_ms
+        return decision
+
+    def reset_session(self, session_id: str) -> bool:
+        """Clear one cached segmenter and return whether it existed."""
+        normalized_session_id = session_id.strip()
+        if not normalized_session_id:
+            return False
+
+        return self._sessions.pop(normalized_session_id, None) is not None
+
     def health_payload(self) -> dict[str, object]:
         """Return a liveness payload that stays truthful even in degraded mode."""
         return {
@@ -99,6 +190,7 @@ class VadServiceRuntime:
             "version": self.settings.service_version,
             "grpc_enabled": self.settings.enable_grpc,
             "bootstrap_error": self.bootstrap_error,
+            "tracked_streams": len(self._sessions),
         }
 
     def readiness(self) -> RuntimeStatus:

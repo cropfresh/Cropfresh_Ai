@@ -18,6 +18,8 @@ export function registerHealthRoutes(
       bridge_mode_enabled: config.enableLiveKitBridge,
       fallback_ws_url: config.fallbackWsUrl,
       heartbeat_interval_ms: config.heartbeatIntervalMs,
+      dead_peer_timeout_ms: config.deadPeerTimeoutMs,
+      reconnect_backoff_ms: config.reconnectBackoffMs,
       session_recovery_ttl_ms: config.sessionRecoveryTtlMs,
     });
   });
@@ -30,6 +32,8 @@ export function registerHealthRoutes(
       bridge_mode_available: bootstrapService.isBridgeModeAvailable(),
       fallback_ws_configured: Boolean(config.fallbackWsUrl),
       vad_service_url: config.vadServiceBaseUrl,
+      dead_peer_timeout_ms: config.deadPeerTimeoutMs,
+      reconnect_backoff_ms: config.reconnectBackoffMs,
       continuity_window_ms: config.continuityWindowMs,
     });
   });

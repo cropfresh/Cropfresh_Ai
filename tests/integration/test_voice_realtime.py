@@ -1,15 +1,15 @@
 """
-Bidirectional Voice Agent Test Suite
-=====================================
+Bidirectional Voice Agent realtime smoke tests.
 
-Tests for verifying WebSocket streaming, VAD, and bidirectional communication.
-
-Run with: uv run pytest tests/test_voice_realtime.py -v
+These are opt-in E2E checks for a manually running local voice server.
+They are intentionally skipped in CI because the root test command does not
+start an external websocket server on localhost.
 """
 
 import asyncio
 import base64
 import json
+import os
 import struct
 import time
 from pathlib import Path
@@ -20,9 +20,13 @@ import pytest
 import websockets
 from loguru import logger
 
+pytestmark = pytest.mark.skipif(
+    os.getenv("VOICE_REALTIME_E2E") != "1",
+    reason="requires a running websocket voice server; set VOICE_REALTIME_E2E=1 to enable",
+)
 
 # Test configuration
-TEST_SERVER_URL = "ws://127.0.0.1:8000/api/v1/voice/ws"
+TEST_SERVER_URL = os.getenv("VOICE_REALTIME_E2E_URL", "ws://127.0.0.1:8000/api/v1/voice/ws")
 SAMPLE_RATE = 16000
 AUDIO_CHUNK_MS = 30
 

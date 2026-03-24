@@ -64,6 +64,11 @@ class BuyerMatchingAgent(BaseAgent, BuyerMatchingCacheMixin, BuyerMatchingMockDa
             "and explain why each buyer is a good fit. Be concise."
         )
 
+    @staticmethod
+    def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Backward-compatible alias preserved for older tests and callers."""
+        return MatchingEngine.haversine(lat1, lon1, lat2, lon2)
+
     async def process(
         self,
         query: str,

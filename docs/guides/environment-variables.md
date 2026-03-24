@@ -125,3 +125,21 @@ Note: VAD thresholds and duplex transport settings are not centralized in `Setti
 | `ENABLE_RERANKER` | `true` | Enable reranking |
 | `SCRAPING_RATE_LIMIT` | `30` | Request budget for scraping |
 | `SCRAPING_CACHE_TTL` | `300` | Scraper cache TTL in seconds |
+
+---
+
+## 2026-03-24 Update - CI and Scraper Workflow Variables
+
+### Scheduled Scraper Workflow
+
+- The GitHub Actions scraper workflow now reuses the Aurora variables above when it runs `python -m src.scrapers`.
+- `PG_HOST` is the on/off switch for persistence in that workflow. If it is empty, the scraper CLI runs in no-persistence smoke mode.
+- The workflow currently defaults `PG_DATABASE=postgres`, `PG_USER=postgres`, `PG_PORT=5432`, and `PG_USE_IAM_AUTH=false` unless you override them in the workflow environment.
+- `AWS_REGION` is also reused by the scraper CLI when IAM auth is enabled for Aurora.
+
+### Opt-In Realtime Smoke Tests
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VOICE_REALTIME_E2E` | unset | Set to `1` to run the websocket realtime smoke tests against a live server |
+| `VOICE_REALTIME_E2E_URL` | `ws://127.0.0.1:8000/api/v1/voice/ws` | Override the live websocket target for those smoke tests |

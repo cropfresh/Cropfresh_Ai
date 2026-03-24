@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
-import src.api.websocket.voice_pkg.router as voice_router_module
 from src.memory.state_manager import AgentStateManager, VoiceTurn
 from src.voice.duplex import PipelineState
+
+voice_router_module = importlib.import_module("src.api.websocket.voice_pkg.router")
 
 
 class StubDuplexPipeline:
@@ -40,7 +45,12 @@ class StubDuplexPipeline:
         self.state = PipelineState.INTERRUPTED
 
 
-def _build_test_client(monkeypatch) -> TestClient:
+def _build_test_client(
+    monkeypatch,
+    *,
+    heartbeat_interval_ms: int = 10000,
+    dead_peer_timeout_ms: int = 30000,
+) -> TestClient:
     monkeypatch.setattr(voice_router_module, "DuplexPipeline", StubDuplexPipeline)
     monkeypatch.setattr(voice_router_module, "DUPLEX_AVAILABLE", True)
     monkeypatch.setattr(voice_router_module, "VAD_AVAILABLE", False)
@@ -51,8 +61,8 @@ def _build_test_client(monkeypatch) -> TestClient:
             voice_semantic_endpointing_enabled=False,
             voice_semantic_timeout_ms=150,
             voice_semantic_hold_max_ms=800,
-            voice_heartbeat_interval_ms=10000,
-            voice_dead_peer_timeout_ms=30000,
+            voice_heartbeat_interval_ms=heartbeat_interval_ms,
+            voice_dead_peer_timeout_ms=dead_peer_timeout_ms,
         ),
     )
 
@@ -105,6 +115,25 @@ def test_duplex_reconnect_with_invalid_token_falls_back_to_fresh_session(monkeyp
         assert ready["recovery_outcome"] == "invalid_reconnect_token"
 
 
+def test_duplex_reconnect_with_expired_session_falls_back_to_fresh_session(monkeypatch) -> None:
+    client = _build_test_client(monkeypatch)
+
+    with client.websocket_connect("/api/v1/voice/ws/duplex?session_id=s-4&reconnect_token=token-4") as ws:
+        ready = ws.receive_json()
+        assert ready["session_id"] == "s-4"
+
+    context = client.app.state.state_manager._sessions["s-4"]
+    context.last_active_at = datetime.now() - timedelta(seconds=310)
+    client.app.state.state_manager._sessions["s-4"] = context
+
+    with client.websocket_connect("/api/v1/voice/ws/duplex?session_id=s-4&reconnect_token=token-4") as ws:
+        ready = ws.receive_json()
+
+        assert ready["recovered"] is False
+        assert ready["session_id"] != "s-4"
+        assert ready["recovery_outcome"] == "expired"
+
+
 def test_duplex_heartbeat_acknowledges_keepalive(monkeypatch) -> None:
     client = _build_test_client(monkeypatch)
 
@@ -116,3 +145,22 @@ def test_duplex_heartbeat_acknowledges_keepalive(monkeypatch) -> None:
         assert ack["type"] == "heartbeat_ack"
         assert ack["session_id"] == "s-3"
         assert ack["heartbeat_interval_ms"] == 10000
+
+
+def test_duplex_heartbeat_timeout_closes_stalled_session(monkeypatch) -> None:
+    client = _build_test_client(
+        monkeypatch,
+        heartbeat_interval_ms=20,
+        dead_peer_timeout_ms=40,
+    )
+
+    with client.websocket_connect("/api/v1/voice/ws/duplex?session_id=s-5&reconnect_token=token-5") as ws:
+        ready = ws.receive_json()
+        assert ready["type"] == "ready"
+
+        error = ws.receive_json()
+        assert error["type"] == "error"
+        assert error["error"] == "heartbeat_timeout"
+
+        with pytest.raises(WebSocketDisconnect):
+            ws.receive_json()
