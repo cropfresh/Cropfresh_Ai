@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropFresh Vision Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/suite/critical-shell.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/suite.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/lab-pages.css?v=20260318-shellfix" />
+    <link rel="stylesheet" href="./assets/css/vision-lab.css?v=20260318-visionlab" />
+  </head>
+  <body data-suite-page="vision-lab">
+    <div class="suite-frame">
+      <aside class="suite-rail">
+        <div class="suite-rail-brand">
+          <a class="suite-rail-mark" href="./index.html">
+            <span class="suite-rail-mark-badge">VL</span>
+            <div>
+              <span class="suite-rail-label">Freemium Lab</span>
+              <h2 class="suite-rail-title">Vision and Quality Lab</h2>
+            </div>
+          </a>
+          <p class="suite-rail-copy">A connected testing lane for image grading, rule-based fallback, HITL decisions, and listing-grade attachment.</p>
+        </div>
+        <nav class="suite-rail-nav">
+          <a class="suite-rail-link" href="./index.html"><strong>Dashboard</strong><small>Start from the suite switchboard.</small></a>
+          <a class="suite-rail-link" href="./voice_agent.html"><strong>Voice Hub</strong><small>Run the voice listing flow first.</small></a>
+          <a class="suite-rail-link active" href="./vision_lab.html"><strong>Vision Lab</strong><small>Assess produce and attach grades.</small></a>
+          <a class="suite-rail-link" href="./premium_voice.html"><strong>Premium Voice</strong><small>Customer-facing duplex demo.</small></a>
+          <a class="suite-rail-link" href="./rag_test.html"><strong>RAG Lab</strong><small>Validate knowledge-side grounding.</small></a>
+          <a class="suite-rail-link" href="./voice_test_ui.html"><strong>Voice UI</strong><small>Quick record and TTS checks.</small></a>
+        </nav>
+        <div class="suite-rail-panels">
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Primary Use</span>
+            <p>Test the real quality agent with either an image or a condition description, then attach the result to a listing.</p>
+          </article>
+          <article class="suite-rail-panel">
+            <span class="suite-rail-panel-label">Connected Story</span>
+            <p>Voice can create the listing, vision can grade it, and listings can store the final grade without leaving the suite.</p>
+          </article>
+        </div>
+        <p class="suite-rail-footer">This is the clearest place to validate the vision layer before mobile or operator workflows depend on it.</p>
+      </aside>
+      <div class="app-shell">
+        <header class="topbar">
+          <div class="brand">
+            <span class="brand-logo">VL</span>
+            <div>
+              <div class="brand-title">CropFresh Vision Lab</div>
+              <div class="brand-subtitle">Vision-grade, fallback, HITL, and listing attach in one connected page</div>
+            </div>
+          </div>
+          <div class="topbar-actions">
+            <span class="topbar-tag">Quality agent</span>
+            <span class="topbar-tag">Listing-grade handoff</span>
+            <div class="status-pill offline" id="visionStatusPill"><span class="dot"></span><span data-status-text>Checking vision</span></div>
+          </div>
+        </header>
+
+        <section class="vision-hero">
+          <div class="vision-hero-copy">
+            <p class="eyebrow">Vision pipeline made visible</p>
+            <h1>Test how the quality agent behaves with a real grading and listing-attach path.</h1>
+            <p>This page gives the static suite a truthful vision layer: image or description assessment, model-mode visibility, HITL flags, and the final `/listings/{id}/grade` handoff.</p>
+            <div class="vision-link-row">
+              <a class="workflow-tag" href="./voice_agent.html">Run voice listing first</a>
+              <a class="workflow-tag" href="./index.html">Return to dashboard</a>
+            </div>
+          </div>
+          <div class="vision-stack">
+            <div class="vision-status-grid">
+              <article class="vision-stat">
+                <span class="card-kicker">Pipeline</span>
+                <strong>Vision -> grade</strong>
+                <p class="card-desc">Uses the shared quality agent, not a page-only mock.</p>
+              </article>
+              <article class="vision-stat">
+                <span class="card-kicker">Attach</span>
+                <strong>Listing grade</strong>
+                <p class="card-desc">Reuses the existing listing-grade contract after assessment.</p>
+              </article>
+            </div>
+            <div id="visionVoiceHandoff" class="vision-handoff"></div>
+          </div>
+        </section>
+
+        <section class="card stack">
+          <div>
+            <span class="card-kicker">Connected journeys</span>
+            <h3 class="card-title">Use the right vision test for the workflow you are validating</h3>
+            <p class="card-desc">These lanes make it clear whether you are grading a fresh voice-created listing, a manual operator listing, or just testing fallback behavior.</p>
+          </div>
+          <div id="visionScenarioCatalog" class="scenario-grid"></div>
+        </section>
+
+        <section class="vision-form-grid">
+          <article class="card stack">
+            <div>
+              <span class="card-kicker">Vision intake</span>
+              <h3 class="card-title">Assess produce quality</h3>
+              <p class="card-desc">Use a real image for model mode when weights are available, or a description-only run to verify the fallback contract.</p>
+            </div>
+            <div class="grid grid-2">
+              <div><label class="label" for="visionListingId">Listing ID</label><input id="visionListingId" class="input" placeholder="Optional existing listing id" /></div>
+              <div><label class="label" for="visionCommodity">Commodity</label><input id="visionCommodity" class="input" value="Tomato" /></div>
+            </div>
+            <div><label class="label" for="visionDescription">Condition description</label><textarea id="visionDescription" class="textarea">Fresh, firm, uniform color, light bruising on one side</textarea></div>
+            <div class="vision-upload">
+              <label class="label" for="visionImage">Optional image</label>
+              <input id="visionImage" type="file" accept="image/*" />
+              <div class="vision-upload-meta">
+                <span>Leave image empty to test rule-based fallback.</span>
+                <span>If a voice listing already created a listing id, it is carried here automatically.</span>
+              </div>
+            </div>
+            <label class="checkbox-row"><input id="visionUpgradeReview" type="checkbox" /> Force upgrade review / human verification</label>
+            <button id="btnVisionAssess" class="btn btn-primary">Run vision assessment</button>
+            <div id="visionAssessResult" class="result"></div>
+          </article>
+
+          <article class="card stack">
+            <div>
+              <span class="card-kicker">Service health</span>
+              <h3 class="card-title">Vision runtime status</h3>
+              <p class="card-desc">This card keeps the model readiness and fallback state visible before you trust the result.</p>
+            </div>
+            <div id="visionHealthResult" class="result"></div>
+            <div id="visionPipelineBoard" class="workflow-board"></div>
+          </article>
+        </section>
+
+        <section class="grid grid-2">
+          <article class="card stack">
+            <div>
+              <span class="card-kicker">Listing handoff</span>
+              <h3 class="card-title">Attach the latest grade to a listing</h3>
+              <p class="card-desc">This calls the existing listing-grade route, so you can verify the full voice -> vision -> listing path.</p>
+            </div>
+            <div><label class="label" for="attachListingId">Listing ID to update</label><input id="attachListingId" class="input" placeholder="Listing id from voice or operator flow" /></div>
+            <button id="btnAttachVisionGrade" class="btn btn-secondary">Attach latest assessment grade</button>
+            <div id="visionAttachResult" class="result"></div>
+          </article>
+          <article class="card">
+            <span class="card-kicker">Why this matters</span>
+            <h3 class="card-title">One truthful quality workflow</h3>
+            <p class="card-desc">The suite now exposes the real quality agent contract, shows whether it is running in model mode or fallback mode, and lets you verify that the grade can land on a listing without hidden backend jumps.</p>
+          </article>
+        </section>
+
+        <footer class="page-footer">
+          <div>
+            <div class="page-footer-copy">Vision Lab</div>
+            <div class="page-footer-note">Shared testing lane for quality assessment, HITL, and listing-grade attachment.</div>
+          </div>
+          <div class="page-footer-links">
+            <a href="./voice_agent.html">Voice Hub</a>
+            <a href="./index.html">Dashboard</a>
+            <a href="./premium_voice.html">Premium Voice</a>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <script src="./assets/js/shared.js"></script>
+    <script src="./assets/js/lab-state.js"></script>
+    <script src="./assets/js/agent-workflow-data.js"></script>
+    <script src="./assets/js/agent-workflows.js"></script>
+    <script src="./assets/js/vision-lab.js"></script>
+  </body>
+</html>

@@ -108,6 +108,7 @@ Thumbs.db
 
 # Temp/debug files (root level)
 *.html
+!static/**/*.html
 *.png
 *.wav
 *.tmp
