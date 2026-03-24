@@ -1,0 +1,66 @@
+[
+  {
+    "id": "kn_hold_pause_01",
+    "language": "kn",
+    "prompt_text": "ಸ್ವಲ್ಪ ತಾಳಿ",
+    "expected_endpointing": "hold_then_flush",
+    "expected_notes": "Standalone Kannada hesitation phrase should hold instead of cutting early.",
+    "tags": ["kn", "hesitation", "semantic_hold"]
+  },
+  {
+    "id": "kn_flush_complete_01",
+    "language": "kn",
+    "prompt_text": "ಇಂದು ಕೋಲಾರಿನಲ್ಲಿ ಟೊಮೇಟೊ ಬೆಲೆ ಏನು?",
+    "expected_endpointing": "flush",
+    "expected_notes": "Complete Kannada price question should flush immediately.",
+    "tags": ["kn", "complete_query"]
+  },
+  {
+    "id": "hi_hold_pause_01",
+    "language": "hi",
+    "prompt_text": "एक मिनट",
+    "expected_endpointing": "hold_then_flush",
+    "expected_notes": "Standalone Hindi filler pause should keep the segment open briefly.",
+    "tags": ["hi", "hesitation", "semantic_hold"]
+  },
+  {
+    "id": "hi_code_mix_flush_01",
+    "language": "hi",
+    "prompt_text": "आज Kolar में onion rate क्या है?",
+    "expected_endpointing": "flush",
+    "expected_notes": "Code-mixed Hindi-English price query is complete and should flush.",
+    "tags": ["hi", "code_mixed", "complete_query"]
+  },
+  {
+    "id": "te_hold_pause_01",
+    "language": "te",
+    "prompt_text": "ఒక్క నిమిషం",
+    "expected_endpointing": "hold_then_flush",
+    "expected_notes": "Standalone Telugu hesitation phrase should trigger a semantic hold.",
+    "tags": ["te", "hesitation", "semantic_hold"]
+  },
+  {
+    "id": "te_flush_complete_01",
+    "language": "te",
+    "prompt_text": "ఈరోజు టమోటా రేట్ ఎంత?",
+    "expected_endpointing": "flush",
+    "expected_notes": "Complete Telugu market query should flush normally.",
+    "tags": ["te", "complete_query"]
+  },
+  {
+    "id": "ta_hold_pause_01",
+    "language": "ta",
+    "prompt_text": "ஒரு நிமிடம்",
+    "expected_endpointing": "hold_then_flush",
+    "expected_notes": "Standalone Tamil hesitation phrase should delay endpointing briefly.",
+    "tags": ["ta", "hesitation", "semantic_hold"]
+  },
+  {
+    "id": "ta_code_mix_flush_01",
+    "language": "ta",
+    "prompt_text": "today Koyambedu tomato rate என்ன?",
+    "expected_endpointing": "flush",
+    "expected_notes": "Code-mixed Tamil-English question is complete and should flush.",
+    "tags": ["ta", "code_mixed", "complete_query"]
+  }
+]

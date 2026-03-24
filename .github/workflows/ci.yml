@@ -10,7 +10,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7.6.0
         with:
           python-version: "3.12"
-      - run: uv sync --group dev
+      - run: uv sync --group dev --extra dev
       - run: uv run ruff check src/ ai/
 
   python-tests:
@@ -20,7 +20,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7.6.0
         with:
           python-version: "3.12"
-      - run: uv sync --group dev
+      - run: uv sync --group dev --extra dev
       - run: uv run pytest tests/ -v --tb=short
 
   voice-gateway:
